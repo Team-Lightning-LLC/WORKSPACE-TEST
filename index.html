@@ -250,7 +250,7 @@
     .doc-picker { border: 1px solid var(--border); border-radius: 8px; margin-top: 8px; }
     .doc-picker-search { padding: 10px 12px; border-bottom: 1px solid var(--hair); }
     .doc-picker-search input { width: 100%; padding: 8px 10px; border: 1px solid var(--border); border-radius: 6px; font-size: 12px; }
-    .doc-picker-list { max-height: 280px; overflow-y: auto; }
+    .doc-picker-list { max-height: 50vh; overflow-y: auto; }
     .doc-picker-item { padding: 10px 12px; display: flex; align-items: center; gap: 10px; border-bottom: 1px solid var(--hair); cursor: pointer; }
     .doc-picker-item:last-child { border-bottom: none; }
     .doc-picker-item:hover { background: var(--soft); }
@@ -338,9 +338,11 @@
     .doc-body strong { color: var(--primary); }
     .doc-body ul, .doc-body ol { margin: 14px 0; padding-left: 24px; }
     .doc-body li { margin-bottom: 6px; font-size: 14px; }
-    .doc-body table { width: 100%; border-collapse: collapse; margin: 18px 0; font-size: 13px; }
-    .doc-body th { background: var(--primary); color: white; padding: 10px 12px; text-align: left; font-weight: 600; }
-    .doc-body td { border: 1px solid var(--border); padding: 10px 12px; }
+    .doc-body table { width: 100%; border-collapse: collapse; margin: 18px 0; font-size: 13px; background: white; }
+    .doc-body th { background: var(--accent) !important; color: white !important; padding: 10px 12px; text-align: left; font-weight: 600; border: 1px solid var(--accent); }
+    .doc-body td { border: 1px solid var(--border); padding: 10px 12px; background: white; }
+    .doc-body thead { background: var(--accent); }
+    .doc-body thead th { background: var(--accent) !important; color: white !important; }
     .doc-body tr:nth-child(even) { background: var(--soft); }
     
     /* Chat/Follow-up panel */
@@ -391,21 +393,32 @@
     .doc-followup-btn { width: 100%; padding: 12px; background: var(--accent); color: white; border: none; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; margin-top: auto; }
     .doc-followup-btn:hover { background: var(--accent-hover); }
     .doc-followup-btn:disabled { background: var(--border); cursor: not-allowed; }
-    
-    /* Loading & API Status */
+
+    /* Loading Overlay */
     .loading-overlay { position: fixed; inset: 0; background: rgba(255,255,255,0.97); display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 999; transition: opacity 0.3s; }
     .loading-overlay.hidden { opacity: 0; pointer-events: none; }
     .loading-spinner { width: 36px; height: 36px; border: 3px solid var(--border); border-top-color: var(--accent); border-radius: 50%; animation: spin 0.8s linear infinite; }
     @keyframes spin { to { transform: rotate(360deg); } }
     .loading-text { margin-top: 14px; color: var(--muted); font-size: 13px; }
+    
+    /* API Status Badge */
     .api-status { display: flex; align-items: center; gap: 6px; font-size: 11px; color: rgba(255,255,255,0.7); background: rgba(255,255,255,0.1); padding: 5px 10px; border-radius: 12px; margin-right: 10px; }
     .api-dot { width: 7px; height: 7px; border-radius: 50%; }
     .api-dot.connected { background: #4a9d6e; }
     .api-dot.error { background: #c0392b; }
     .api-dot.loading { background: #d4a017; animation: pulse 1s infinite; }
+    
+    /* Thinking indicator */
+    .thinking-indicator { display: flex; align-items: center; gap: 8px; padding: 12px 14px; background: var(--soft); border-radius: 12px; font-size: 13px; color: var(--muted); }
+    .thinking-dots { display: flex; gap: 4px; }
+    .thinking-dots span { width: 6px; height: 6px; background: var(--accent); border-radius: 50%; animation: bounce 1.4s infinite; }
+    .thinking-dots span:nth-child(2) { animation-delay: 0.2s; }
+    .thinking-dots span:nth-child(3) { animation-delay: 0.4s; }
+    @keyframes bounce { 0%, 80%, 100% { opacity: 0.3; } 40% { opacity: 1; } }
   </style>
 </head>
 <body>
+  <!-- Loading Overlay -->
   <div class="loading-overlay" id="loadingOverlay">
     <div class="loading-spinner"></div>
     <div class="loading-text" id="loadingText">Connecting to Vertesia...</div>
@@ -829,68 +842,183 @@
   </dialog>
 
 <script>
-// ===== VERTESIA API =====
+// ===== VERTESIA API CONFIGURATION =====
 const CONFIG = {
   VERTESIA_API_BASE: 'https://api.vertesia.io/api/v1',
   VERTESIA_API_KEY: 'sk-2538a58567e4ebb6654c0a17ceab228c',
   ENVIRONMENT_ID: '681915c6a01fb262a410c161',
-  MODEL: 'publishers/anthropic/models/claude-sonnet-4'
+  MODEL: 'publishers/anthropic/models/claude-sonnet-4',
+  INTERACTION_RESEARCH: 'ResearchV2',
+  INTERACTION_CHAT: 'DocumentChat'
 };
 
+// ===== VERTESIA API CLASS =====
 class VertesiaAPI {
   async call(endpoint, options = {}) {
-    const response = await fetch(`${CONFIG.VERTESIA_API_BASE}${endpoint}`, {
-      headers: { 'Authorization': `Bearer ${CONFIG.VERTESIA_API_KEY}`, 'Content-Type': 'application/json', ...options.headers },
+    const url = `${CONFIG.VERTESIA_API_BASE}${endpoint}`;
+    const response = await fetch(url, {
+      headers: {
+        'Authorization': `Bearer ${CONFIG.VERTESIA_API_KEY}`,
+        'Content-Type': 'application/json',
+        ...options.headers
+      },
       ...options
     });
-    if (!response.ok) throw new Error(`API error: ${response.status}`);
-    return response.json();
+    if (!response.ok) throw new Error(`API ${response.status}: ${response.statusText}`);
+    const text = await response.text();
+    return text ? JSON.parse(text) : null;
   }
-  async loadAllObjects() { return this.call('/objects?limit=500&offset=0').then(d => Array.isArray(d) ? d : d.objects || []); }
-  async getDownloadUrl(src) { return this.call('/objects/download-url', { method: 'POST', body: JSON.stringify({ file: src, format: 'original' }) }); }
-  async getFileContent(src) { const { url } = await this.getDownloadUrl(src); return fetch(url).then(r => r.text()); }
+
+  // Load all documents
+  async loadAllObjects(limit = 1000) {
+    const data = await this.call(`/objects?limit=${limit}&offset=0`);
+    return Array.isArray(data) ? data : data.objects || [];
+  }
+
+  // Get single object
+  async getObject(id) {
+    return await this.call(`/objects/${id}`);
+  }
+
+  // Get download URL for file content
+  async getDownloadUrl(fileSource) {
+    return await this.call('/objects/download-url', {
+      method: 'POST',
+      body: JSON.stringify({ file: fileSource, format: 'original' })
+    });
+  }
+
+  // Get file content as text
+  async getFileContent(fileSource) {
+    const { url } = await this.getDownloadUrl(fileSource);
+    const response = await fetch(url);
+    return await response.text();
+  }
+
+  // Load collections (workspaces)
+  async loadCollections() {
+    return await this.call('/collections/search', {
+      method: 'POST',
+      body: JSON.stringify({ dynamic: false, status: 'active', limit: 100 })
+    });
+  }
+
+  // Get collection members (documents in workspace)
+  async getCollectionMembers(collectionId) {
+    return await this.call(`/collections/${collectionId}/members?limit=1000`);
+  }
+
+  // Create collection (workspace)
+  async createCollection(name, description = '') {
+    return await this.call('/collections', {
+      method: 'POST',
+      body: JSON.stringify({ name, description, dynamic: false })
+    });
+  }
+
+  // Add documents to collection
+  async addToCollection(collectionId, docIds) {
+    return await this.call(`/collections/${collectionId}/members`, {
+      method: 'POST',
+      body: JSON.stringify({ action: 'add', members: docIds })
+    });
+  }
+
+  // Remove from collection
+  async removeFromCollection(collectionId, docIds) {
+    return await this.call(`/collections/${collectionId}/members`, {
+      method: 'POST',
+      body: JSON.stringify({ action: 'delete', members: docIds })
+    });
+  }
+
+  // Execute DocumentChat
   async executeDocChat(task) {
-    return this.call('/execute/async', { method: 'POST', body: JSON.stringify({
-      type: 'conversation', interaction: 'DocumentChat', data: { task },
-      config: { environment: CONFIG.ENVIRONMENT_ID, model: CONFIG.MODEL }, interactive: true, max_iterations: 100
-    })});
+    return await this.call('/execute/async', {
+      method: 'POST',
+      body: JSON.stringify({
+        type: 'conversation',
+        interaction: CONFIG.INTERACTION_CHAT,
+        data: { task },
+        config: { environment: CONFIG.ENVIRONMENT_ID, model: CONFIG.MODEL },
+        interactive: true,
+        max_iterations: 100
+      })
+    });
   }
-  async streamResponse(wfId, runId, onMsg, onDone, onErr) {
+
+  // Execute Research
+  async executeResearch(task) {
+    return await this.call('/execute/async', {
+      method: 'POST',
+      body: JSON.stringify({
+        type: 'conversation',
+        interaction: CONFIG.INTERACTION_RESEARCH,
+        data: { Task: task },
+        config: { environment: CONFIG.ENVIRONMENT_ID, model: CONFIG.MODEL }
+      })
+    });
+  }
+
+  // Get run status
+  async getRunStatus(workflowId, runId) {
+    return await this.call(`/workflows/runs/${workflowId}/${runId}`);
+  }
+
+  // Stream response
+  async streamResponse(workflowId, runId, onMessage, onComplete, onError) {
+    const url = `${CONFIG.VERTESIA_API_BASE}/workflows/runs/${workflowId}/${runId}/stream?since=${Date.now()}&access_token=${CONFIG.VERTESIA_API_KEY}`;
     try {
-      const response = await fetch(`${CONFIG.VERTESIA_API_BASE}/workflows/runs/${wfId}/${runId}/stream?since=${Date.now()}&access_token=${CONFIG.VERTESIA_API_KEY}`);
+      const response = await fetch(url);
+      if (!response.ok) throw new Error(`Stream error: ${response.status}`);
+      
       const reader = response.body.getReader();
       const decoder = new TextDecoder();
       let buffer = '';
+
       while (true) {
         const { done, value } = await reader.read();
         if (done) break;
+
         buffer += decoder.decode(value, { stream: true });
         const lines = buffer.split('\n');
         buffer = lines.pop();
+
         for (const line of lines) {
           if (!line.startsWith('data:')) continue;
           try {
             const data = JSON.parse(line.slice(5).trim());
-            if (onMsg) onMsg(data);
-            if (data.type === 'finish' || data.finish_reason === 'stop') { if (onDone) onDone(); return; }
+            if (onMessage) onMessage(data);
+            if (data.type === 'finish' || data.finish_reason === 'stop') {
+              if (onComplete) onComplete();
+              return;
+            }
           } catch (e) {}
         }
       }
-      if (onDone) onDone();
-    } catch (e) { if (onErr) onErr(e); }
+      if (onComplete) onComplete();
+    } catch (error) {
+      if (onError) onError(error);
+    }
   }
+
+  // Extract clean answer from agent response
   extractAnswer(msg) {
     if (!msg) return '';
-    const m = msg.match(/\*\*3\.\s*Agent Answer:\*\*\s*([\s\S]*?)(?=\*\*\d+\.|$)/i);
-    return m ? m[1].trim() : msg;
+    const match = msg.match(/\*\*3\.\s*Agent Answer:\*\*\s*([\s\S]*?)(?=\*\*\d+\.|$)/i);
+    return match ? match[1].trim() : msg;
   }
 }
-const vertesiaAPI = new VertesiaAPI();
 
-// Live mode state
+const api = new VertesiaAPI();
+
+// ===== LIVE MODE STATE =====
 let liveMode = false;
-let allVertesiaDocs = [];
+let allVertesiaDocs = [];      // All documents from API
+let vertesiaCollections = [];  // Collections (workspaces) from API
+let collectionMembers = {};    // collectionId -> [docIds]
 
+// ===== DEMO DATA (FALLBACK) =====
 // DATA
 let workspaces = [
   { id: 1, name: 'Semiconductor Risk', pinned: true, status: 'active' },
@@ -989,25 +1117,20 @@ let workspaceChats = {
   4: []
 };
 
-// INIT
+// ===== INITIALIZATION =====
 document.addEventListener('DOMContentLoaded', async () => {
-  // Try API connection
   try {
     setLoadingText('Loading documents...');
-    const objects = await vertesiaAPI.loadAllObjects();
-    allVertesiaDocs = objects.filter(o => o.content?.source).map(o => ({
-      id: o.id, title: o.name || 'Untitled', type: o.properties?.framework || o.properties?.document_type || 'Document',
-      date: new Date(o.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
-      source: o.content?.source, parentId: o.parent || null
-    }));
-    if (allVertesiaDocs.length > 0) libraryDocs = allVertesiaDocs.slice(0, 20);
-    liveMode = true;
+    await loadFromAPI();
     setApiStatus('connected');
-    console.log(`Loaded ${allVertesiaDocs.length} docs from Vertesia`);
-  } catch (e) {
-    console.error('API failed, using demo:', e);
+    liveMode = true;
+    console.log('Live mode enabled');
+  } catch (error) {
+    console.error('API connection failed, using demo mode:', error);
     setApiStatus('error');
+    liveMode = false;
   }
+  
   hideLoading();
   renderSidebar();
   renderDocuments();
@@ -1019,13 +1142,95 @@ document.addEventListener('DOMContentLoaded', async () => {
   renderChatHistory();
 });
 
-function setLoadingText(t) { const el = document.getElementById('loadingText'); if (el) el.textContent = t; }
-function hideLoading() { document.getElementById('loadingOverlay')?.classList.add('hidden'); }
-function setApiStatus(s) {
-  const dot = document.getElementById('apiDot'), txt = document.getElementById('apiStatusText');
+async function loadFromAPI() {
+  // 1. Load all documents
+  setLoadingText('Loading documents...');
+  const objects = await api.loadAllObjects();
+  allVertesiaDocs = objects.filter(o => o.content?.source).map(o => ({
+    id: o.id,
+    title: o.name || 'Untitled',
+    type: o.properties?.framework || o.properties?.document_type || 'Research',
+    date: formatApiDate(o.created_at),
+    source: o.content?.source,
+    parentId: o.parent || null
+  }));
+  console.log(`Loaded ${allVertesiaDocs.length} documents from API`);
+
+  // Update library with all docs
+  libraryDocs = allVertesiaDocs;
+
+  // 2. Load collections as workspaces
+  setLoadingText('Loading workspaces...');
+  let collections = [];
+  try {
+    collections = await api.loadCollections() || [];
+    console.log(`Loaded ${collections.length} collections from API`);
+  } catch (e) {
+    console.warn('Failed to load collections:', e);
+  }
+  
+  vertesiaCollections = collections;
+  
+  if (collections.length > 0) {
+    // Map collections to workspaces format
+    workspaces = collections.map((c, i) => ({
+      id: c.id,
+      name: c.name,
+      pinned: i === 0,
+      status: 'active'
+    }));
+
+    // 3. Load members for each collection
+    setLoadingText('Loading workspace contents...');
+    workspaceDocs = {};
+    for (const c of collections) {
+      try {
+        const members = await api.getCollectionMembers(c.id) || [];
+        const memberIds = members.map(m => m.id);
+        collectionMembers[c.id] = memberIds;
+        
+        // Map to workspace docs format
+        workspaceDocs[c.id] = memberIds.map(docId => {
+          return allVertesiaDocs.find(d => d.id === docId);
+        }).filter(Boolean);
+        
+        console.log(`Collection ${c.name}: ${workspaceDocs[c.id].length} docs`);
+      } catch (e) {
+        console.warn(`Failed to load members for ${c.name}:`, e);
+        workspaceDocs[c.id] = [];
+        collectionMembers[c.id] = [];
+      }
+    }
+
+    currentWs = workspaces[0];
+    documents = workspaceDocs[currentWs.id] || [];
+    console.log(`Active workspace: ${currentWs.name} with ${documents.length} docs`);
+  } else {
+    console.log('No collections found, using demo workspaces');
+  }
+}
+
+function formatApiDate(dateStr) {
+  if (!dateStr) return '';
+  const d = new Date(dateStr);
+  return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+}
+
+function setLoadingText(text) {
+  const el = document.getElementById('loadingText');
+  if (el) el.textContent = text;
+}
+
+function hideLoading() {
+  document.getElementById('loadingOverlay')?.classList.add('hidden');
+}
+
+function setApiStatus(status) {
+  const dot = document.getElementById('apiDot');
+  const text = document.getElementById('apiStatusText');
   if (!dot) return;
-  dot.className = 'api-dot ' + s;
-  txt.textContent = s === 'connected' ? 'Live' : s === 'error' ? 'Demo' : 'Connecting...';
+  dot.className = 'api-dot ' + status;
+  if (text) text.textContent = status === 'connected' ? 'Live' : status === 'error' ? 'Demo' : 'Connecting...';
 }
 
 // MODALS
@@ -1060,19 +1265,20 @@ function wsItem(w) {
   const wsJobs = activeJobs.filter(j => j.wsId === w.id);
   const docCount = (workspaceDocs[w.id] || []).length;
   const meta = wsJobs.length > 0 ? `<span class="activity-dot"></span> ${wsJobs.length} generating` : `${docCount} doc${docCount !== 1 ? 's' : ''}`;
-  return `<div class="workspace-item ${active}" onclick="selectWs(${w.id})">
+  const idStr = JSON.stringify(w.id);
+  return `<div class="workspace-item ${active}" onclick="selectWs(${idStr})">
     <div class="workspace-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg></div>
     <div class="workspace-info">
       <div class="workspace-name">${w.name} ${pin}</div>
       <div class="workspace-meta">${meta}</div>
     </div>
-    <button class="workspace-menu-btn" onclick="event.stopPropagation();toggleWsMenu(${w.id})"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="1"/><circle cx="12" cy="5" r="1"/><circle cx="12" cy="19" r="1"/></svg></button>
+    <button class="workspace-menu-btn" onclick="event.stopPropagation();toggleWsMenu(${idStr})"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="1"/><circle cx="12" cy="5" r="1"/><circle cx="12" cy="19" r="1"/></svg></button>
     <div class="workspace-menu" id="wsMenu${w.id}">
-      <div class="workspace-menu-item" onclick="event.stopPropagation();renameWs(${w.id})"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg> Rename</div>
-      <div class="workspace-menu-item" onclick="event.stopPropagation();togglePin(${w.id})"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z"/></svg> ${w.pinned ? 'Unpin' : 'Pin'}</div>
-      <div class="workspace-menu-item" onclick="event.stopPropagation();toggleComplete(${w.id})"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg> ${w.status === 'completed' ? 'Reopen' : 'Mark Complete'}</div>
+      <div class="workspace-menu-item" onclick="event.stopPropagation();renameWs(${idStr})"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg> Rename</div>
+      <div class="workspace-menu-item" onclick="event.stopPropagation();togglePin(${idStr})"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z"/></svg> ${w.pinned ? 'Unpin' : 'Pin'}</div>
+      <div class="workspace-menu-item" onclick="event.stopPropagation();toggleComplete(${idStr})"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg> ${w.status === 'completed' ? 'Reopen' : 'Mark Complete'}</div>
       <div class="menu-divider"></div>
-      <div class="workspace-menu-item danger" onclick="event.stopPropagation();deleteWs(${w.id})"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg> Delete</div>
+      <div class="workspace-menu-item danger" onclick="event.stopPropagation();deleteWs(${idStr})"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg> Delete</div>
     </div>
   </div>`;
 }
@@ -1168,35 +1374,73 @@ function filterWorkspaces(q) {
     el.style.display = el.textContent.toLowerCase().includes(q.toLowerCase()) ? 'flex' : 'none';
   });
 }
-function createWorkspace() {
+
+async function createWorkspace() {
   const name = document.getElementById('newWsName').value.trim();
   if (!name) { alert('Enter a name'); return; }
   
-  const wsId = Date.now();
-  const ws = { id: wsId, name, pinned: false, status: 'active' };
+  let wsId;
+  let ws;
   
-  // Initialize empty document array for this workspace
-  workspaceDocs[wsId] = [];
-  
-  // Add any selected docs from the picker
-  const picker = document.getElementById('newWsPicker');
-  const selected = picker.querySelectorAll('.doc-picker-item.selected');
-  selected.forEach(el => {
-    const title = el.querySelector('.doc-picker-title').textContent;
-    const meta = el.querySelector('.doc-picker-meta').textContent;
-    const type = meta.split(' · ')[1] || 'Research';
-    workspaceDocs[wsId].push({
-      id: Date.now() + Math.random(),
-      title,
-      type,
-      date: 'Just now',
-      parentId: null
+  // If live mode, create via API
+  if (liveMode) {
+    try {
+      const btn = document.querySelector('#newWorkspace .action-btn.primary');
+      if (btn) { btn.disabled = true; btn.textContent = 'Creating...'; }
+      
+      const collection = await api.createCollection(name, `Created from MarketLens on ${new Date().toLocaleDateString()}`);
+      wsId = collection.id;
+      ws = { id: wsId, name, pinned: false, status: 'active' };
+      
+      // Add selected docs to collection
+      const picker = document.getElementById('newWsPicker');
+      const selected = picker.querySelectorAll('.doc-picker-item.selected');
+      const docIds = Array.from(selected).map(el => el.dataset.docId).filter(id => id);
+      
+      if (docIds.length > 0) {
+        await api.addToCollection(wsId, docIds);
+        collectionMembers[wsId] = docIds;
+        workspaceDocs[wsId] = docIds.map(id => allVertesiaDocs.find(d => d.id === id)).filter(Boolean);
+      } else {
+        workspaceDocs[wsId] = [];
+        collectionMembers[wsId] = [];
+      }
+      
+      if (btn) { btn.disabled = false; btn.textContent = 'Create Workspace'; }
+      console.log('Created workspace via API:', wsId);
+      
+    } catch (error) {
+      console.error('Failed to create workspace via API:', error);
+      alert('Failed to create workspace. Please try again.');
+      const btn = document.querySelector('#newWorkspace .action-btn.primary');
+      if (btn) { btn.disabled = false; btn.textContent = 'Create Workspace'; }
+      return;
+    }
+  } else {
+    // Demo mode
+    wsId = Date.now();
+    ws = { id: wsId, name, pinned: false, status: 'active' };
+    workspaceDocs[wsId] = [];
+    
+    const picker = document.getElementById('newWsPicker');
+    const selected = picker.querySelectorAll('.doc-picker-item.selected');
+    selected.forEach(el => {
+      const title = el.querySelector('.doc-picker-title').textContent;
+      const meta = el.querySelector('.doc-picker-meta').textContent;
+      const type = meta.split(' · ')[1] || 'Research';
+      workspaceDocs[wsId].push({
+        id: Date.now() + Math.random(),
+        title,
+        type,
+        date: 'Just now',
+        parentId: null
+      });
     });
-  });
+  }
   
   workspaces.unshift(ws);
   currentWs = ws;
-  documents = workspaceDocs[wsId];
+  documents = workspaceDocs[wsId] || [];
   
   renderSidebar();
   renderDocuments();
@@ -1306,7 +1550,7 @@ function renderDocPicker(containerId, docs, isRelated = false) {
   container.innerHTML = `
     ${!isRelated ? '<div class="doc-picker-search"><input type="text" placeholder="Search..." oninput="filterPicker(this)"></div>' : ''}
     <div class="doc-picker-list">${docs.map(d => `
-      <div class="doc-picker-item" onclick="togglePickerItem(this)">
+      <div class="doc-picker-item" data-doc-id="${d.id}" onclick="togglePickerItem(this)">
         <div class="doc-picker-checkbox"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg></div>
         <div class="doc-picker-info">
           <div class="doc-picker-title">${d.title}</div>
@@ -1314,14 +1558,15 @@ function renderDocPicker(containerId, docs, isRelated = false) {
         </div>
       </div>
     `).join('')}</div>
-    <div class="doc-picker-footer">0 documents selected</div>
+    <div class="doc-picker-footer">${docs.length} documents available · 0 selected</div>
   `;
 }
 function togglePickerItem(el) {
   el.classList.toggle('selected');
   const picker = el.closest('.doc-picker');
   const count = picker.querySelectorAll('.doc-picker-item.selected').length;
-  picker.querySelector('.doc-picker-footer').textContent = count + ' documents selected';
+  const total = picker.querySelectorAll('.doc-picker-item').length;
+  picker.querySelector('.doc-picker-footer').textContent = `${total} documents available · ${count} selected`;
 }
 function filterPicker(input) {
   const q = input.value.toLowerCase();
@@ -1329,14 +1574,42 @@ function filterPicker(input) {
     el.style.display = el.textContent.toLowerCase().includes(q) ? 'flex' : 'none';
   });
 }
-function addDocsToWorkspace(pickerId) {
+
+async function addDocsToWorkspace(pickerId) {
   const picker = document.getElementById(pickerId);
   const selected = picker.querySelectorAll('.doc-picker-item.selected');
   if (!selected.length) { alert('Select at least one document'); return; }
-  selected.forEach(el => {
-    const title = el.querySelector('.doc-picker-title').textContent;
-    documents.push({ id: Date.now() + Math.random(), title, type: 'Added', date: 'Just now', parentId: null });
-  });
+  
+  if (liveMode && typeof currentWs.id === 'string') {
+    // API mode - add to collection
+    try {
+      const docIds = Array.from(selected).map(el => el.dataset.docId).filter(id => id);
+      if (docIds.length > 0) {
+        await api.addToCollection(currentWs.id, docIds);
+        
+        // Update local state
+        docIds.forEach(docId => {
+          const doc = allVertesiaDocs.find(d => d.id === docId);
+          if (doc && !documents.find(d => d.id === docId)) {
+            documents.push(doc);
+            if (!collectionMembers[currentWs.id]) collectionMembers[currentWs.id] = [];
+            collectionMembers[currentWs.id].push(docId);
+          }
+        });
+      }
+    } catch (error) {
+      console.error('Failed to add docs to collection:', error);
+      alert('Failed to add documents. Please try again.');
+      return;
+    }
+  } else {
+    // Demo mode
+    selected.forEach(el => {
+      const title = el.querySelector('.doc-picker-title').textContent;
+      documents.push({ id: Date.now() + Math.random(), title, type: 'Added', date: 'Just now', parentId: null });
+    });
+  }
+  
   workspaceDocs[currentWs.id] = documents;
   renderDocuments();
   renderSidebar();
@@ -1351,19 +1624,115 @@ function updateFocus() {
     ? '<option value="">Select focus...</option>' + opts.map(o => `<option value="${o}">${o}</option>`).join('')
     : '<option value="">Choose type first...</option>';
 }
-function startResearch() {
-  const f = document.getElementById('researchFocus').value;
-  if (!f) { alert('Select type and focus'); return; }
+
+async function startResearch() {
+  const type = document.getElementById('researchType').value;
+  const focus = document.getElementById('researchFocus').value;
+  const context = document.getElementById('researchContext')?.value?.trim() || '';
+  
+  if (!focus) { alert('Select type and focus'); return; }
   
   // Create job with parent info if follow-up
-  const jobName = followUpParentDoc ? `Follow-up: ${f}` : f;
-  addJob(jobName);
+  const jobName = followUpParentDoc ? `Follow-up: ${focus}` : focus;
   
-  // In real implementation, would pass parent_id to API:
-  // { framework: f, scope, rigor, context, parent_document_id: followUpParentDoc?.id }
+  // Build prompt
+  let prompt = '';
+  
+  if (followUpParentDoc) {
+    prompt = `FOLLOW-UP RESEARCH REQUEST
+
+First, access and analyze Document ID: ${followUpParentDoc.id} from the content object library.
+Parent document: ${followUpParentDoc.title}
+
+The user wants to explore: ${context || 'Further analysis based on the parent document'}
+
+Use insights from the parent document to enhance this research.
+
+`;
+  }
+  
+  prompt += `Analysis Type: ${type || 'General'}
+Framework: ${focus}
+Context: ${context || 'General analysis'}
+
+Generate a comprehensive research document with hyperlinked sources.
+The final output must be a document uploaded to the content object library.
+`;
+
+  console.log('Starting research:', { focus, context, hasParent: !!followUpParentDoc });
+  
+  // Call API if in live mode
+  if (liveMode) {
+    try {
+      const response = await api.executeResearch(prompt);
+      console.log('Research started:', response);
+      
+      // Add to active jobs
+      addJob(jobName);
+      
+      // Poll for completion
+      if (response.runId && response.workflowId) {
+        pollResearchCompletion(response.workflowId, response.runId, jobName);
+      }
+    } catch (error) {
+      console.error('Failed to start research:', error);
+      alert('Failed to start research. Please try again.');
+      return;
+    }
+  } else {
+    // Demo mode
+    addJob(jobName);
+  }
   
   closeModal('research');
   resetResearchModal();
+}
+
+async function pollResearchCompletion(workflowId, runId, jobName) {
+  let attempts = 0;
+  const maxAttempts = 60;
+  
+  const poll = setInterval(async () => {
+    attempts++;
+    if (attempts > maxAttempts) {
+      clearInterval(poll);
+      removeJob(jobName);
+      console.log('Research timed out');
+      return;
+    }
+    
+    try {
+      const status = await api.getRunStatus(workflowId, runId);
+      const runStatus = (status?.status || '').toLowerCase();
+      
+      if (['completed', 'finished', 'done'].includes(runStatus)) {
+        clearInterval(poll);
+        removeJob(jobName);
+        
+        // Reload documents
+        const objects = await api.loadAllObjects();
+        allVertesiaDocs = objects.filter(o => o.content?.source).map(o => ({
+          id: o.id,
+          title: o.name || 'Untitled',
+          type: o.properties?.framework || o.properties?.document_type || 'Research',
+          date: formatApiDate(o.created_at),
+          source: o.content?.source,
+          parentId: o.parent || null
+        }));
+        libraryDocs = allVertesiaDocs;
+        
+        console.log('Research completed, docs reloaded');
+        renderSidebar();
+        
+      } else if (['failed', 'error'].includes(runStatus)) {
+        clearInterval(poll);
+        removeJob(jobName);
+        console.error('Research failed');
+      }
+    } catch (e) {
+      console.error('Poll error:', e);
+    }
+  }, 15000);
 }
 
 function resetResearchModal() {
@@ -1574,8 +1943,9 @@ async function sendChat() {
   input.value = '';
   chat.scrollTop = chat.scrollHeight;
   
-  // Use API if in live mode with real doc IDs
+  // Check if we have live docs to search
   const hasLiveDocs = liveMode && documents.some(d => typeof d.id === 'string');
+  
   if (hasLiveDocs) {
     await sendChatToAPI(msg, chat);
   } else {
@@ -1587,25 +1957,44 @@ async function sendChatToAPI(msg, chatEl) {
   isChatStreaming = true;
   const sendBtn = document.getElementById('chatSend');
   if (sendBtn) sendBtn.disabled = true;
-  
-  // Show thinking
-  chatEl.innerHTML += `<div class="thinking-indicator" id="wsThinking"><div class="thinking-dots"><span></span><span></span><span></span></div><span>Analyzing documents...</span></div>`;
+
+  // Show thinking indicator
+  chatEl.innerHTML += `
+    <div class="thinking-indicator" id="wsThinking">
+      <div class="thinking-dots"><span></span><span></span><span></span></div>
+      <span>Analyzing workspace documents...</span>
+    </div>`;
   chatEl.scrollTop = chatEl.scrollHeight;
-  
+
   try {
-    const docIds = documents.filter(d => typeof d.id === 'string').map(d => d.id).join(', ');
-    const docNames = documents.map(d => d.title).join(', ');
-    const task = `Search these documents: ${docNames}\nDocument IDs: ${docIds}\n\nQuestion: ${msg}`;
+    // Build task with document IDs
+    const liveDocs = documents.filter(d => typeof d.id === 'string');
+    const docIds = liveDocs.map(d => d.id);
+    const docNames = liveDocs.map(d => d.title).join(', ');
     
-    const response = await vertesiaAPI.executeDocChat(task);
+    console.log('Workspace chat context:', { 
+      workspace: currentWs?.name,
+      docCount: liveDocs.length, 
+      docIds: docIds.slice(0, 3),
+      msg 
+    });
     
+    let task = `WORKSPACE CONTEXT: Search these ${docIds.length} documents in the ${currentWs?.name || 'current'} workspace.\n`;
+    task += `Documents: ${docNames}\n`;
+    task += `Document IDs: ${docIds.join(', ')}\n\n`;
+    task += `USER QUESTION: ${msg}`;
+
+    const response = await api.executeDocChat(task);
+    console.log('Chat API response:', response);
+
     if (response.runId && response.workflowId) {
       let gotAnswer = false;
-      await vertesiaAPI.streamResponse(response.workflowId, response.runId,
+      
+      await api.streamResponse(response.workflowId, response.runId,
         (data) => {
           if (data.type === 'answer' && data.message && !gotAnswer) {
-            const answer = vertesiaAPI.extractAnswer(data.message);
-            if (answer?.length > 10) {
+            const answer = api.extractAnswer(data.message);
+            if (answer && answer.length > 10) {
               gotAnswer = true;
               document.getElementById('wsThinking')?.remove();
               addAIResponse(chatEl, answer);
@@ -1613,15 +2002,26 @@ async function sendChatToAPI(msg, chatEl) {
           }
         },
         () => {
-          if (!gotAnswer) { document.getElementById('wsThinking')?.remove(); addAIResponse(chatEl, "I couldn't find relevant information. Try rephrasing your question."); }
+          if (!gotAnswer) {
+            document.getElementById('wsThinking')?.remove();
+            addAIResponse(chatEl, "I couldn't find relevant information in the workspace documents. Try rephrasing your question or checking that the documents contain the information you're looking for.");
+          }
           isChatStreaming = false;
           if (sendBtn) sendBtn.disabled = false;
         },
-        () => { document.getElementById('wsThinking')?.remove(); addAIResponse(chatEl, 'Error processing request.'); isChatStreaming = false; if (sendBtn) sendBtn.disabled = false; }
+        (error) => {
+          console.error('Stream error:', error);
+          document.getElementById('wsThinking')?.remove();
+          addAIResponse(chatEl, 'Sorry, there was an error processing your request. Please try again.');
+          isChatStreaming = false;
+          if (sendBtn) sendBtn.disabled = false;
+        }
       );
+    } else {
+      throw new Error('No runId/workflowId in response');
     }
-  } catch (e) {
-    console.error('Chat API error:', e);
+  } catch (error) {
+    console.error('Chat API error:', error);
     document.getElementById('wsThinking')?.remove();
     addAIResponse(chatEl, 'Error connecting to AI. Please try again.');
     isChatStreaming = false;
@@ -1631,7 +2031,9 @@ async function sendChatToAPI(msg, chatEl) {
 
 function addAIResponse(chatEl, text, sources = []) {
   const aiTime = new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
-  let sourcesHtml = sources.length ? `<div class="message-sources">Sources: ${sources.map(s => `<a href="#" onclick="event.preventDefault();viewDoc('${s}')">${s}</a>`).join(', ')}</div>` : '';
+  let sourcesHtml = sources.length > 0 
+    ? `<div class="message-sources">Sources: ${sources.map(s => `<a href="#" onclick="event.preventDefault();viewDoc('${s}')">${s}</a>`).join(', ')}</div>` 
+    : '';
   
   chatEl.innerHTML += `
     <div class="chat-message ai">
@@ -2050,18 +2452,19 @@ All leading-edge foundries depend entirely on ASML:
 ASML represents both a strategic bottleneck and an investable moat. The company's position is secure for the foreseeable future, though geopolitical factors warrant monitoring.`
 };
 
-let currentViewDocId = null; // For API calls
+let currentViewDocId = null; // Track doc ID for API calls
 
 function viewDoc(title) {
-  // Try live API first
+  // Check if we have this doc in live data
   if (liveMode) {
     const liveDoc = allVertesiaDocs.find(d => d.title === title);
-    if (liveDoc?.source) {
+    if (liveDoc && liveDoc.source) {
       viewDocFromAPI(liveDoc);
       return;
     }
   }
-  // Fallback to demo
+  
+  // Fallback to demo content
   const content = sampleDocuments[title] || generatePlaceholderDoc(title);
   openDocViewer(content, title);
 }
@@ -2071,37 +2474,51 @@ async function viewDocFromAPI(doc) {
   currentViewDocId = doc.id;
   currentViewContent = '';
   docChatMessages = [];
-  
+
   const dialog = document.getElementById('docViewer');
   document.getElementById('docViewerTitle').textContent = doc.title;
   document.getElementById('docChatTitle').textContent = doc.title;
   document.getElementById('viewerParentDocName').textContent = doc.title;
-  document.getElementById('docBody').innerHTML = '<div style="text-align:center;padding:60px;color:var(--muted)"><div class="loading-spinner" style="margin:0 auto 16px"></div>Loading document...</div>';
+  document.getElementById('docBody').innerHTML = `
+    <div style="text-align:center;padding:60px;color:var(--muted)">
+      <div class="loading-spinner" style="margin:0 auto 16px;width:32px;height:32px;border-width:2px"></div>
+      <p>Loading document...</p>
+    </div>`;
   document.getElementById('docTocList').innerHTML = '';
   document.getElementById('docViewerContainer').classList.remove('chat-open');
   document.getElementById('docChatToggle').classList.remove('active');
-  resetDocChatUI();
-  switchDocTab('chat');
-  dialog.showModal();
   
-  try {
-    const content = await vertesiaAPI.getFileContent(doc.source);
-    currentViewContent = content;
-    renderDocContent(content);
-    renderDocTOC(content);
-  } catch (e) {
-    console.error('Failed to load doc:', e);
-    document.getElementById('docBody').innerHTML = `<div style="text-align:center;padding:60px;color:var(--danger)">Failed to load document</div>`;
-  }
-}
-
-function resetDocChatUI() {
+  // Reset chat UI
   document.getElementById('docChatMessages').innerHTML = `
     <div class="doc-chat-empty">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
       <p>Ask questions about this document</p>
     </div>`;
   document.getElementById('docFollowupContext').value = '';
+  switchDocTab('chat');
+  
+  dialog.showModal();
+
+  try {
+    console.log('Loading document content from:', doc.source);
+    const content = await api.getFileContent(doc.source);
+    currentViewContent = content;
+    
+    // Use marked.js for proper rendering
+    if (typeof marked !== 'undefined') {
+      document.getElementById('docBody').innerHTML = marked.parse(content);
+    } else {
+      renderDocContent(content);
+    }
+    renderDocTOC(content);
+  } catch (error) {
+    console.error('Failed to load document:', error);
+    document.getElementById('docBody').innerHTML = `
+      <div style="text-align:center;padding:60px;color:var(--danger)">
+        <p style="font-size:18px;margin-bottom:8px">Failed to load document</p>
+        <p style="font-size:13px">${error.message}</p>
+      </div>`;
+  }
 }
 
 function generatePlaceholderDoc(title) {
@@ -2131,6 +2548,7 @@ Further analysis is recommended to explore the implications identified in this d
 
 function openDocViewer(content, title) {
   currentViewDoc = title;
+  currentViewDocId = null; // Reset for demo docs
   currentViewContent = content;
   docChatMessages = [];
   
@@ -2147,7 +2565,13 @@ function openDocViewer(content, title) {
   
   // Render TOC and content
   renderDocTOC(content);
-  renderDocContent(content);
+  
+  // Use marked.js for proper rendering if available
+  if (typeof marked !== 'undefined') {
+    document.getElementById('docBody').innerHTML = marked.parse(content);
+  } else {
+    renderDocContent(content);
+  }
   
   // Reset chat
   document.getElementById('docChatMessages').innerHTML = `
@@ -2162,6 +2586,8 @@ function openDocViewer(content, title) {
   switchDocTab('chat');
   
   dialog.showModal();
+  
+  console.log('Opened doc viewer:', { title, hasLiveId: !!currentViewDocId, liveMode });
 }
 
 function renderDocTOC(markdown) {
@@ -2262,6 +2688,8 @@ async function sendDocChat() {
   const msg = input.value.trim();
   if (!msg || isDocChatStreaming) return;
   
+  console.log('sendDocChat called:', { msg, liveMode, currentViewDocId, currentViewDoc });
+  
   const messagesEl = document.getElementById('docChatMessages');
   const time = new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
   
@@ -2283,8 +2711,10 @@ async function sendDocChat() {
   
   // Use API if we have a live doc ID
   if (liveMode && currentViewDocId) {
+    console.log('Using API for doc chat');
     await sendDocChatToAPI(msg, messagesEl);
   } else {
+    console.log('Using demo mode for doc chat');
     simulateDocChatResponse(messagesEl);
   }
 }
@@ -2292,21 +2722,29 @@ async function sendDocChat() {
 async function sendDocChatToAPI(msg, messagesEl) {
   isDocChatStreaming = true;
   
-  // Show thinking
-  messagesEl.innerHTML += `<div class="thinking-indicator" id="docThinking"><div class="thinking-dots"><span></span><span></span><span></span></div><span>Analyzing...</span></div>`;
+  // Show thinking indicator
+  messagesEl.innerHTML += `
+    <div class="thinking-indicator" id="docThinking">
+      <div class="thinking-dots"><span></span><span></span><span></span></div>
+      <span>Analyzing document...</span>
+    </div>`;
   messagesEl.scrollTop = messagesEl.scrollHeight;
-  
+
   try {
-    const task = `Document ID: ${currentViewDocId}\n\nQuestion: ${msg}`;
-    const response = await vertesiaAPI.executeDocChat(task);
+    const task = `DOCUMENT CONTEXT: Analyze document ID ${currentViewDocId} (${currentViewDoc})\n\nUSER QUESTION: ${msg}`;
     
+    console.log('Sending doc chat:', { docId: currentViewDocId, msg });
+    const response = await api.executeDocChat(task);
+    console.log('Doc chat response:', response);
+
     if (response.runId && response.workflowId) {
       let gotAnswer = false;
-      await vertesiaAPI.streamResponse(response.workflowId, response.runId,
+      
+      await api.streamResponse(response.workflowId, response.runId,
         (data) => {
           if (data.type === 'answer' && data.message && !gotAnswer) {
-            const answer = vertesiaAPI.extractAnswer(data.message);
-            if (answer?.length > 10) {
+            const answer = api.extractAnswer(data.message);
+            if (answer && answer.length > 10) {
               gotAnswer = true;
               document.getElementById('docThinking')?.remove();
               addDocAIResponse(messagesEl, answer);
@@ -2314,16 +2752,26 @@ async function sendDocChatToAPI(msg, messagesEl) {
           }
         },
         () => {
-          if (!gotAnswer) { document.getElementById('docThinking')?.remove(); addDocAIResponse(messagesEl, "I couldn't find relevant information in this document."); }
+          if (!gotAnswer) {
+            document.getElementById('docThinking')?.remove();
+            addDocAIResponse(messagesEl, "I couldn't find relevant information in this document for your question.");
+          }
           isDocChatStreaming = false;
         },
-        () => { document.getElementById('docThinking')?.remove(); addDocAIResponse(messagesEl, 'Error processing request.'); isDocChatStreaming = false; }
+        (error) => {
+          console.error('Doc chat stream error:', error);
+          document.getElementById('docThinking')?.remove();
+          addDocAIResponse(messagesEl, 'Error processing your request. Please try again.');
+          isDocChatStreaming = false;
+        }
       );
+    } else {
+      throw new Error('No runId/workflowId');
     }
-  } catch (e) {
-    console.error('Doc chat error:', e);
+  } catch (error) {
+    console.error('Doc chat error:', error);
     document.getElementById('docThinking')?.remove();
-    addDocAIResponse(messagesEl, 'Error connecting to AI.');
+    addDocAIResponse(messagesEl, 'Error connecting to AI. Please try again.');
     isDocChatStreaming = false;
   }
 }
@@ -2407,9 +2855,9 @@ function generateFollowUp() {
   const scope = document.getElementById('docFollowupScope').value;
   const rigor = document.getElementById('docFollowupRigor').value;
   
-  // Save doc info before closing viewer (which clears it)
+  // Save doc info before closing viewer
   const parentDocTitle = currentViewDoc;
-  const parentDocId = currentViewDoc; // In real app, would be actual doc ID
+  const parentDocId = currentViewDocId || currentViewDoc; // Use API ID if available
   
   // Close viewer first
   closeDocViewer();
@@ -2421,8 +2869,8 @@ function generateFollowUp() {
   if (context) {
     document.getElementById('researchContext').value = context;
   }
-  document.getElementById('researchScope').value = scope;
-  document.getElementById('researchRigor').value = rigor;
+  if (scope) document.getElementById('researchScope').value = scope;
+  if (rigor) document.getElementById('researchRigor').value = rigor;
 }
 </script>
 </body>
