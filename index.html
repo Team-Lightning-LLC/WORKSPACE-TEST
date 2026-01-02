@@ -856,6 +856,8 @@ const CONFIG = {
 class VertesiaAPI {
   async call(endpoint, options = {}) {
     const url = `${CONFIG.VERTESIA_API_BASE}${endpoint}`;
+    console.log('API Call:', options.method || 'GET', endpoint);
+    
     const response = await fetch(url, {
       headers: {
         'Authorization': `Bearer ${CONFIG.VERTESIA_API_KEY}`,
@@ -864,9 +866,32 @@ class VertesiaAPI {
       },
       ...options
     });
-    if (!response.ok) throw new Error(`API ${response.status}: ${response.statusText}`);
+    
+    // Handle non-OK responses
+    if (!response.ok) {
+      const errorText = await response.text().catch(() => '');
+      console.error('API Error:', response.status, errorText);
+      throw new Error(`API ${response.status}: ${response.statusText}`);
+    }
+    
+    // Handle 204 No Content and empty responses
+    if (response.status === 204) {
+      console.log('API: 204 No Content (success)');
+      return null;
+    }
+    
     const text = await response.text();
-    return text ? JSON.parse(text) : null;
+    if (!text || text.trim() === '') {
+      console.log('API: Empty response (success)');
+      return null;
+    }
+    
+    try {
+      return JSON.parse(text);
+    } catch (e) {
+      console.log('API: Non-JSON response:', text.substring(0, 100));
+      return null;
+    }
   }
 
   // Load all documents
@@ -1291,8 +1316,18 @@ function selectWs(id) {
     }
   }
   
+  console.log('Selecting workspace:', id, typeof id);
   currentWs = workspaces.find(w => w.id === id);
+  
+  if (!currentWs) {
+    console.error('Workspace not found:', id);
+    return;
+  }
+  
+  // Get documents for this workspace
   documents = workspaceDocs[id] || [];
+  console.log('Loaded', documents.length, 'documents for workspace');
+  
   renderSidebar();
   renderDocuments();
   updateHeader();
@@ -1520,28 +1555,37 @@ function updateJobs() {
     : activeJobs.map(j => `<div class="job-item"><div class="job-spinner"></div><div class="job-info"><div class="job-name">${j.name}</div><div class="job-progress">~${j.time} min</div></div></div>`).join('');
   renderSidebar();
 }
-function addJob(name) {
+
+function addJob(name, skipFakeTimer = false) {
   const job = { id: ++jobId, name, time: Math.floor(Math.random() * 3) + 2, wsId: currentWs.id };
   activeJobs.push(job);
   updateJobs();
   renderSidebar();
   document.getElementById('jobsToast').classList.remove('collapsed');
-  setTimeout(() => {
-    activeJobs = activeJobs.filter(j => j.id !== job.id);
-    updateJobs();
-    
-    // Add document to the workspace where job was started
-    const newDoc = { id: Date.now(), title: name, type: 'Research', date: 'Just now', parentId: null };
-    if (!workspaceDocs[job.wsId]) workspaceDocs[job.wsId] = [];
-    workspaceDocs[job.wsId].unshift(newDoc);
-    
-    // If we're still on that workspace, update the view
-    if (currentWs.id === job.wsId) {
-      documents = workspaceDocs[job.wsId];
-      renderDocuments();
-    }
-    renderSidebar();
-  }, 5000 + Math.random() * 5000);
+  
+  // Only use fake timer if not in live mode or if not skipFakeTimer
+  if (!liveMode && !skipFakeTimer) {
+    setTimeout(() => {
+      removeJob(name);
+      
+      // Add demo document to workspace
+      const newDoc = { id: Date.now(), title: name, type: 'Research', date: 'Just now', parentId: null };
+      if (!workspaceDocs[job.wsId]) workspaceDocs[job.wsId] = [];
+      workspaceDocs[job.wsId].unshift(newDoc);
+      
+      if (currentWs.id === job.wsId) {
+        documents = workspaceDocs[job.wsId];
+        renderDocuments();
+      }
+      renderSidebar();
+    }, 5000 + Math.random() * 5000);
+  }
+}
+
+function removeJob(name) {
+  activeJobs = activeJobs.filter(j => j.name !== name);
+  updateJobs();
+  renderSidebar();
 }
 
 // DOC PICKERS
@@ -1584,8 +1628,11 @@ async function addDocsToWorkspace(pickerId) {
     // API mode - add to collection
     try {
       const docIds = Array.from(selected).map(el => el.dataset.docId).filter(id => id);
+      console.log('Adding docs to workspace:', currentWs.id, docIds);
+      
       if (docIds.length > 0) {
         await api.addToCollection(currentWs.id, docIds);
+        console.log('API call successful');
         
         // Update local state
         docIds.forEach(docId => {
@@ -1596,6 +1643,7 @@ async function addDocsToWorkspace(pickerId) {
             collectionMembers[currentWs.id].push(docId);
           }
         });
+        console.log('Local state updated, documents:', documents.length);
       }
     } catch (error) {
       console.error('Failed to add docs to collection:', error);
@@ -1667,8 +1715,8 @@ The final output must be a document uploaded to the content object library.
       const response = await api.executeResearch(prompt);
       console.log('Research started:', response);
       
-      // Add to active jobs
-      addJob(jobName);
+      // Add to active jobs (skip fake timer since we're polling)
+      addJob(jobName, true);
       
       // Poll for completion
       if (response.runId && response.workflowId) {
@@ -1681,7 +1729,7 @@ The final output must be a document uploaded to the content object library.
     }
   } else {
     // Demo mode
-    addJob(jobName);
+    addJob(jobName, false);
   }
   
   closeModal('research');
@@ -1823,13 +1871,38 @@ function showBatchConfig() {
   document.getElementById('batchStep1').classList.add('active');
 }
 function startBatchResearch() {
-  document.querySelectorAll('#batchTypes .research-type.selected').forEach(el => {
+  const topic = document.getElementById('batchTopic')?.value?.trim() || '';
+  const selected = document.querySelectorAll('#batchTypes .research-type.selected');
+  
+  selected.forEach(async (el) => {
     const name = el.querySelector('.research-type-name').textContent;
     const qty = parseInt(el.querySelector('.stepper-value').textContent.replace('×', ''));
-    for (let i = 0; i < qty; i++) addJob(qty > 1 ? `${name} (${i + 1})` : name);
+    
+    for (let i = 0; i < qty; i++) {
+      const jobName = qty > 1 ? `${name} (${i + 1})` : name;
+      
+      // Call API if in live mode
+      if (liveMode) {
+        addJob(jobName, true); // Skip fake timer
+        try {
+          const prompt = `Research Type: ${name}\nTopic: ${topic || 'General analysis'}\n\nGenerate comprehensive research with hyperlinked sources.`;
+          const response = await api.executeResearch(prompt);
+          if (response.runId && response.workflowId) {
+            pollResearchCompletion(response.workflowId, response.runId, jobName);
+          }
+        } catch (error) {
+          console.error('Batch research failed:', error);
+          removeJob(jobName);
+        }
+      } else {
+        addJob(jobName, false); // Use fake timer in demo mode
+      }
+    }
+    
     el.classList.remove('selected');
     el.querySelector('.stepper-value').textContent = '×1';
   });
+  
   updateBatchTotal();
   closeModal('batchResearch');
 }
@@ -1867,12 +1940,50 @@ function updateReportBtn() {
   const allSel = Array.from(items).every(i => i.classList.contains('selected'));
   document.querySelector('#generateReport .select-all-btn').textContent = allSel ? 'Deselect All' : 'Select All';
 }
-function generateReport() {
+async function generateReport() {
   const t = document.getElementById('reportTitle').value.trim();
   if (!t) { alert('Enter a title'); return; }
   const sel = document.querySelectorAll('#reportPicker .doc-picker-item.selected');
   if (!sel.length) { alert('Select documents'); return; }
-  addJob('Report: ' + t);
+  
+  const jobName = 'Report: ' + t;
+  
+  // Call API if in live mode
+  if (liveMode) {
+    addJob(jobName, true); // Skip fake timer
+    try {
+      // Get selected document IDs
+      const docIds = documents.filter(d => typeof d.id === 'string').map(d => d.id);
+      const docNames = documents.map(d => d.title).join(', ');
+      
+      const prompt = `REPORT GENERATION REQUEST
+
+Title: ${t}
+Workspace: ${currentWs?.name || 'Current Workspace'}
+
+Analyze and synthesize the following documents:
+${docNames}
+
+Document IDs: ${docIds.join(', ')}
+
+Generate a comprehensive report that synthesizes insights from all documents with proper citations.`;
+
+      console.log('Generating report:', { title: t, docCount: docIds.length });
+      const response = await api.executeResearch(prompt);
+      
+      if (response.runId && response.workflowId) {
+        pollResearchCompletion(response.workflowId, response.runId, jobName);
+      }
+    } catch (error) {
+      console.error('Report generation failed:', error);
+      removeJob(jobName);
+      alert('Failed to start report generation. Please try again.');
+    }
+  } else {
+    // Demo mode
+    addJob(jobName, false);
+  }
+  
   closeModal('generateReport');
 }
 
