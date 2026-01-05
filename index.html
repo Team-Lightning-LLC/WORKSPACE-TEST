@@ -1365,20 +1365,21 @@ function wsItem(w) {
   const wsJobs = activeJobs.filter(j => j.wsId === w.id);
   const docCount = (workspaceDocs[w.id] || []).length;
   const meta = wsJobs.length > 0 ? `<span class="activity-dot"></span> ${wsJobs.length} generating` : `${docCount} doc${docCount !== 1 ? 's' : ''}`;
-  const idStr = JSON.stringify(w.id);
-  return `<div class="workspace-item ${active}" onclick="selectWs(${idStr})">
+  // Fix: Use escaped single quotes for string IDs
+  const idAttr = typeof w.id === 'string' ? `'${w.id}'` : w.id;
+  return `<div class="workspace-item ${active}" onclick="selectWs(${idAttr})">
     <div class="workspace-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg></div>
     <div class="workspace-info">
       <div class="workspace-name">${w.name} ${pin}</div>
       <div class="workspace-meta">${meta}</div>
     </div>
-    <button class="workspace-menu-btn" onclick="event.stopPropagation();toggleWsMenu(${idStr})"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="1"/><circle cx="12" cy="5" r="1"/><circle cx="12" cy="19" r="1"/></svg></button>
+    <button class="workspace-menu-btn" onclick="event.stopPropagation();toggleWsMenu(${idAttr})"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="1"/><circle cx="12" cy="5" r="1"/><circle cx="12" cy="19" r="1"/></svg></button>
     <div class="workspace-menu" id="wsMenu${w.id}">
-      <div class="workspace-menu-item" onclick="event.stopPropagation();renameWs(${idStr})"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg> Rename</div>
-      <div class="workspace-menu-item" onclick="event.stopPropagation();togglePin(${idStr})"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z"/></svg> ${w.pinned ? 'Unpin' : 'Pin'}</div>
-      <div class="workspace-menu-item" onclick="event.stopPropagation();toggleComplete(${idStr})"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg> ${w.status === 'completed' ? 'Reopen' : 'Mark Complete'}</div>
+      <div class="workspace-menu-item" onclick="event.stopPropagation();renameWs(${idAttr})"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg> Rename</div>
+      <div class="workspace-menu-item" onclick="event.stopPropagation();togglePin(${idAttr})"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z"/></svg> ${w.pinned ? 'Unpin' : 'Pin'}</div>
+      <div class="workspace-menu-item" onclick="event.stopPropagation();toggleComplete(${idAttr})"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg> ${w.status === 'completed' ? 'Reopen' : 'Mark Complete'}</div>
       <div class="menu-divider"></div>
-      <div class="workspace-menu-item danger" onclick="event.stopPropagation();deleteWs(${idStr})"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg> Delete</div>
+      <div class="workspace-menu-item danger" onclick="event.stopPropagation();deleteWs(${idAttr})"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg> Delete</div>
     </div>
   </div>`;
 }
