@@ -1454,11 +1454,33 @@ function toggleWsMenu(id) {
 }
 document.addEventListener('click', () => document.querySelectorAll('.workspace-menu').forEach(m => m.classList.remove('open')));
 
-function renameWs(id) {
+async function renameWs(id) {
   const w = workspaces.find(x => x.id === id);
   const n = prompt('Rename:', w.name);
-  if (n && n.trim()) { w.name = n.trim(); renderSidebar(); if (currentWs.id === id) updateHeader(); }
+  if (!n || !n.trim()) return;
+  
+  const newName = n.trim();
+  
+  // Call API if live mode with string ID
+  if (liveMode && typeof id === 'string') {
+    try {
+      await api.call(`/collections/${id}`, {
+        method: 'PATCH',
+        body: JSON.stringify({ name: newName })
+      });
+      console.log('Collection renamed via API:', id, newName);
+    } catch (error) {
+      console.error('Failed to rename collection:', error);
+      alert('Failed to rename workspace. Please try again.');
+      return;
+    }
+  }
+  
+  w.name = newName;
+  renderSidebar();
+  if (currentWs.id === id) updateHeader();
 }
+
 function togglePin(id) {
   const w = workspaces.find(x => x.id === id);
   w.pinned = !w.pinned;
@@ -1471,14 +1493,36 @@ function toggleComplete(id) {
   if (w.status === 'completed') w.pinned = false;
   renderSidebar();
 }
-function deleteWs(id) {
+
+async function deleteWs(id) {
   const w = workspaces.find(x => x.id === id);
-  if (confirm(`Delete "${w.name}"?`)) {
-    workspaces = workspaces.filter(x => x.id !== id);
-    if (currentWs.id === id && workspaces.length) currentWs = workspaces[0];
-    renderSidebar();
-    updateHeader();
+  if (!confirm(`Delete "${w.name}"?`)) return;
+  
+  // Call API if live mode with string ID
+  if (liveMode && typeof id === 'string') {
+    try {
+      await api.call(`/collections/${id}`, {
+        method: 'DELETE'
+      });
+      console.log('Collection deleted via API:', id);
+    } catch (error) {
+      console.error('Failed to delete collection:', error);
+      alert('Failed to delete workspace. Please try again.');
+      return;
+    }
   }
+  
+  workspaces = workspaces.filter(x => x.id !== id);
+  delete workspaceDocs[id];
+  delete collectionMembers[id];
+  
+  if (currentWs.id === id && workspaces.length) {
+    currentWs = workspaces[0];
+    documents = workspaceDocs[currentWs.id] || [];
+  }
+  renderSidebar();
+  renderDocuments();
+  updateHeader();
 }
 function filterWorkspaces(q) {
   document.querySelectorAll('.workspace-item').forEach(el => {
@@ -1594,14 +1638,16 @@ function renderDocuments() {
   listEl.innerHTML = documents.map(d => {
     const isChild = d.parentId !== null;
     const safeTitle = d.title.replace(/'/g, "\\'");
+    // Handle string IDs (from API) vs numeric IDs (demo)
+    const idAttr = typeof d.id === 'string' ? `'${d.id}'` : d.id;
     return `<div class="document-card ${isChild ? 'is-child' : ''}">
       ${isChild ? '<div class="child-indicator">↳ Follow-up</div>' : ''}
       <div class="document-card-header">
         <span class="document-type">${d.type}</span>
         <div class="document-actions">
           <button class="doc-action-btn" onclick="viewDoc('${safeTitle}')" title="View"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></button>
-          ${!isChild ? `<button class="doc-action-btn" onclick="openFollowUpResearch('${safeTitle}', ${d.id})" title="Follow-up Research"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg></button>` : ''}
-          <button class="doc-action-btn danger" onclick="removeDoc(${d.id})" title="Remove from Workspace"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+          ${!isChild ? `<button class="doc-action-btn" onclick="openFollowUpResearch('${safeTitle}', ${idAttr})" title="Follow-up Research"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg></button>` : ''}
+          <button class="doc-action-btn danger" onclick="removeDoc(${idAttr})" title="Remove from Workspace"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
         </div>
       </div>
       <div class="document-title">${d.title}</div>
@@ -1611,13 +1657,29 @@ function renderDocuments() {
   document.getElementById('docCount').textContent = ` · ${documents.length} total`;
 }
 
-function removeDoc(id) {
-  if (confirm('Remove this document from the workspace?\n\nThis only removes it from this workspace—the document will still be available in your Library.')) {
-    documents = documents.filter(d => d.id !== id);
-    workspaceDocs[currentWs.id] = documents;
-    renderDocuments();
-    renderSidebar();
+async function removeDoc(id) {
+  if (!confirm('Remove this document from the workspace?\n\nThis only removes it from this workspace—the document will still be available in your Library.')) {
+    return;
   }
+  
+  // Call API if live mode with string IDs
+  if (liveMode && typeof currentWs.id === 'string' && typeof id === 'string') {
+    try {
+      await api.removeFromCollection(currentWs.id, [id]);
+      console.log('Document removed from collection via API:', id);
+    } catch (error) {
+      console.error('Failed to remove document from collection:', error);
+      // Continue with local update even if API fails
+    }
+  }
+  
+  documents = documents.filter(d => d.id !== id);
+  workspaceDocs[currentWs.id] = documents;
+  if (collectionMembers[currentWs.id]) {
+    collectionMembers[currentWs.id] = collectionMembers[currentWs.id].filter(docId => docId !== id);
+  }
+  renderDocuments();
+  renderSidebar();
 }
 
 // JOBS
@@ -1753,6 +1815,8 @@ async function startResearch() {
   const type = document.getElementById('researchType').value;
   const focus = document.getElementById('researchFocus').value;
   const context = document.getElementById('researchContext')?.value?.trim() || '';
+  const scope = document.getElementById('researchScope')?.value || 'Asset';
+  const rigor = document.getElementById('researchRigor')?.value || 'In Depth';
   
   if (!focus) { alert('Select type and focus'); return; }
   
@@ -1767,6 +1831,7 @@ async function startResearch() {
 
 First, access and analyze Document ID: ${followUpParentDoc.id} from the content object library.
 Parent document: ${followUpParentDoc.title}
+IMPORTANT: When creating the output document, set the parent metadata to reference document ID: ${followUpParentDoc.id}
 
 The user wants to explore: ${context || 'Further analysis based on the parent document'}
 
@@ -1777,13 +1842,15 @@ Use insights from the parent document to enhance this research.
   
   prompt += `Analysis Type: ${type || 'General'}
 Framework: ${focus}
+Scope: ${scope}
+Analytical Rigor: ${rigor}
 Context: ${context || 'General analysis'}
 
 Generate a comprehensive research document with hyperlinked sources.
 The final output must be a document uploaded to the content object library.
 `;
 
-  console.log('Starting research:', { focus, context, hasParent: !!followUpParentDoc });
+  console.log('Starting research:', { focus, scope, rigor, context, hasParent: !!followUpParentDoc });
   
   // Call API if in live mode
   if (liveMode) {
@@ -1948,6 +2015,8 @@ function showBatchConfig() {
 }
 function startBatchResearch() {
   const topic = document.getElementById('batchTopic')?.value?.trim() || '';
+  const scope = document.getElementById('researchScope')?.value || 'Asset';
+  const rigor = document.getElementById('researchRigor')?.value || 'In Depth';
   const selected = document.querySelectorAll('#batchTypes .research-type.selected');
   
   selected.forEach(async (el) => {
@@ -1961,7 +2030,13 @@ function startBatchResearch() {
       if (liveMode) {
         addJob(jobName, true); // Skip fake timer
         try {
-          const prompt = `Research Type: ${name}\nTopic: ${topic || 'General analysis'}\n\nGenerate comprehensive research with hyperlinked sources.`;
+          const prompt = `Research Type: ${name}
+Topic: ${topic || 'General analysis'}
+Scope: ${scope}
+Analytical Rigor: ${rigor}
+
+Generate comprehensive research with hyperlinked sources.
+The final output must be a document uploaded to the content object library.`;
           const response = await api.executeResearch(prompt);
           if (response.runId && response.workflowId) {
             pollResearchCompletion(response.workflowId, response.runId, jobName);
@@ -2022,6 +2097,10 @@ async function generateReport() {
   const sel = document.querySelectorAll('#reportPicker .doc-picker-item.selected');
   if (!sel.length) { alert('Select documents'); return; }
   
+  // Use defaults for reports - could add selectors to modal later
+  const scope = 'Asset';
+  const rigor = 'Comprehensive';
+  
   const jobName = 'Report: ' + t;
   
   // Call API if in live mode
@@ -2036,15 +2115,18 @@ async function generateReport() {
 
 Title: ${t}
 Workspace: ${currentWs?.name || 'Current Workspace'}
+Scope: ${scope}
+Analytical Rigor: ${rigor}
 
 Analyze and synthesize the following documents:
 ${docNames}
 
 Document IDs: ${docIds.join(', ')}
 
-Generate a comprehensive report that synthesizes insights from all documents with proper citations.`;
+Generate a comprehensive report that synthesizes insights from all documents with proper citations.
+The final output must be a document uploaded to the content object library.`;
 
-      console.log('Generating report:', { title: t, docCount: docIds.length });
+      console.log('Generating report:', { title: t, scope, rigor, docCount: docIds.length });
       const response = await api.executeResearch(prompt);
       
       if (response.runId && response.workflowId) {
@@ -3037,27 +3119,64 @@ function downloadDocPDF() {
   };
 }
 
-function generateFollowUp() {
+async function generateFollowUp() {
   const context = document.getElementById('docFollowupContext').value.trim();
-  const scope = document.getElementById('docFollowupScope').value;
-  const rigor = document.getElementById('docFollowupRigor').value;
+  const scope = document.getElementById('docFollowupScope').value || 'Asset';
+  const rigor = document.getElementById('docFollowupRigor').value || 'In Depth';
   
   // Save doc info before closing viewer
   const parentDocTitle = currentViewDoc;
-  const parentDocId = currentViewDocId || currentViewDoc; // Use API ID if available
+  const parentDocId = currentViewDocId || currentViewDoc;
+  
+  if (!parentDocId) {
+    alert('No document selected for follow-up');
+    return;
+  }
+  
+  // Build prompt directly
+  const prompt = `FOLLOW-UP RESEARCH REQUEST
+
+First, access and analyze Document ID: ${parentDocId} from the content object library.
+Parent document: ${parentDocTitle}
+IMPORTANT: When creating the output document, set the parent metadata to reference document ID: ${parentDocId}
+
+Research Direction: ${context || 'Further analysis based on the parent document'}
+
+Research Parameters:
+- Scope: ${scope}
+- Analytical Rigor: ${rigor}
+
+Use insights from the parent document to enhance this research.
+Generate a comprehensive research document with hyperlinked sources.
+The final output must be a document uploaded to the content object library.
+`;
+
+  const jobName = `Follow-up: ${parentDocTitle.substring(0, 30)}${parentDocTitle.length > 30 ? '...' : ''}`;
+  
+  console.log('Starting follow-up research:', { parentDocId, parentDocTitle, scope, rigor, context });
   
   // Close viewer first
   closeDocViewer();
   
-  // Open research modal in follow-up mode
-  openFollowUpResearch(parentDocTitle, parentDocId);
-  
-  // Pre-populate settings if provided
-  if (context) {
-    document.getElementById('researchContext').value = context;
+  // Call API if in live mode
+  if (liveMode) {
+    try {
+      const response = await api.executeResearch(prompt);
+      console.log('Follow-up research started:', response);
+      
+      addJob(jobName, true);
+      
+      if (response.runId && response.workflowId) {
+        pollResearchCompletion(response.workflowId, response.runId, jobName);
+      }
+    } catch (error) {
+      console.error('Failed to start follow-up research:', error);
+      alert('Failed to start follow-up research. Please try again.');
+      return;
+    }
+  } else {
+    addJob(jobName, false);
   }
-  if (scope) document.getElementById('researchScope').value = scope;
-  if (rigor) document.getElementById('researchRigor').value = rigor;
 }
 </script>
 </body>
