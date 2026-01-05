@@ -1066,11 +1066,29 @@ class VertesiaAPI {
     return await this.call(`/workflows/runs/${workflowId}/${runId}`);
   }
 
-  // Stream response (requires JWT)
+  // Stream response (requires JWT) - with timeout
   async streamResponse(workflowId, runId, onMessage, onComplete, onError) {
+    const TIMEOUT_MS = 120000; // 2 minute timeout
+    let timeoutId;
+    let completed = false;
+    
+    const cleanup = () => {
+      if (timeoutId) clearTimeout(timeoutId);
+      completed = true;
+    };
+    
     try {
       const token = await this.getAuthToken();
       const url = `${VERTESIA_CONFIG.VERTESIA_API_BASE}/workflows/runs/${workflowId}/${runId}/stream?since=${Date.now()}&access_token=${token}`;
+      
+      // Set timeout
+      timeoutId = setTimeout(() => {
+        if (!completed) {
+          console.log('Stream timeout - forcing completion');
+          cleanup();
+          if (onComplete) onComplete();
+        }
+      }, TIMEOUT_MS);
       
       const response = await fetch(url);
       if (!response.ok) throw new Error(`Stream error: ${response.status}`);
@@ -1081,7 +1099,7 @@ class VertesiaAPI {
 
       while (true) {
         const { done, value } = await reader.read();
-        if (done) break;
+        if (done || completed) break;
 
         buffer += decoder.decode(value, { stream: true });
         const lines = buffer.split('\n');
@@ -1093,14 +1111,17 @@ class VertesiaAPI {
             const data = JSON.parse(line.slice(5).trim());
             if (onMessage) onMessage(data);
             if (data.type === 'finish' || data.finish_reason === 'stop') {
+              cleanup();
               if (onComplete) onComplete();
               return;
             }
           } catch (e) {}
         }
       }
+      cleanup();
       if (onComplete) onComplete();
     } catch (error) {
+      cleanup();
       if (onError) onError(error);
     }
   }
@@ -2279,6 +2300,14 @@ async function sendChatToAPI(msg, chatEl) {
   isChatStreaming = true;
   const sendBtn = document.getElementById('chatSend');
   if (sendBtn) sendBtn.disabled = true;
+  
+  // BACKUP: Force reset after 30 seconds no matter what
+  const backupTimeout = setTimeout(() => {
+    console.log('Backup timeout - forcing chat reset');
+    isChatStreaming = false;
+    if (sendBtn) sendBtn.disabled = false;
+    document.getElementById('wsThinking')?.remove();
+  }, 30000);
 
   // Show thinking indicator
   chatEl.innerHTML += `
@@ -2298,13 +2327,23 @@ async function sendChatToAPI(msg, chatEl) {
       workspace: currentWs?.name,
       docCount: liveDocs.length, 
       docIds: docIds.slice(0, 3),
-      msg 
+      msg,
+      historyLength: chatMessages.length
     });
     
     let task = `WORKSPACE CONTEXT: Search these ${docIds.length} documents in the ${currentWs?.name || 'current'} workspace.\n`;
     task += `Documents: ${docNames}\n`;
     task += `Document IDs: ${docIds.join(', ')}\n\n`;
-    task += `USER QUESTION: ${msg}`;
+    
+    // Include conversation history for context (last 10 messages, excluding current)
+    if (chatMessages.length > 1) {
+      const history = chatMessages.slice(-11, -1).map(m => 
+        `${m.role === 'user' ? 'User' : 'Assistant'}: ${m.content}`
+      ).join('\n');
+      task += `Previous conversation:\n${history}\n\n`;
+    }
+    
+    task += `Current question: ${msg}`;
 
     const response = await api.executeDocChat(task);
     console.log('Chat API response:', response);
@@ -2346,6 +2385,7 @@ async function sendChatToAPI(msg, chatEl) {
     addAIResponse(chatEl, 'Error connecting to AI. Please try again.');
   } finally {
     // CRITICAL: Always reset state
+    clearTimeout(backupTimeout);
     console.log('Resetting chat state...');
     isChatStreaming = false;
     if (sendBtn) sendBtn.disabled = false;
@@ -3093,6 +3133,14 @@ async function sendDocChatToAPI(msg, messagesEl) {
   const sendBtn = document.getElementById('docChatSend');
   if (sendBtn) sendBtn.disabled = true;
   
+  // BACKUP: Force reset after 30 seconds no matter what
+  const backupTimeout = setTimeout(() => {
+    console.log('Backup timeout - forcing doc chat reset');
+    isDocChatStreaming = false;
+    if (sendBtn) sendBtn.disabled = false;
+    document.getElementById('docThinking')?.remove();
+  }, 30000);
+  
   // Show thinking indicator
   messagesEl.innerHTML += `
     <div class="thinking-indicator" id="docThinking">
@@ -3102,9 +3150,19 @@ async function sendDocChatToAPI(msg, messagesEl) {
   messagesEl.scrollTop = messagesEl.scrollHeight;
 
   try {
-    const task = `DOCUMENT CONTEXT: Analyze document ID ${currentViewDocId} (${currentViewDoc})\n\nUSER QUESTION: ${msg}`;
+    let task = `DOCUMENT CONTEXT: Analyze document ID ${currentViewDocId} (${currentViewDoc})\n\n`;
     
-    console.log('Sending doc chat:', { docId: currentViewDocId, msg });
+    // Include conversation history for context (last 10 messages, excluding current)
+    if (docChatMessages.length > 1) {
+      const history = docChatMessages.slice(-11, -1).map(m => 
+        `${m.role === 'user' ? 'User' : 'Assistant'}: ${m.content}`
+      ).join('\n');
+      task += `Previous conversation:\n${history}\n\n`;
+    }
+    
+    task += `Current question: ${msg}`;
+    
+    console.log('Sending doc chat:', { docId: currentViewDocId, msg, historyLength: docChatMessages.length });
     const response = await api.executeDocChat(task);
     console.log('Doc chat response:', response);
 
@@ -3145,6 +3203,7 @@ async function sendDocChatToAPI(msg, messagesEl) {
     addDocAIResponse(messagesEl, 'Error connecting to AI. Please try again.');
   } finally {
     // CRITICAL: Always reset state
+    clearTimeout(backupTimeout);
     console.log('Resetting doc chat state...');
     isDocChatStreaming = false;
     if (sendBtn) sendBtn.disabled = false;
