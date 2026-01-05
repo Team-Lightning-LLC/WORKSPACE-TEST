@@ -172,6 +172,12 @@
     .message-bubble { padding: 10px 14px; font-size: 13px; line-height: 1.5; border-radius: 12px; }
     .chat-message.user .message-bubble { background: var(--primary); color: white; margin-left: 40px; border-bottom-right-radius: 4px; }
     .chat-message.ai .message-bubble { background: var(--soft); color: var(--ink); margin-right: 40px; border-bottom-left-radius: 4px; }
+    /* Formatted AI response content */
+    .message-bubble p, .doc-chat-bubble p { margin: 0 0 12px 0; }
+    .message-bubble p:last-child, .doc-chat-bubble p:last-child { margin-bottom: 0; }
+    .message-bubble strong, .doc-chat-bubble strong { font-weight: 600; }
+    .message-bubble ul, .doc-chat-bubble ul { margin: 8px 0; padding-left: 20px; }
+    .message-bubble li, .doc-chat-bubble li { margin: 4px 0; }
     .message-footer { display: flex; align-items: center; justify-content: space-between; margin-top: 6px; padding: 0 4px; }
     .message-time { font-size: 10px; color: var(--muted); }
     .message-sources { font-size: 10px; color: var(--accent); margin-top: 6px; padding: 0 4px; }
@@ -2354,7 +2360,7 @@ function addAIResponse(chatEl, text, sources = []) {
   
   chatEl.innerHTML += `
     <div class="chat-message ai">
-      <div class="message-bubble">${escapeHtml(text)}</div>
+      <div class="message-bubble">${formatAIResponse(text)}</div>
       ${sourcesHtml}
       <div class="message-footer">
         <span class="message-time">Scout · ${aiTime}</span>
@@ -2387,6 +2393,38 @@ function escapeHtml(text) {
   const div = document.createElement('div');
   div.textContent = text;
   return div.innerHTML;
+}
+
+// Format AI responses with proper markdown rendering
+function formatAIResponse(text) {
+  if (!text) return '';
+  
+  // First escape HTML
+  let html = escapeHtml(text);
+  
+  // Convert **bold** to <strong> (do this first, before italic)
+  html = html.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+  
+  // Convert bullet points (- or •) at start of lines
+  html = html.replace(/^[\-•]\s+(.+)$/gm, '<li>$1</li>');
+  
+  // Wrap consecutive <li> in <ul>
+  html = html.replace(/(<li>[^<]*<\/li>\s*)+/g, (match) => `<ul>${match}</ul>`);
+  
+  // Convert numbered lists (1. 2. etc)
+  html = html.replace(/^\d+\.\s+(.+)$/gm, '<li>$1</li>');
+  
+  // Double newlines become paragraph breaks
+  const paragraphs = html.split(/\n\n+/);
+  html = paragraphs.map(para => {
+    para = para.trim();
+    if (!para) return '';
+    // Don't wrap if already a list
+    if (para.startsWith('<ul>') || para.startsWith('<li>')) return para;
+    return `<p>${para.replace(/\n/g, '<br>')}</p>`;
+  }).filter(p => p).join('');
+  
+  return html;
 }
 
 function newChat() {
@@ -3052,6 +3090,8 @@ async function sendDocChat() {
 
 async function sendDocChatToAPI(msg, messagesEl) {
   isDocChatStreaming = true;
+  const sendBtn = document.getElementById('docChatSend');
+  if (sendBtn) sendBtn.disabled = true;
   
   // Show thinking indicator
   messagesEl.innerHTML += `
@@ -3068,7 +3108,7 @@ async function sendDocChatToAPI(msg, messagesEl) {
     const response = await api.executeDocChat(task);
     console.log('Doc chat response:', response);
 
-    if (response.runId && response.workflowId) {
+    if (response && response.runId && response.workflowId) {
       let gotAnswer = false;
       
       await api.streamResponse(response.workflowId, response.runId,
@@ -3083,17 +3123,17 @@ async function sendDocChatToAPI(msg, messagesEl) {
           }
         },
         () => {
+          // onComplete
           if (!gotAnswer) {
             document.getElementById('docThinking')?.remove();
             addDocAIResponse(messagesEl, "I couldn't find relevant information in this document for your question.");
           }
-          isDocChatStreaming = false;
         },
         (error) => {
+          // onError
           console.error('Doc chat stream error:', error);
           document.getElementById('docThinking')?.remove();
           addDocAIResponse(messagesEl, 'Error processing your request. Please try again.');
-          isDocChatStreaming = false;
         }
       );
     } else {
@@ -3103,7 +3143,11 @@ async function sendDocChatToAPI(msg, messagesEl) {
     console.error('Doc chat error:', error);
     document.getElementById('docThinking')?.remove();
     addDocAIResponse(messagesEl, 'Error connecting to AI. Please try again.');
+  } finally {
+    // CRITICAL: Always reset state
+    console.log('Resetting doc chat state...');
     isDocChatStreaming = false;
+    if (sendBtn) sendBtn.disabled = false;
   }
 }
 
@@ -3111,7 +3155,7 @@ function addDocAIResponse(messagesEl, text) {
   const aiTime = new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
   messagesEl.innerHTML += `
     <div class="doc-chat-message assistant">
-      <div class="doc-chat-bubble">${escapeHtml(text)}</div>
+      <div class="doc-chat-bubble">${formatAIResponse(text)}</div>
       <div class="doc-chat-time">Scout · ${aiTime}</div>
     </div>`;
   docChatMessages.push({ role: 'assistant', content: text, time: aiTime });
