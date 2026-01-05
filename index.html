@@ -1187,32 +1187,39 @@ const focusOpts = {
 
 // CHAT STATE
 let chatMessages = [];
-let chatMessageCount = 3; // Start with demo messages counted
+let chatMessageCount = 0; // Start fresh
 let currentChatId = null;
 let chatIsSaved = true; // Track if current chat is saved
-const CHAT_LIMIT = 20;
 
 // FOLLOW-UP RESEARCH STATE
 let followUpParentDoc = null; // { id, title } when in follow-up mode
 
-// Saved chats per workspace
-let workspaceChats = {
-  1: [
-    { id: 'chat_1', title: 'TSMC Supply Chain Risk', date: 'Dec 28', messages: [
-      { role: 'user', content: 'What are the key TSMC dependencies?', time: '2:30 PM' },
-      { role: 'ai', content: 'TSMC controls 54% of global advanced foundry capacity...', time: '2:31 PM', sources: ['TSMC Dependencies'] }
-    ]},
-    { id: 'chat_2', title: 'NVIDIA Exposure Analysis', date: 'Dec 27', messages: [
-      { role: 'user', content: 'How exposed is NVIDIA to Taiwan?', time: '10:15 AM' },
-      { role: 'ai', content: 'NVIDIA sources approximately 85% of advanced chips from TSMC...', time: '10:16 AM', sources: ['TSMC Dependencies', 'Foundry Market Analysis'] }
-    ]}
-  ],
-  2: [
-    { id: 'chat_3', title: 'Chevron Deal Structure', date: 'Dec 26', messages: [] }
-  ],
-  3: [],
-  4: []
-};
+// Chat persistence
+const WORKSPACE_CHATS_STORAGE_KEY = 'marketlens_workspace_chats';
+const CHAT_LIMIT = 10; // Max messages per chat
+
+// Load saved chats from localStorage
+function loadWorkspaceChats() {
+  try {
+    const saved = localStorage.getItem(WORKSPACE_CHATS_STORAGE_KEY);
+    return saved ? JSON.parse(saved) : {};
+  } catch (e) {
+    console.error('Failed to load workspace chats:', e);
+    return {};
+  }
+}
+
+// Save chats to localStorage
+function saveWorkspaceChats() {
+  try {
+    localStorage.setItem(WORKSPACE_CHATS_STORAGE_KEY, JSON.stringify(workspaceChats));
+  } catch (e) {
+    console.error('Failed to save workspace chats:', e);
+  }
+}
+
+// Saved chats per workspace - loaded from localStorage
+let workspaceChats = loadWorkspaceChats();
 
 // ===== INITIALIZATION =====
 document.addEventListener('DOMContentLoaded', async () => {
@@ -1417,6 +1424,12 @@ function resetChat() {
   chatMessageCount = 0;
   currentChatId = null;
   chatIsSaved = true;
+  
+  // Reset streaming state
+  isChatStreaming = false;
+  const sendBtn = document.getElementById('chatSend');
+  if (sendBtn) sendBtn.disabled = false;
+  
   updateChatUsage();
   
   if (documents.length > 0) {
@@ -2208,6 +2221,22 @@ async function sendChat() {
   const msg = input.value.trim();
   if (!msg || isChatStreaming) return;
   
+  // Check message limit
+  if (chatMessageCount >= CHAT_LIMIT) {
+    const action = confirm(`You've reached the ${CHAT_LIMIT} message limit for this chat.\n\nClick OK to save/download this chat and start a new one, or Cancel to continue without sending.`);
+    if (action) {
+      // Offer save or download
+      const saveChoice = confirm('Save to chat history?\n\nOK = Save to history\nCancel = Download as file');
+      if (saveChoice) {
+        saveChat();
+      } else {
+        downloadChat();
+      }
+      resetChat();
+    }
+    return;
+  }
+  
   chatIsSaved = false;
   const chat = document.getElementById('chatMessages');
   const time = new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
@@ -2274,7 +2303,7 @@ async function sendChatToAPI(msg, chatEl) {
     const response = await api.executeDocChat(task);
     console.log('Chat API response:', response);
 
-    if (response.runId && response.workflowId) {
+    if (response && response.runId && response.workflowId) {
       let gotAnswer = false;
       
       await api.streamResponse(response.workflowId, response.runId,
@@ -2289,19 +2318,17 @@ async function sendChatToAPI(msg, chatEl) {
           }
         },
         () => {
+          // onComplete
           if (!gotAnswer) {
             document.getElementById('wsThinking')?.remove();
             addAIResponse(chatEl, "I couldn't find relevant information in the workspace documents. Try rephrasing your question or checking that the documents contain the information you're looking for.");
           }
-          isChatStreaming = false;
-          if (sendBtn) sendBtn.disabled = false;
         },
         (error) => {
+          // onError
           console.error('Stream error:', error);
           document.getElementById('wsThinking')?.remove();
           addAIResponse(chatEl, 'Sorry, there was an error processing your request. Please try again.');
-          isChatStreaming = false;
-          if (sendBtn) sendBtn.disabled = false;
         }
       );
     } else {
@@ -2311,6 +2338,9 @@ async function sendChatToAPI(msg, chatEl) {
     console.error('Chat API error:', error);
     document.getElementById('wsThinking')?.remove();
     addAIResponse(chatEl, 'Error connecting to AI. Please try again.');
+  } finally {
+    // CRITICAL: Always reset state
+    console.log('Resetting chat state...');
     isChatStreaming = false;
     if (sendBtn) sendBtn.disabled = false;
   }
@@ -2365,6 +2395,12 @@ function newChat() {
       return;
     }
   }
+  
+  // Reset streaming state
+  isChatStreaming = false;
+  const sendBtn = document.getElementById('chatSend');
+  if (sendBtn) sendBtn.disabled = false;
+  
   currentChatId = null;
   chatIsSaved = true;
   resetChat();
@@ -2410,6 +2446,7 @@ function saveChat() {
   
   chatIsSaved = true;
   renderChatHistory();
+  saveWorkspaceChats(); // Persist to localStorage
   
   // Brief confirmation
   const btn = document.querySelector('[onclick="saveChat()"]');
@@ -2487,6 +2524,11 @@ function loadSavedChat(chatId) {
   const chat = chats.find(c => c.id === chatId);
   if (!chat) return;
   
+  // Reset streaming state
+  isChatStreaming = false;
+  const sendBtn = document.getElementById('chatSend');
+  if (sendBtn) sendBtn.disabled = false;
+  
   currentChatId = chatId;
   chatMessages = [...chat.messages];
   chatMessageCount = chat.messages.length;
@@ -2542,6 +2584,7 @@ function renameSavedChat(chatId) {
   
   chat.title = newTitle;
   renderChatHistory();
+  saveWorkspaceChats(); // Persist to localStorage
 }
 
 function deleteSavedChat(chatId) {
@@ -2556,6 +2599,7 @@ function deleteSavedChat(chatId) {
   }
   
   renderChatHistory();
+  saveWorkspaceChats(); // Persist to localStorage
 }
 
 function downloadChat() {
