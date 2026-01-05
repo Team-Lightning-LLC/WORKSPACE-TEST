@@ -845,6 +845,7 @@
 // ===== VERTESIA API CONFIGURATION =====
 const VERTESIA_CONFIG = {
   VERTESIA_API_BASE: 'https://api.vertesia.io/api/v1',
+  VERTESIA_AUTH_BASE: 'https://api.vertesia.io',
   VERTESIA_API_KEY: 'sk-2538a58567e4ebb6654c0a17ceab228c',
   ENVIRONMENT_ID: '681915c6a01fb262a410c161',
   MODEL: 'publishers/anthropic/models/claude-sonnet-4',
@@ -854,6 +855,44 @@ const VERTESIA_CONFIG = {
 
 // ===== VERTESIA API CLASS =====
 class VertesiaAPI {
+  constructor() {
+    this.jwtToken = null;
+    this.tokenExpiry = null;
+  }
+
+  // Get JWT token from API key
+  async getAuthToken() {
+    // Return cached token if still valid (tokens typically last 1 hour, refresh at 50 min)
+    if (this.jwtToken && this.tokenExpiry && Date.now() < this.tokenExpiry) {
+      return this.jwtToken;
+    }
+
+    console.log('Fetching new JWT token...');
+    const url = `${VERTESIA_CONFIG.VERTESIA_AUTH_BASE}/auth/token?token=${VERTESIA_CONFIG.VERTESIA_API_KEY}`;
+    
+    const response = await fetch(url, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${VERTESIA_CONFIG.VERTESIA_API_KEY}`
+      }
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text().catch(() => '');
+      console.error('Auth token error:', response.status, errorText);
+      throw new Error(`Auth failed: ${response.status}`);
+    }
+
+    const data = await response.json();
+    this.jwtToken = data.token;
+    // Set expiry to 50 minutes from now (tokens usually last 1 hour)
+    this.tokenExpiry = Date.now() + (50 * 60 * 1000);
+    
+    console.log('JWT token obtained successfully');
+    return this.jwtToken;
+  }
+
+  // Standard API call (uses API key)
   async call(endpoint, options = {}) {
     const url = `${VERTESIA_CONFIG.VERTESIA_API_BASE}${endpoint}`;
     console.log('API Call:', options.method || 'GET', endpoint);
@@ -890,6 +929,37 @@ class VertesiaAPI {
       return JSON.parse(text);
     } catch (e) {
       console.log('API: Non-JSON response:', text.substring(0, 100));
+      return null;
+    }
+  }
+
+  // Authenticated API call for agent execution (uses JWT token)
+  async callWithAuth(endpoint, options = {}) {
+    const token = await this.getAuthToken();
+    const url = `${VERTESIA_CONFIG.VERTESIA_API_BASE}${endpoint}`;
+    console.log('API Call (JWT):', options.method || 'GET', endpoint);
+    
+    const response = await fetch(url, {
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json',
+        ...options.headers
+      },
+      ...options
+    });
+    
+    if (!response.ok) {
+      const errorText = await response.text().catch(() => '');
+      console.error('API Error:', response.status, errorText);
+      throw new Error(`API ${response.status}: ${response.statusText}`);
+    }
+    
+    const text = await response.text();
+    if (!text || text.trim() === '') return null;
+    
+    try {
+      return JSON.parse(text);
+    } catch (e) {
       return null;
     }
   }
@@ -957,9 +1027,9 @@ class VertesiaAPI {
     });
   }
 
-  // Execute DocumentChat
+  // Execute DocumentChat (requires JWT)
   async executeDocChat(task) {
-    return await this.call('/execute/async', {
+    return await this.callWithAuth('/execute/async', {
       method: 'POST',
       body: JSON.stringify({
         type: 'conversation',
@@ -972,9 +1042,9 @@ class VertesiaAPI {
     });
   }
 
-  // Execute Research
+  // Execute Research (requires JWT)
   async executeResearch(task) {
-    return await this.call('/execute/async', {
+    return await this.callWithAuth('/execute/async', {
       method: 'POST',
       body: JSON.stringify({
         type: 'conversation',
@@ -990,10 +1060,12 @@ class VertesiaAPI {
     return await this.call(`/workflows/runs/${workflowId}/${runId}`);
   }
 
-  // Stream response
+  // Stream response (requires JWT)
   async streamResponse(workflowId, runId, onMessage, onComplete, onError) {
-    const url = `${VERTESIA_CONFIG.VERTESIA_API_BASE}/workflows/runs/${workflowId}/${runId}/stream?since=${Date.now()}&access_token=${VERTESIA_CONFIG.VERTESIA_API_KEY}`;
     try {
+      const token = await this.getAuthToken();
+      const url = `${VERTESIA_CONFIG.VERTESIA_API_BASE}/workflows/runs/${workflowId}/${runId}/stream?since=${Date.now()}&access_token=${token}`;
+      
       const response = await fetch(url);
       if (!response.ok) throw new Error(`Stream error: ${response.status}`);
       
