@@ -1544,7 +1544,23 @@ async function createWorkspace() {
       if (btn) { btn.disabled = true; btn.textContent = 'Creating...'; }
       
       const collection = await api.createCollection(name, `Created from MarketLens on ${new Date().toLocaleDateString()}`);
-      wsId = collection.id;
+      console.log('createCollection response:', collection);
+      
+      // Handle case where API returns empty/null - we need to reload collections
+      if (!collection || !collection.id) {
+        console.log('Collection created but no ID returned, reloading collections...');
+        // Reload collections to get the new one
+        const collections = await api.loadCollections() || [];
+        const newCollection = collections.find(c => c.name === name);
+        if (newCollection) {
+          wsId = newCollection.id;
+        } else {
+          throw new Error('Could not find newly created collection');
+        }
+      } else {
+        wsId = collection.id;
+      }
+      
       ws = { id: wsId, name, pinned: false, status: 'active' };
       
       // Add selected docs to collection
@@ -1554,6 +1570,7 @@ async function createWorkspace() {
       
       if (docIds.length > 0) {
         await api.addToCollection(wsId, docIds);
+        console.log('Documents added to collection');
         collectionMembers[wsId] = docIds;
         workspaceDocs[wsId] = docIds.map(id => allVertesiaDocs.find(d => d.id === id)).filter(Boolean);
       } else {
@@ -1762,31 +1779,32 @@ async function addDocsToWorkspace(pickerId) {
   const selected = picker.querySelectorAll('.doc-picker-item.selected');
   if (!selected.length) { alert('Select at least one document'); return; }
   
+  const docIds = Array.from(selected).map(el => el.dataset.docId).filter(id => id);
+  
   if (liveMode && typeof currentWs.id === 'string') {
     // API mode - add to collection
-    try {
-      const docIds = Array.from(selected).map(el => el.dataset.docId).filter(id => id);
-      console.log('Adding docs to workspace:', currentWs.id, docIds);
-      
-      if (docIds.length > 0) {
+    if (docIds.length > 0) {
+      try {
+        console.log('Adding docs to workspace:', currentWs.id, docIds);
         await api.addToCollection(currentWs.id, docIds);
-        console.log('API call successful');
-        
-        // Update local state
-        docIds.forEach(docId => {
-          const doc = allVertesiaDocs.find(d => d.id === docId);
-          if (doc && !documents.find(d => d.id === docId)) {
-            documents.push(doc);
-            if (!collectionMembers[currentWs.id]) collectionMembers[currentWs.id] = [];
-            collectionMembers[currentWs.id].push(docId);
-          }
-        });
-        console.log('Local state updated, documents:', documents.length);
+        // API call succeeded (even if returned null/204)
+        console.log('API call successful - documents added');
+      } catch (error) {
+        console.error('Failed to add docs to collection:', error);
+        alert('Failed to add documents. Please try again.');
+        return;
       }
-    } catch (error) {
-      console.error('Failed to add docs to collection:', error);
-      alert('Failed to add documents. Please try again.');
-      return;
+      
+      // Update local state after successful API call
+      docIds.forEach(docId => {
+        const doc = allVertesiaDocs.find(d => d.id === docId);
+        if (doc && !documents.find(d => d.id === docId)) {
+          documents.push(doc);
+          if (!collectionMembers[currentWs.id]) collectionMembers[currentWs.id] = [];
+          collectionMembers[currentWs.id].push(docId);
+        }
+      });
+      console.log('Local state updated, documents:', documents.length);
     }
   } else {
     // Demo mode
