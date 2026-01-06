@@ -1895,10 +1895,22 @@ The user wants to explore: ${context || 'Further analysis based on the parent do
 
 Use insights from the parent document to enhance this research.
 
+Analysis Type: ${type || 'General'}
+Framework: ${focus}
+Scope: ${scope}
+Analytical Rigor: ${rigor}
+Context: ${context || 'General analysis'}
+
+Generate a comprehensive research document with hyperlinked sources.
+The final output must be a document uploaded to the content object library.
+
+FINAL STEP - CRITICAL: After uploading the document to the content library, you MUST:
+- Search for collections containing the parent document ID: ${followUpParentDoc.id}
+- Add the newly created document to ALL of those collections using the add_to_collection tool
+- Confirm completion by listing which collections now contain the new document
 `;
-  }
-  
-  prompt += `Analysis Type: ${type || 'General'}
+  } else {
+    prompt = `Analysis Type: ${type || 'General'}
 Framework: ${focus}
 Scope: ${scope}
 Analytical Rigor: ${rigor}
@@ -1907,6 +1919,7 @@ Context: ${context || 'General analysis'}
 Generate a comprehensive research document with hyperlinked sources.
 The final output must be a document uploaded to the content object library.
 `;
+  }
 
   console.log('Starting research:', { focus, scope, rigor, context, hasParent: !!followUpParentDoc });
   
@@ -3314,6 +3327,11 @@ Research Parameters:
 Use insights from the parent document to enhance this research.
 Generate a comprehensive research document with hyperlinked sources.
 The final output must be a document uploaded to the content object library.
+
+FINAL STEP - CRITICAL: After uploading the document to the content library, you MUST:
+- Search for collections containing the parent document ID: ${parentDocId}
+- Add the newly created document to ALL of those collections using the add_to_collection tool
+- Confirm completion by listing which collections now contain the new document
 `;
 
   const jobName = `Follow-up: ${parentDocTitle.substring(0, 30)}${parentDocTitle.length > 30 ? '...' : ''}`;
