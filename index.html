@@ -260,6 +260,8 @@
     .dialog-btn.confirm:hover { background: #0d8f6f; }
     .dialog-btn.danger { background: #dc3545; border-color: #dc3545; }
     .dialog-btn.danger:hover { background: #c82333; }
+    .dialog-input { width: 100%; padding: 10px 12px; border: 1px solid var(--border); border-radius: 6px; font-size: 14px; margin-bottom: 20px; }
+    .dialog-input:focus { outline: none; border-color: var(--accent); }
 
     .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.4); display: flex; align-items: center; justify-content: center; z-index: 200; opacity: 0; visibility: hidden; }
     .modal-overlay.open { opacity: 1; visibility: visible; }
@@ -478,7 +480,6 @@
       </div>
       <button class="nav-tab active">Workspaces</button>
       <button class="nav-tab">Library</button>
-      <button class="nav-tab">Pulse</button>
     </nav>
   </header>
 
@@ -499,10 +500,6 @@
         <div class="quick-link" onclick="openModal('libraryPopup')">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
           Library
-        </div>
-        <div class="quick-link" onclick="openModal('pulsePopup')">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
-          Today's Pulse
         </div>
       </div>
     </aside>
@@ -635,6 +632,7 @@
     <div class="dialog-box">
       <div class="dialog-title" id="dialogTitle">Confirm</div>
       <div class="dialog-message" id="dialogMessage">Are you sure?</div>
+      <input type="text" class="dialog-input" id="dialogInput" style="display:none;">
       <div class="dialog-buttons" id="dialogButtons">
         <button class="dialog-btn cancel" id="dialogCancel">Cancel</button>
         <button class="dialog-btn confirm" id="dialogConfirm">OK</button>
@@ -803,13 +801,6 @@
     <div class="modal fullish">
       <div class="modal-header"><h2 class="modal-title">Library</h2><button class="modal-close" onclick="closeModal('libraryPopup')">×</button></div>
       <div class="modal-body" style="padding:0;max-height:500px;overflow-y:auto"><div class="library-list" id="libraryList"></div></div>
-    </div>
-  </div>
-
-  <div class="modal-overlay" id="pulsePopup" onclick="if(event.target===this)closeModal('pulsePopup')">
-    <div class="modal fullish">
-      <div class="modal-header"><h2 class="modal-title">Portfolio Pulse - Dec 30, 2025</h2><button class="modal-close" onclick="closeModal('pulsePopup')">×</button></div>
-      <div class="modal-body" style="padding:0;max-height:500px;overflow-y:auto"><div class="pulse-list" id="pulseList"></div></div>
     </div>
   </div>
 
@@ -1085,6 +1076,14 @@ class VertesiaAPI {
     });
   }
 
+  // Update collection (requires JWT for name changes)
+  async updateCollection(collectionId, updates) {
+    return await this.callWithAuth(`/collections/${collectionId}`, {
+      method: 'PUT',
+      body: JSON.stringify(updates)
+    });
+  }
+
   // Execute DocumentChat (requires JWT)
   async executeDocChat(task) {
     return await this.callWithAuth('/execute/async', {
@@ -1258,7 +1257,6 @@ let relatedDocs = [
   { id: 203, title: 'NVIDIA Q3 Earnings Analysis', match: 'NVDA, technology' },
   { id: 204, title: 'Advanced Packaging Technology Trends', match: 'semiconductor, TSMC' }
 ];
-let pulseArticles = ['Federal Reserve Cuts Rates Amid Division', 'Tech Sector AI-Driven Bifurcation', 'Healthcare Shows Resilience', 'Manufacturing Faces Headwinds', 'Energy Sector Operational Excellence'];
 let researchTypes = [
   { id: 'supply', name: 'Supply Chain Contagion', desc: 'Disruption effects' },
   { id: 'risk', name: 'Risk Modeling', desc: 'Portfolio impact' },
@@ -1266,11 +1264,16 @@ let researchTypes = [
   { id: 'dcf', name: 'DCF Valuation', desc: 'Intrinsic value' },
   { id: 'porter', name: "Porter's Five Forces", desc: 'Competitive dynamics' }
 ];
-let activeJobs = [
-  { id: 1, name: 'Supply Chain Contagion', time: 2, wsId: 1 },
-  { id: 2, name: 'Risk Modeling', time: 4, wsId: 1 }
-];
-let jobId = 2;
+
+// Job persistence
+const JOBS_STORAGE_KEY = 'marketlens_active_jobs';
+let activeJobs = JSON.parse(localStorage.getItem(JOBS_STORAGE_KEY) || '[]');
+let jobId = activeJobs.length > 0 ? Math.max(...activeJobs.map(j => j.id)) : 0;
+
+function saveJobs() {
+  localStorage.setItem(JOBS_STORAGE_KEY, JSON.stringify(activeJobs));
+}
+
 const focusOpts = {
   traditional: ['General Analysis', 'DCF Valuation', "Porter's Five Forces"],
   ecosystem: ['Ecosystem Mapping', 'Supply Chain Contagion'],
@@ -1324,6 +1327,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     setApiStatus('connected');
     liveMode = true;
     console.log('Live mode enabled');
+    
+    // Resume polling for any running jobs from previous session
+    resumeJobPolling();
   } catch (error) {
     console.error('API connection failed, using demo mode:', error);
     setApiStatus('error');
@@ -1334,7 +1340,6 @@ document.addEventListener('DOMContentLoaded', async () => {
   renderSidebar();
   renderDocuments();
   renderLibrary();
-  renderPulse();
   renderBatchTypes();
   updateJobs();
   updateChatUsage();
@@ -1436,13 +1441,22 @@ function setApiStatus(status) {
 
 // CUSTOM DIALOG
 let dialogResolve = null;
+let dialogHasInput = false;
 
-function showDialog({ title = 'Confirm', message = 'Are you sure?', confirmText = 'OK', cancelText = 'Cancel', showCancel = true, danger = false }) {
+function showDialog({ title = 'Confirm', message = 'Are you sure?', confirmText = 'OK', cancelText = 'Cancel', showCancel = true, danger = false, input = false, inputValue = '' }) {
   return new Promise(resolve => {
     dialogResolve = resolve;
+    dialogHasInput = input;
     
     document.getElementById('dialogTitle').textContent = title;
     document.getElementById('dialogMessage').textContent = message;
+    
+    const inputEl = document.getElementById('dialogInput');
+    inputEl.style.display = input ? 'block' : 'none';
+    if (input) {
+      inputEl.value = inputValue;
+      setTimeout(() => { inputEl.focus(); inputEl.select(); }, 100);
+    }
     
     const confirmBtn = document.getElementById('dialogConfirm');
     const cancelBtn = document.getElementById('dialogCancel');
@@ -1457,11 +1471,17 @@ function showDialog({ title = 'Confirm', message = 'Are you sure?', confirmText 
   });
 }
 
-function closeDialog(result) {
+function closeDialog(confirmed) {
   document.getElementById('customDialog').classList.remove('open');
   if (dialogResolve) {
-    dialogResolve(result);
+    if (dialogHasInput) {
+      const value = confirmed ? document.getElementById('dialogInput').value : null;
+      dialogResolve(value);
+    } else {
+      dialogResolve(confirmed);
+    }
     dialogResolve = null;
+    dialogHasInput = false;
   }
 }
 
@@ -1481,6 +1501,10 @@ async function showAlert(message, title = 'Notice') {
 
 async function showConfirm(message, title = 'Confirm', danger = false) {
   return showDialog({ title, message, danger });
+}
+
+async function showPrompt(message, title = 'Input', defaultValue = '') {
+  return showDialog({ title, message, input: true, inputValue: defaultValue });
 }
 
 // MODALS
@@ -1628,27 +1652,24 @@ document.addEventListener('click', () => document.querySelectorAll('.workspace-m
 
 async function renameWs(id) {
   const w = workspaces.find(x => x.id === id);
-  const n = prompt('Rename:', w.name);
-  if (!n || !n.trim()) return;
+  const newName = await showPrompt('Enter new name:', 'Rename Workspace', w.name);
+  if (!newName || !newName.trim()) return;
   
-  const newName = n.trim();
+  const trimmedName = newName.trim();
   
   // Call API if live mode with string ID
   if (liveMode && typeof id === 'string') {
     try {
-      await api.call(`/collections/${id}`, {
-        method: 'PATCH',
-        body: JSON.stringify({ name: newName })
-      });
-      console.log('Collection renamed via API:', id, newName);
+      await api.updateCollection(id, { name: trimmedName });
+      console.log('Collection renamed via API:', id, trimmedName);
     } catch (error) {
       console.error('Failed to rename collection:', error);
-      showAlert('Failed to rename workspace. Please try again.', 'Error');
+      await showAlert('Failed to rename workspace. Please try again.', 'Error');
       return;
     }
   }
   
-  w.name = newName;
+  w.name = trimmedName;
   renderSidebar();
   if (currentWs.id === id) updateHeader();
 }
@@ -1736,12 +1757,15 @@ async function createWorkspace() {
       
       ws = { id: wsId, name, pinned: false, status: 'active' };
       
-      // Add selected docs to collection
+      // Add selected docs to collection (with slight delay to ensure collection is fully created)
       const picker = document.getElementById('newWsPicker');
       const selected = picker.querySelectorAll('.doc-picker-item.selected');
       const docIds = Array.from(selected).map(el => el.dataset.docId).filter(id => id);
       
       if (docIds.length > 0) {
+        if (btn) { btn.textContent = 'Adding documents...'; }
+        // Brief delay to ensure collection is fully registered in backend
+        await new Promise(resolve => setTimeout(resolve, 500));
         await api.addToCollection(wsId, docIds);
         console.log('Documents added to collection');
         collectionMembers[wsId] = docIds;
@@ -2118,16 +2142,20 @@ function updateJobs() {
   renderSidebar();
 }
 
-function addJob(name, skipFakeTimer = false) {
+function addJob(name, skipFakeTimer = false, workflowId = null, runId = null) {
   const job = { 
     id: ++jobId, 
     name, 
     time: Math.floor(Math.random() * 3) + 2, 
     wsId: currentWs.id,
     wsName: currentWs.name,
-    status: 'running'
+    status: 'running',
+    workflowId,
+    runId,
+    startedAt: Date.now()
   };
   activeJobs.push(job);
+  saveJobs();
   updateJobs();
   renderSidebar();
   document.getElementById('jobsToast').classList.remove('collapsed');
@@ -2155,6 +2183,7 @@ function completeJob(name) {
   const job = activeJobs.find(j => j.name === name);
   if (job) {
     job.status = 'completed';
+    saveJobs();
     updateJobs();
     renderSidebar();
   }
@@ -2162,12 +2191,14 @@ function completeJob(name) {
 
 function removeJob(name) {
   activeJobs = activeJobs.filter(j => j.name !== name);
+  saveJobs();
   updateJobs();
   renderSidebar();
 }
 
 function dismissJob(name) {
   activeJobs = activeJobs.filter(j => j.name !== name);
+  saveJobs();
   updateJobs();
   renderSidebar();
 }
@@ -2177,6 +2208,23 @@ function goToJobWorkspace(wsId) {
   if (ws) {
     doSelectWs(wsId);
   }
+}
+
+// Resume polling for any running jobs from previous session
+function resumeJobPolling() {
+  const runningJobs = activeJobs.filter(j => j.status === 'running' && j.workflowId && j.runId);
+  console.log(`Resuming polling for ${runningJobs.length} jobs from previous session`);
+  
+  runningJobs.forEach(job => {
+    // Check if job is too old (> 30 minutes)
+    if (Date.now() - job.startedAt > 30 * 60 * 1000) {
+      console.log(`Job ${job.name} is too old, marking as completed`);
+      completeJob(job.name);
+      return;
+    }
+    
+    pollResearchCompletion(job.workflowId, job.runId, job.name);
+  });
 }
 
 // DOC PICKERS
@@ -2350,8 +2398,8 @@ FINAL STEP - CRITICAL: After uploading the document to the content library, you 
       const response = await api.executeResearch(prompt);
       console.log('Research started:', response);
       
-      // Add to active jobs (skip fake timer since we're polling)
-      addJob(jobName, true);
+      // Add to active jobs with workflow IDs for persistence
+      addJob(jobName, true, response.workflowId, response.runId);
       
       // Poll for completion
       if (response.runId && response.workflowId) {
@@ -2561,7 +2609,6 @@ function startBatchResearch() {
       
       // Call API if in live mode
       if (liveMode) {
-        addJob(jobName, true); // Skip fake timer
         try {
           const prompt = `Research Type: ${name}
 Topic: ${topic || 'General analysis'}
@@ -2576,12 +2623,12 @@ FINAL STEP - CRITICAL: After uploading the document to the content library, you 
 - Confirm completion by confirming the document was added to the collection
 ` : ''}`;
           const response = await api.executeResearch(prompt);
+          addJob(jobName, true, response.workflowId, response.runId);
           if (response.runId && response.workflowId) {
             pollResearchCompletion(response.workflowId, response.runId, jobName);
           }
         } catch (error) {
           console.error('Batch research failed:', error);
-          removeJob(jobName);
         }
       } else {
         addJob(jobName, false); // Use fake timer in demo mode
@@ -2643,7 +2690,6 @@ async function generateReport() {
   
   // Call API if in live mode
   if (liveMode) {
-    addJob(jobName, true); // Skip fake timer
     try {
       // Get selected document IDs
       const docIds = documents.filter(d => typeof d.id === 'string').map(d => d.id);
@@ -2667,12 +2713,13 @@ The final output must be a document uploaded to the content object library.`;
       console.log('Generating report:', { title: t, scope, rigor, docCount: docIds.length });
       const response = await api.executeResearch(prompt);
       
+      addJob(jobName, true, response.workflowId, response.runId);
+      
       if (response.runId && response.workflowId) {
         pollResearchCompletion(response.workflowId, response.runId, jobName);
       }
     } catch (error) {
       console.error('Report generation failed:', error);
-      removeJob(jobName);
       await showAlert('Failed to start report generation. Please try again.', 'Error');
     }
   } else {
@@ -2705,14 +2752,6 @@ function addLibDoc(title, type) {
   renderDocuments();
   renderSidebar();
   showAlert('Added "' + title + '" to ' + currentWs.name, 'Success');
-}
-function renderPulse() {
-  document.getElementById('pulseList').innerHTML = pulseArticles.map(t => {
-    const safeT = t.replace(/'/g, "\\'");
-    return `<div class="pulse-item" onclick="showAlert('Opening: ', 'Pulse')">
-      <div class="pulse-item-title">${t}</div>
-    </div>`;
-  }).join('');
 }
 
 // CHAT
@@ -2968,7 +3007,7 @@ async function newChat() {
   resetChat();
 }
 
-function saveChat() {
+async function saveChat() {
   if (chatMessages.length === 0) {
     showAlert('No messages to save.', 'Notice');
     return;
@@ -2978,7 +3017,7 @@ function saveChat() {
   const firstUserMsg = chatMessages.find(m => m.role === 'user');
   const defaultTitle = firstUserMsg ? firstUserMsg.content.substring(0, 40) + (firstUserMsg.content.length > 40 ? '...' : '') : 'Untitled Chat';
   
-  const title = prompt('Name this conversation:', defaultTitle);
+  const title = await showPrompt('Name this conversation:', 'Save Chat', defaultTitle);
   if (!title) return;
   
   // Initialize workspace chats array if needed
@@ -3135,12 +3174,12 @@ async function loadSavedChat(chatId) {
   container.scrollTop = container.scrollHeight;
 }
 
-function renameSavedChat(chatId) {
+async function renameSavedChat(chatId) {
   const chats = workspaceChats[currentWs.id] || [];
   const chat = chats.find(c => c.id === chatId);
   if (!chat) return;
   
-  const newTitle = prompt('Rename conversation:', chat.title);
+  const newTitle = await showPrompt('Enter new title:', 'Rename Conversation', chat.title);
   if (!newTitle || newTitle === chat.title) return;
   
   chat.title = newTitle;
@@ -3822,7 +3861,7 @@ FINAL STEP - CRITICAL: After uploading the document to the content library, you 
       const response = await api.executeResearch(prompt);
       console.log('Follow-up research started:', response);
       
-      addJob(jobName, true);
+      addJob(jobName, true, response.workflowId, response.runId);
       
       if (response.runId && response.workflowId) {
         pollResearchCompletion(response.workflowId, response.runId, jobName);
