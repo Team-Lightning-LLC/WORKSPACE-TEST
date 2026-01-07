@@ -1362,7 +1362,9 @@ async function loadFromAPI() {
           return allVertesiaDocs.find(d => d.id === docId);
         }).filter(Boolean);
         
-        console.log(`Collection ${c.name}: ${workspaceDocs[c.id].length} docs`);
+        // DEBUG: Check if parentId is preserved
+        const docsWithParent = workspaceDocs[c.id].filter(d => d.parentId);
+        console.log(`Collection ${c.name}: ${workspaceDocs[c.id].length} docs, ${docsWithParent.length} with parentId`);
       } catch (e) {
         console.warn(`Failed to load members for ${c.name}:`, e);
         workspaceDocs[c.id] = [];
@@ -1731,6 +1733,16 @@ function renderDocuments() {
   const rootDocs = [];
   const childrenMap = new Map(); // parentId -> [children]
   
+  // DEBUG: Log what we're working with
+  console.log('renderDocuments - documents:', documents.length);
+  console.log('renderDocuments - docMap keys (IDs in workspace):', Array.from(docMap.keys()));
+  console.log('renderDocuments - docs with parentId:', documents.filter(d => d.parentId).map(d => ({
+    title: d.title.substring(0, 40),
+    id: d.id,
+    parentId: d.parentId,
+    parentInWorkspace: docMap.has(d.parentId)
+  })));
+  
   documents.forEach(d => {
     if (d.parentId && docMap.has(d.parentId)) {
       // Parent is in this workspace - add as child
@@ -1741,6 +1753,8 @@ function renderDocuments() {
       rootDocs.push(d);
     }
   });
+  
+  console.log('renderDocuments - rootDocs:', rootDocs.length, 'childrenMap size:', childrenMap.size);
   
   // Recursive function to render doc and its children
   function renderDocWithChildren(d, depth = 0) {
