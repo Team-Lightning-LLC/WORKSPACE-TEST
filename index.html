@@ -1300,6 +1300,18 @@ async function loadFromAPI() {
   // 1. Load all documents
   setLoadingText('Loading documents...');
   const objects = await api.loadAllObjects();
+  
+  // DEBUG: Log raw API response for first few objects to see parent field
+  console.log('Raw API response sample (first 3 with parent field):', 
+    objects.filter(o => o.parent || o.properties?.parent_document_id).slice(0, 3).map(o => ({
+      id: o.id,
+      name: o.name,
+      parent: o.parent,
+      'properties.parent_document_id': o.properties?.parent_document_id,
+      allKeys: Object.keys(o)
+    }))
+  );
+  
   allVertesiaDocs = objects.filter(o => o.content?.source).map(o => ({
     id: o.id,
     title: o.name || 'Untitled',
