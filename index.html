@@ -159,10 +159,15 @@
     .document-title { font-size: 14px; font-weight: 600; color: var(--ink); line-height: 1.4; margin-bottom: 4px; }
     .document-meta { font-size: 11px; color: var(--muted); }
     .document-card.is-child { margin-left: 20px; border-left: 3px solid var(--accent); }
+    .document-card.is-child.is-starred { border-left: 3px solid #f5a623; }
     .children-container { transition: all 0.2s ease; }
     .children-container.collapsed { display: none; }
     .collapse-btn { transition: transform 0.2s ease; }
     .collapse-btn.collapsed { opacity: 0.6; }
+    .star-btn { color: var(--muted); }
+    .star-btn.starred { color: #f5a623; }
+    .star-btn:hover { color: #f5a623; }
+    .document-card.is-starred { border-left: 3px solid #f5a623; }
     .child-indicator { font-size: 10px; color: var(--muted); margin-bottom: 4px; }
 
     /* CHAT */
@@ -1738,6 +1743,15 @@ function renderDocuments() {
     }
   });
   
+  // Sort root docs: starred first, then by date
+  rootDocs.sort((a, b) => {
+    const aStarred = starredDocs.has(a.id);
+    const bStarred = starredDocs.has(b.id);
+    if (aStarred && !bStarred) return -1;
+    if (!aStarred && bStarred) return 1;
+    return 0; // Keep original order otherwise
+  });
+  
   // Recursive function to render doc and its children
   function renderDocWithChildren(d, depth = 0) {
     const isChild = depth > 0;
@@ -1747,12 +1761,14 @@ function renderDocuments() {
     const hasChildren = children.length > 0;
     const indentStyle = depth > 0 ? `margin-left: ${depth * 24}px;` : '';
     const isCollapsed = collapsedParents.has(d.id);
+    const isStarred = starredDocs.has(d.id);
     
-    let html = `<div class="document-card ${isChild ? 'is-child' : ''} ${hasChildren ? 'has-children' : ''}" style="${indentStyle}" data-doc-id="${d.id}" data-parent-id="${d.parentId || ''}">
+    let html = `<div class="document-card ${isChild ? 'is-child' : ''} ${hasChildren ? 'has-children' : ''} ${isStarred ? 'is-starred' : ''}" style="${indentStyle}" data-doc-id="${d.id}" data-parent-id="${d.parentId || ''}">
       ${isChild ? `<div class="child-indicator">↳ Follow-up${d.parentTitle ? ` from ${d.parentTitle.substring(0, 25)}${d.parentTitle.length > 25 ? '...' : ''}` : ''}</div>` : ''}
       <div class="document-card-header">
         <span class="document-type">${d.type}</span>
         <div class="document-actions">
+          <button class="doc-action-btn star-btn ${isStarred ? 'starred' : ''}" onclick="toggleStar(${idAttr})" title="${isStarred ? 'Unstar' : 'Star'}"><svg width="14" height="14" viewBox="0 0 24 24" fill="${isStarred ? 'currentColor' : 'none'}" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg></button>
           ${hasChildren ? `<button class="doc-action-btn collapse-btn ${isCollapsed ? 'collapsed' : ''}" onclick="toggleCollapse(${idAttr})" title="${isCollapsed ? 'Expand' : 'Collapse'} follow-ups"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="${isCollapsed ? '6 9 12 15 18 9' : '18 15 12 9 6 15'}"/></svg></button>` : ''}
           <button class="doc-action-btn" onclick="viewDoc('${safeTitle}')" title="View"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></button>
           <button class="doc-action-btn" onclick="openFollowUpResearch('${safeTitle}', ${idAttr})" title="Follow-up Research"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg></button>
@@ -1781,6 +1797,24 @@ function renderDocuments() {
 
 // Track collapsed state for parent documents
 const collapsedParents = new Set();
+
+// Track starred/pinned documents (persisted to localStorage)
+const STARRED_STORAGE_KEY = 'marketlens_starred_docs';
+let starredDocs = new Set(JSON.parse(localStorage.getItem(STARRED_STORAGE_KEY) || '[]'));
+
+function saveStarredDocs() {
+  localStorage.setItem(STARRED_STORAGE_KEY, JSON.stringify([...starredDocs]));
+}
+
+function toggleStar(docId) {
+  if (starredDocs.has(docId)) {
+    starredDocs.delete(docId);
+  } else {
+    starredDocs.add(docId);
+  }
+  saveStarredDocs();
+  renderDocuments();
+}
 
 function toggleCollapse(docId) {
   if (collapsedParents.has(docId)) {
@@ -1831,19 +1865,12 @@ async function syncDocuments() {
   btnText.textContent = 'Syncing...';
   btn.classList.add('syncing');
   
-  const syncPrompt = `Use facets on the parent field to find all parent documents with children. For each parent-child relationship found:
-
-1. For each child document, update its properties to include:
-   - parent_document_id: [the parent's document ID]
-   - parent_document_title: [the parent's document name]
-   - relationship_type: "follow_up_research"
-
-2. For each parent that belongs to a collection, search for its children and add them to the same collection(s) as the parent.
-
-Report which children were updated with parent metadata and added to which collections.`;
+  const collectionName = currentWs?.name || 'Unknown';
+  const syncPrompt = `Use facets on the parent field to find all parent documents with children. For each parent that belongs to a collection, search for its children and add them to the same collection(s) as the parent. Report which children were added to which collections.
+Complete this task only for the specified collection: ${collectionName}`;
   
   try {
-    console.log('Starting document sync...');
+    console.log('Starting document sync for collection:', collectionName);
     const response = await api.executeGeneralChat(syncPrompt);
     console.log('Sync initiated:', response);
     
