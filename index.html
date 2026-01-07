@@ -159,6 +159,10 @@
     .document-title { font-size: 14px; font-weight: 600; color: var(--ink); line-height: 1.4; margin-bottom: 4px; }
     .document-meta { font-size: 11px; color: var(--muted); }
     .document-card.is-child { margin-left: 20px; border-left: 3px solid var(--accent); }
+    .children-container { transition: all 0.2s ease; }
+    .children-container.collapsed { display: none; }
+    .collapse-btn { transition: transform 0.2s ease; }
+    .collapse-btn.collapsed { opacity: 0.6; }
     .child-indicator { font-size: 10px; color: var(--muted); margin-bottom: 4px; }
 
     /* CHAT */
@@ -1301,17 +1305,6 @@ async function loadFromAPI() {
   setLoadingText('Loading documents...');
   const objects = await api.loadAllObjects();
   
-  // DEBUG: Log raw API response for first few objects to see parent field
-  console.log('Raw API response sample (first 3 with parent field):', 
-    objects.filter(o => o.parent || o.properties?.parent_document_id).slice(0, 3).map(o => ({
-      id: o.id,
-      name: o.name,
-      parent: o.parent,
-      'properties.parent_document_id': o.properties?.parent_document_id,
-      allKeys: Object.keys(o)
-    }))
-  );
-  
   allVertesiaDocs = objects.filter(o => o.content?.source).map(o => ({
     id: o.id,
     title: o.name || 'Untitled',
@@ -1322,7 +1315,6 @@ async function loadFromAPI() {
     parentTitle: o.parent?.name || o.properties?.parent_document_title || null
   }));
   console.log(`Loaded ${allVertesiaDocs.length} documents from API`);
-  console.log('Docs with parents:', allVertesiaDocs.filter(d => d.parentId).map(d => ({ title: d.title, parentId: d.parentId })));
 
   // Update library with all docs
   libraryDocs = allVertesiaDocs;
@@ -1362,9 +1354,7 @@ async function loadFromAPI() {
           return allVertesiaDocs.find(d => d.id === docId);
         }).filter(Boolean);
         
-        // DEBUG: Check if parentId is preserved
-        const docsWithParent = workspaceDocs[c.id].filter(d => d.parentId);
-        console.log(`Collection ${c.name}: ${workspaceDocs[c.id].length} docs, ${docsWithParent.length} with parentId`);
+        console.log(`Collection ${c.name}: ${workspaceDocs[c.id].length} docs`);
       } catch (e) {
         console.warn(`Failed to load members for ${c.name}:`, e);
         workspaceDocs[c.id] = [];
@@ -1407,7 +1397,11 @@ function setApiStatus(status) {
 function openModal(id) {
   document.getElementById(id).classList.add('open');
   if (id === 'newWorkspace') renderDocPicker('newWsPicker', libraryDocs);
-  if (id === 'addDocuments') renderDocPicker('addDocsPicker', libraryDocs);
+  if (id === 'addDocuments') {
+    // Exclude docs already in the current workspace
+    const existingIds = documents.map(d => d.id);
+    renderDocPicker('addDocsPicker', libraryDocs, false, existingIds);
+  }
   if (id === 'findRelated') renderDocPicker('findRelatedPicker', relatedDocs, true);
   if (id === 'generateReport') renderReportPicker();
   if (id === 'batchResearch') { document.getElementById('batchStep1').classList.add('active'); document.getElementById('batchStep2').classList.remove('active'); }
@@ -1733,22 +1727,6 @@ function renderDocuments() {
   const rootDocs = [];
   const childrenMap = new Map(); // parentId -> [children]
   
-  // DEBUG: Log what we're working with
-  console.log('renderDocuments - documents:', documents.length);
-  console.log('renderDocuments - docMap keys (IDs in workspace):', Array.from(docMap.keys()));
-  
-  // DEBUG: Explicit check for each doc with parentId
-  documents.filter(d => d.parentId).forEach(d => {
-    const parentExists = docMap.has(d.parentId);
-    console.log(`Doc "${d.title.substring(0,30)}" has parentId: "${d.parentId}" - parent in workspace: ${parentExists}`);
-    if (!parentExists && d.parentId) {
-      // Check if it's a close match (maybe encoding issue)
-      const keys = Array.from(docMap.keys());
-      const closeMatch = keys.find(k => k.includes(d.parentId.substring(0,10)) || d.parentId.includes(k.substring(0,10)));
-      if (closeMatch) console.log(`  Possible close match: ${closeMatch}`);
-    }
-  });
-  
   documents.forEach(d => {
     if (d.parentId && docMap.has(d.parentId)) {
       // Parent is in this workspace - add as child
@@ -1760,8 +1738,6 @@ function renderDocuments() {
     }
   });
   
-  console.log('renderDocuments - rootDocs:', rootDocs.length, 'childrenMap size:', childrenMap.size);
-  
   // Recursive function to render doc and its children
   function renderDocWithChildren(d, depth = 0) {
     const isChild = depth > 0;
@@ -1770,31 +1746,49 @@ function renderDocuments() {
     const children = childrenMap.get(d.id) || [];
     const hasChildren = children.length > 0;
     const indentStyle = depth > 0 ? `margin-left: ${depth * 24}px;` : '';
+    const isCollapsed = collapsedParents.has(d.id);
     
     let html = `<div class="document-card ${isChild ? 'is-child' : ''} ${hasChildren ? 'has-children' : ''}" style="${indentStyle}" data-doc-id="${d.id}" data-parent-id="${d.parentId || ''}">
       ${isChild ? `<div class="child-indicator">↳ Follow-up${d.parentTitle ? ` from ${d.parentTitle.substring(0, 25)}${d.parentTitle.length > 25 ? '...' : ''}` : ''}</div>` : ''}
       <div class="document-card-header">
         <span class="document-type">${d.type}</span>
         <div class="document-actions">
+          ${hasChildren ? `<button class="doc-action-btn collapse-btn ${isCollapsed ? 'collapsed' : ''}" onclick="toggleCollapse(${idAttr})" title="${isCollapsed ? 'Expand' : 'Collapse'} follow-ups"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="${isCollapsed ? '6 9 12 15 18 9' : '18 15 12 9 6 15'}"/></svg></button>` : ''}
           <button class="doc-action-btn" onclick="viewDoc('${safeTitle}')" title="View"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></button>
           <button class="doc-action-btn" onclick="openFollowUpResearch('${safeTitle}', ${idAttr})" title="Follow-up Research"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg></button>
           <button class="doc-action-btn danger" onclick="removeDoc(${idAttr})" title="Remove from Workspace"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
         </div>
       </div>
       <div class="document-title">${d.title}</div>
-      <div class="document-meta">${d.date}${hasChildren ? ` · ${children.length} follow-up${children.length > 1 ? 's' : ''}` : ''}</div>
+      <div class="document-meta">${d.date}${hasChildren ? ` · ${children.length} follow-up${children.length > 1 ? 's' : ''}${isCollapsed ? ' (collapsed)' : ''}` : ''}</div>
     </div>`;
     
-    // Render children recursively
-    children.forEach(child => {
-      html += renderDocWithChildren(child, depth + 1);
-    });
+    // Render children recursively (wrapped in container for collapse)
+    if (hasChildren) {
+      html += `<div class="children-container ${isCollapsed ? 'collapsed' : ''}" data-parent="${d.id}">`;
+      children.forEach(child => {
+        html += renderDocWithChildren(child, depth + 1);
+      });
+      html += `</div>`;
+    }
     
     return html;
   }
   
   listEl.innerHTML = rootDocs.map(d => renderDocWithChildren(d, 0)).join('');
   document.getElementById('docCount').textContent = ` · ${documents.length} total`;
+}
+
+// Track collapsed state for parent documents
+const collapsedParents = new Set();
+
+function toggleCollapse(docId) {
+  if (collapsedParents.has(docId)) {
+    collapsedParents.delete(docId);
+  } else {
+    collapsedParents.add(docId);
+  }
+  renderDocuments();
 }
 
 async function removeDoc(id) {
@@ -1989,11 +1983,17 @@ function removeJob(name) {
 }
 
 // DOC PICKERS
-function renderDocPicker(containerId, docs, isRelated = false) {
+function renderDocPicker(containerId, docs, isRelated = false, excludeIds = []) {
   const container = document.getElementById(containerId);
+  
+  // Filter out documents that are already in the workspace
+  const filteredDocs = excludeIds.length > 0 
+    ? docs.filter(d => !excludeIds.includes(d.id))
+    : docs;
+  
   container.innerHTML = `
     ${!isRelated ? '<div class="doc-picker-search"><input type="text" placeholder="Search..." oninput="filterPicker(this)"></div>' : ''}
-    <div class="doc-picker-list">${docs.map(d => `
+    <div class="doc-picker-list">${filteredDocs.map(d => `
       <div class="doc-picker-item" data-doc-id="${d.id}" onclick="togglePickerItem(this)">
         <div class="doc-picker-checkbox"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg></div>
         <div class="doc-picker-info">
@@ -2002,7 +2002,7 @@ function renderDocPicker(containerId, docs, isRelated = false) {
         </div>
       </div>
     `).join('')}</div>
-    <div class="doc-picker-footer">${docs.length} documents available · 0 selected</div>
+    <div class="doc-picker-footer">${filteredDocs.length} documents available · 0 selected</div>
   `;
 }
 function togglePickerItem(el) {
