@@ -1318,8 +1318,8 @@ async function loadFromAPI() {
     type: o.properties?.framework || o.properties?.document_type || 'Research',
     date: formatApiDate(o.created_at),
     source: o.content?.source,
-    parentId: o.parent || o.properties?.parent_document_id || null,
-    parentTitle: o.properties?.parent_document_title || null
+    parentId: o.parent?.id || o.parent || o.properties?.parent_document_id || null,
+    parentTitle: o.parent?.name || o.properties?.parent_document_title || null
   }));
   console.log(`Loaded ${allVertesiaDocs.length} documents from API`);
   console.log('Docs with parents:', allVertesiaDocs.filter(d => d.parentId).map(d => ({ title: d.title, parentId: d.parentId })));
@@ -1736,12 +1736,18 @@ function renderDocuments() {
   // DEBUG: Log what we're working with
   console.log('renderDocuments - documents:', documents.length);
   console.log('renderDocuments - docMap keys (IDs in workspace):', Array.from(docMap.keys()));
-  console.log('renderDocuments - docs with parentId:', documents.filter(d => d.parentId).map(d => ({
-    title: d.title.substring(0, 40),
-    id: d.id,
-    parentId: d.parentId,
-    parentInWorkspace: docMap.has(d.parentId)
-  })));
+  
+  // DEBUG: Explicit check for each doc with parentId
+  documents.filter(d => d.parentId).forEach(d => {
+    const parentExists = docMap.has(d.parentId);
+    console.log(`Doc "${d.title.substring(0,30)}" has parentId: "${d.parentId}" - parent in workspace: ${parentExists}`);
+    if (!parentExists && d.parentId) {
+      // Check if it's a close match (maybe encoding issue)
+      const keys = Array.from(docMap.keys());
+      const closeMatch = keys.find(k => k.includes(d.parentId.substring(0,10)) || d.parentId.includes(k.substring(0,10)));
+      if (closeMatch) console.log(`  Possible close match: ${closeMatch}`);
+    }
+  });
   
   documents.forEach(d => {
     if (d.parentId && docMap.has(d.parentId)) {
@@ -1883,8 +1889,8 @@ function pollSyncCompletion(workflowId, runId) {
           type: o.properties?.framework || o.properties?.document_type || 'Research',
           date: formatApiDate(o.created_at),
           source: o.content?.source,
-          parentId: o.parent || o.properties?.parent_document_id || null,
-          parentTitle: o.properties?.parent_document_title || null
+          parentId: o.parent?.id || o.parent || o.properties?.parent_document_id || null,
+          parentTitle: o.parent?.name || o.properties?.parent_document_title || null
         }));
         libraryDocs = allVertesiaDocs;
         
@@ -2189,8 +2195,8 @@ async function pollResearchCompletion(workflowId, runId, jobName) {
           type: o.properties?.framework || o.properties?.document_type || 'Research',
           date: formatApiDate(o.created_at),
           source: o.content?.source,
-          parentId: o.parent || o.properties?.parent_document_id || null,
-          parentTitle: o.properties?.parent_document_title || null
+          parentId: o.parent?.id || o.parent || o.properties?.parent_document_id || null,
+          parentTitle: o.parent?.name || o.properties?.parent_document_title || null
         }));
         libraryDocs = allVertesiaDocs;
         
