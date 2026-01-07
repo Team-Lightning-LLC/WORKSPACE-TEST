@@ -1981,77 +1981,86 @@ function pollSyncCompletion(workflowId, runId) {
     try {
       const status = await api.getRunStatus(workflowId, runId);
       const runStatus = status?.status?.toLowerCase();
-      console.log('Sync status:', runStatus);
+      console.log('Sync poll - raw status:', status?.status, '| normalized:', runStatus);
       
-      if (['completed', 'success', 'finished', 'done'].includes(runStatus)) {
+      // Check for any completion-like status
+      if (['completed', 'success', 'finished', 'done', 'succeeded'].includes(runStatus)) {
         clearInterval(poll);
+        await reloadAfterSync();
         
-        console.log('Sync completed - reloading workspace data...');
-        
-        // Reload documents to get updated collection memberships
-        const objects = await api.loadAllObjects();
-        allVertesiaDocs = objects.filter(o => o.content?.source).map(o => ({
-          id: o.id,
-          title: o.name || 'Untitled',
-          type: o.properties?.framework || o.properties?.document_type || 'Research',
-          date: formatApiDate(o.created_at),
-          source: o.content?.source,
-          parentId: o.parent?.id || o.parent || o.properties?.parent_document_id || null,
-          parentTitle: o.parent?.name || o.properties?.parent_document_title || null
-        }));
-        libraryDocs = allVertesiaDocs;
-        console.log(`Reloaded ${allVertesiaDocs.length} documents`);
-        
-        // Reload collection members
-        const collections = await api.loadCollections() || [];
-        for (const col of collections) {
-          try {
-            const members = await api.getCollectionMembers(col.id);
-            collectionMembers[col.id] = members.map(m => m.id || m);
-          } catch (e) {
-            console.warn('Failed to reload collection members:', col.id);
-          }
-        }
-        
-        // Refresh current workspace docs
-        if (currentWs && collectionMembers[currentWs.id]) {
-          documents = collectionMembers[currentWs.id]
-            .map(id => allVertesiaDocs.find(d => d.id === id))
-            .filter(Boolean);
-          workspaceDocs[currentWs.id] = documents;
-          console.log(`Workspace now has ${documents.length} documents`);
-        }
-        
-        renderDocuments();
-        renderSidebar();
-        renderLibrary();
-        
-        btn.disabled = false;
-        btnText.textContent = 'Sync';
-        btn.classList.remove('syncing');
-        
-        console.log('Sync completed and UI refreshed');
-        
-      } else if (['failed', 'error'].includes(runStatus)) {
+      } else if (['failed', 'error', 'cancelled', 'canceled'].includes(runStatus)) {
         clearInterval(poll);
-        btn.disabled = false;
-        btnText.textContent = 'Sync';
-        btn.classList.remove('syncing');
-        console.error('Sync failed');
-        await showAlert('Sync failed. Please try again.', 'Error');
+        // Still reload - the agent may have completed the work even if status shows failed
+        console.log('Sync reported as failed, but reloading anyway in case work was done...');
+        await reloadAfterSync();
       }
+      // Otherwise keep polling (status is probably 'running', 'pending', 'in_progress', etc.)
     } catch (e) {
       console.error('Sync poll error:', e);
     }
-  }, 10000); // Check every 10 seconds
+  }, 5000); // Check every 5 seconds (was 10)
   
-  // Safety timeout after 5 minutes
-  setTimeout(() => {
+  // Safety timeout after 5 minutes - still reload in case sync completed but status wasn't caught
+  setTimeout(async () => {
     clearInterval(poll);
-    btn.disabled = false;
-    btnText.textContent = 'Sync';
-    btn.classList.remove('syncing');
+    console.log('Sync timeout reached - reloading anyway');
+    await reloadAfterSync();
   }, 300000);
+}
+
+async function reloadAfterSync() {
+  const btn = document.getElementById('syncDocsBtn');
+  const btnText = document.getElementById('syncDocsBtnText');
+  
+  console.log('Sync completed - reloading workspace data...');
+  
+  try {
+    // Reload documents to get updated collection memberships
+    const objects = await api.loadAllObjects();
+    allVertesiaDocs = objects.filter(o => o.content?.source).map(o => ({
+      id: o.id,
+      title: o.name || 'Untitled',
+      type: o.properties?.framework || o.properties?.document_type || 'Research',
+      date: formatApiDate(o.created_at),
+      source: o.content?.source,
+      parentId: o.parent?.id || o.parent || o.properties?.parent_document_id || null,
+      parentTitle: o.parent?.name || o.properties?.parent_document_title || null
+    }));
+    libraryDocs = allVertesiaDocs;
+    console.log(`Reloaded ${allVertesiaDocs.length} documents`);
+    
+    // Reload collection members
+    const collections = await api.loadCollections() || [];
+    for (const col of collections) {
+      try {
+        const members = await api.getCollectionMembers(col.id);
+        collectionMembers[col.id] = members.map(m => m.id || m);
+      } catch (e) {
+        console.warn('Failed to reload collection members:', col.id);
+      }
+    }
+    
+    // Refresh current workspace docs
+    if (currentWs && collectionMembers[currentWs.id]) {
+      documents = collectionMembers[currentWs.id]
+        .map(id => allVertesiaDocs.find(d => d.id === id))
+        .filter(Boolean);
+      workspaceDocs[currentWs.id] = documents;
+      console.log(`Workspace now has ${documents.length} documents`);
+    }
+    
+    renderDocuments();
+    renderSidebar();
+    renderLibrary();
+    
+    console.log('Sync completed and UI refreshed');
+  } catch (e) {
+    console.error('Error reloading after sync:', e);
+  }
+  
+  btn.disabled = false;
+  btnText.textContent = 'Sync';
+  btn.classList.remove('syncing');
 }
 
 // JOBS
@@ -2284,68 +2293,86 @@ The final output must be a document uploaded to the content object library.
 
 async function pollResearchCompletion(workflowId, runId, jobName) {
   let attempts = 0;
-  const maxAttempts = 60;
+  const maxAttempts = 120; // 10 minutes at 5s intervals
   
   const poll = setInterval(async () => {
     attempts++;
     if (attempts > maxAttempts) {
       clearInterval(poll);
       removeJob(jobName);
-      console.log('Research timed out');
+      console.log('Research timed out - reloading anyway');
+      await reloadAfterResearch();
       return;
     }
     
     try {
       const status = await api.getRunStatus(workflowId, runId);
       const runStatus = (status?.status || '').toLowerCase();
+      console.log('Research poll - raw status:', status?.status, '| normalized:', runStatus, '| attempt:', attempts);
       
-      if (['completed', 'finished', 'done'].includes(runStatus)) {
+      if (['completed', 'success', 'finished', 'done', 'succeeded'].includes(runStatus)) {
         clearInterval(poll);
         removeJob(jobName);
+        console.log('Research completed successfully');
+        await reloadAfterResearch();
         
-        // Reload documents
-        const objects = await api.loadAllObjects();
-        allVertesiaDocs = objects.filter(o => o.content?.source).map(o => ({
-          id: o.id,
-          title: o.name || 'Untitled',
-          type: o.properties?.framework || o.properties?.document_type || 'Research',
-          date: formatApiDate(o.created_at),
-          source: o.content?.source,
-          parentId: o.parent?.id || o.parent || o.properties?.parent_document_id || null,
-          parentTitle: o.parent?.name || o.properties?.parent_document_title || null
-        }));
-        libraryDocs = allVertesiaDocs;
-        
-        // Reload collection members for current workspace
-        if (currentWs && typeof currentWs.id === 'string') {
-          try {
-            const members = await api.getCollectionMembers(currentWs.id);
-            collectionMembers[currentWs.id] = members.map(m => m.id || m);
-            
-            // Update current workspace documents
-            documents = collectionMembers[currentWs.id]
-              .map(id => allVertesiaDocs.find(d => d.id === id))
-              .filter(Boolean);
-            workspaceDocs[currentWs.id] = documents;
-            
-            console.log('Research completed, workspace docs refreshed:', documents.length);
-            renderDocuments();
-          } catch (e) {
-            console.warn('Failed to reload collection members:', e);
-          }
-        }
-        
-        renderSidebar();
-        
-      } else if (['failed', 'error'].includes(runStatus)) {
+      } else if (['failed', 'error', 'cancelled', 'canceled'].includes(runStatus)) {
         clearInterval(poll);
         removeJob(jobName);
-        console.error('Research failed');
+        // Still reload - the agent may have completed the work even if status shows failed
+        console.log('Research reported as failed, but reloading anyway in case work was done...');
+        await reloadAfterResearch();
       }
     } catch (e) {
-      console.error('Poll error:', e);
+      console.error('Research poll error:', e);
     }
-  }, 15000);
+  }, 5000); // Check every 5 seconds
+}
+
+async function reloadAfterResearch() {
+  console.log('Reloading workspace data after research...');
+  
+  try {
+    // Reload documents
+    const objects = await api.loadAllObjects();
+    allVertesiaDocs = objects.filter(o => o.content?.source).map(o => ({
+      id: o.id,
+      title: o.name || 'Untitled',
+      type: o.properties?.framework || o.properties?.document_type || 'Research',
+      date: formatApiDate(o.created_at),
+      source: o.content?.source,
+      parentId: o.parent?.id || o.parent || o.properties?.parent_document_id || null,
+      parentTitle: o.parent?.name || o.properties?.parent_document_title || null
+    }));
+    libraryDocs = allVertesiaDocs;
+    console.log(`Reloaded ${allVertesiaDocs.length} documents`);
+    
+    // Reload collection members for current workspace
+    if (currentWs && typeof currentWs.id === 'string') {
+      try {
+        const members = await api.getCollectionMembers(currentWs.id);
+        collectionMembers[currentWs.id] = members.map(m => m.id || m);
+        
+        // Update current workspace documents
+        documents = collectionMembers[currentWs.id]
+          .map(id => allVertesiaDocs.find(d => d.id === id))
+          .filter(Boolean);
+        workspaceDocs[currentWs.id] = documents;
+        
+        console.log('Workspace docs refreshed:', documents.length);
+      } catch (e) {
+        console.warn('Failed to reload collection members:', e);
+      }
+    }
+    
+    renderDocuments();
+    renderSidebar();
+    renderLibrary();
+    
+    console.log('Research reload complete');
+  } catch (e) {
+    console.error('Error reloading after research:', e);
+  }
 }
 
 function resetResearchModal() {
