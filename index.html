@@ -237,6 +237,22 @@
     .chat-history-action.danger:hover { color: var(--danger); }
 
     /* MODALS */
+    /* Custom Dialog */
+    .dialog-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 300; opacity: 0; visibility: hidden; transition: all 0.2s ease; }
+    .dialog-overlay.open { opacity: 1; visibility: visible; }
+    .dialog-box { background: var(--card); border-radius: 12px; padding: 24px; max-width: 400px; width: 90%; box-shadow: 0 20px 40px rgba(0,0,0,0.3); transform: scale(0.95); transition: transform 0.2s ease; }
+    .dialog-overlay.open .dialog-box { transform: scale(1); }
+    .dialog-title { font-size: 16px; font-weight: 600; color: var(--ink); margin-bottom: 12px; }
+    .dialog-message { font-size: 14px; color: var(--muted); line-height: 1.5; margin-bottom: 24px; white-space: pre-line; }
+    .dialog-buttons { display: flex; gap: 10px; justify-content: flex-end; }
+    .dialog-btn { padding: 10px 20px; border-radius: 6px; font-size: 13px; font-weight: 600; cursor: pointer; transition: all 0.15s ease; }
+    .dialog-btn.cancel { background: var(--soft); border: 1px solid var(--hair); color: var(--muted); }
+    .dialog-btn.cancel:hover { background: var(--hair); color: var(--ink); }
+    .dialog-btn.confirm { background: var(--accent); border: 1px solid var(--accent); color: white; }
+    .dialog-btn.confirm:hover { background: #0d8f6f; }
+    .dialog-btn.danger { background: #dc3545; border-color: #dc3545; }
+    .dialog-btn.danger:hover { background: #c82333; }
+
     .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.4); display: flex; align-items: center; justify-content: center; z-index: 200; opacity: 0; visibility: hidden; }
     .modal-overlay.open { opacity: 1; visibility: visible; }
     .modal { background: var(--card); border-radius: 12px; width: 90%; max-width: 480px; max-height: 85vh; overflow: hidden; box-shadow: var(--shadow-lg); }
@@ -604,6 +620,18 @@
         </div>
       </div>
     </main>
+  </div>
+
+  <!-- CUSTOM DIALOG -->
+  <div class="dialog-overlay" id="customDialog">
+    <div class="dialog-box">
+      <div class="dialog-title" id="dialogTitle">Confirm</div>
+      <div class="dialog-message" id="dialogMessage">Are you sure?</div>
+      <div class="dialog-buttons" id="dialogButtons">
+        <button class="dialog-btn cancel" id="dialogCancel">Cancel</button>
+        <button class="dialog-btn confirm" id="dialogConfirm">OK</button>
+      </div>
+    </div>
   </div>
 
   <!-- MODALS -->
@@ -1398,6 +1426,55 @@ function setApiStatus(status) {
   if (text) text.textContent = status === 'connected' ? 'Live' : status === 'error' ? 'Demo' : 'Connecting...';
 }
 
+// CUSTOM DIALOG
+let dialogResolve = null;
+
+function showDialog({ title = 'Confirm', message = 'Are you sure?', confirmText = 'OK', cancelText = 'Cancel', showCancel = true, danger = false }) {
+  return new Promise(resolve => {
+    dialogResolve = resolve;
+    
+    document.getElementById('dialogTitle').textContent = title;
+    document.getElementById('dialogMessage').textContent = message;
+    
+    const confirmBtn = document.getElementById('dialogConfirm');
+    const cancelBtn = document.getElementById('dialogCancel');
+    
+    confirmBtn.textContent = confirmText;
+    confirmBtn.className = `dialog-btn confirm ${danger ? 'danger' : ''}`;
+    
+    cancelBtn.textContent = cancelText;
+    cancelBtn.style.display = showCancel ? 'block' : 'none';
+    
+    document.getElementById('customDialog').classList.add('open');
+  });
+}
+
+function closeDialog(result) {
+  document.getElementById('customDialog').classList.remove('open');
+  if (dialogResolve) {
+    dialogResolve(result);
+    dialogResolve = null;
+  }
+}
+
+// Initialize dialog button handlers
+document.addEventListener('DOMContentLoaded', () => {
+  document.getElementById('dialogConfirm').addEventListener('click', () => closeDialog(true));
+  document.getElementById('dialogCancel').addEventListener('click', () => closeDialog(false));
+  document.getElementById('customDialog').addEventListener('click', (e) => {
+    if (e.target.id === 'customDialog') closeDialog(false);
+  });
+});
+
+// Helper functions
+async function showAlert(message, title = 'Notice') {
+  return showDialog({ title, message, showCancel: false });
+}
+
+async function showConfirm(message, title = 'Confirm', danger = false) {
+  return showDialog({ title, message, danger });
+}
+
 // MODALS
 function openModal(id) {
   document.getElementById(id).classList.add('open');
@@ -1456,11 +1533,15 @@ function wsItem(w) {
 function selectWs(id) {
   // Check for unsaved chat before switching
   if (chatMessages.length > 0 && !chatIsSaved) {
-    if (!confirm('Switch workspace?\n\nYour current chat is not saved and will be lost.')) {
-      return;
-    }
+    showConfirm('Switch workspace?\n\nYour current chat is not saved and will be lost.', 'Switch Workspace').then(confirmed => {
+      if (confirmed) doSelectWs(id);
+    });
+    return;
   }
-  
+  doSelectWs(id);
+}
+
+function doSelectWs(id) {
   console.log('Selecting workspace:', id, typeof id);
   currentWs = workspaces.find(w => w.id === id);
   
@@ -1546,7 +1627,7 @@ async function renameWs(id) {
       console.log('Collection renamed via API:', id, newName);
     } catch (error) {
       console.error('Failed to rename collection:', error);
-      alert('Failed to rename workspace. Please try again.');
+      showAlert('Failed to rename workspace. Please try again.', 'Error');
       return;
     }
   }
@@ -1571,7 +1652,8 @@ function toggleComplete(id) {
 
 async function deleteWs(id) {
   const w = workspaces.find(x => x.id === id);
-  if (!confirm(`Delete "${w.name}"?`)) return;
+  const confirmed = await showConfirm(`Delete "${w.name}"?\n\nThis action cannot be undone.`, 'Delete Workspace', true);
+  if (!confirmed) return;
   
   // Call API if live mode with string ID
   if (liveMode && typeof id === 'string') {
@@ -1582,7 +1664,7 @@ async function deleteWs(id) {
       console.log('Collection deleted via API:', id);
     } catch (error) {
       console.error('Failed to delete collection:', error);
-      alert('Failed to delete workspace. Please try again.');
+      await showAlert('Failed to delete workspace. Please try again.', 'Error');
       return;
     }
   }
@@ -1607,7 +1689,7 @@ function filterWorkspaces(q) {
 
 async function createWorkspace() {
   const name = document.getElementById('newWsName').value.trim();
-  if (!name) { alert('Enter a name'); return; }
+  if (!name) { await showAlert('Please enter a name.', 'Required'); return; }
   
   let wsId;
   let ws;
@@ -1658,7 +1740,7 @@ async function createWorkspace() {
       
     } catch (error) {
       console.error('Failed to create workspace via API:', error);
-      alert('Failed to create workspace. Please try again.');
+      await showAlert('Failed to create workspace. Please try again.', 'Error');
       const btn = document.querySelector('#newWorkspace .action-btn.primary');
       if (btn) { btn.disabled = false; btn.textContent = 'Create Workspace'; }
       return;
@@ -1826,9 +1908,11 @@ function toggleCollapse(docId) {
 }
 
 async function removeDoc(id) {
-  if (!confirm('Remove this document from the workspace?\n\nThis only removes it from this workspace—the document will still be available in your Library.')) {
-    return;
-  }
+  const confirmed = await showConfirm(
+    'Remove this document from the workspace?\n\nThis only removes it from this workspace—the document will still be available in your Library.',
+    'Remove Document'
+  );
+  if (!confirmed) return;
   
   // Call API if live mode with string IDs
   if (liveMode && typeof currentWs.id === 'string' && typeof id === 'string') {
@@ -1853,7 +1937,7 @@ async function removeDoc(id) {
 // Sync Documents - reconnects orphaned children to parent collections
 async function syncDocuments() {
   if (!liveMode) {
-    alert('Sync is only available in live mode.');
+    await showAlert('Sync is only available in live mode.');
     return;
   }
   
@@ -1882,7 +1966,7 @@ async function syncDocuments() {
     }
   } catch (error) {
     console.error('Failed to start sync:', error);
-    alert('Failed to start document sync. Please try again.');
+    await showAlert('Failed to start document sync. Please try again.', 'Error');
     btn.disabled = false;
     btnText.textContent = 'Sync';
     btn.classList.remove('syncing');
@@ -1954,7 +2038,7 @@ function pollSyncCompletion(workflowId, runId) {
         btnText.textContent = 'Sync';
         btn.classList.remove('syncing');
         console.error('Sync failed');
-        alert('Sync failed. Please try again.');
+        await showAlert('Sync failed. Please try again.', 'Error');
       }
     } catch (e) {
       console.error('Sync poll error:', e);
@@ -2054,7 +2138,7 @@ function filterPicker(input) {
 async function addDocsToWorkspace(pickerId) {
   const picker = document.getElementById(pickerId);
   const selected = picker.querySelectorAll('.doc-picker-item.selected');
-  if (!selected.length) { alert('Select at least one document'); return; }
+  if (!selected.length) { await showAlert('Please select at least one document.', 'Required'); return; }
   
   const docIds = Array.from(selected).map(el => el.dataset.docId).filter(id => id);
   console.log('addDocsToWorkspace - docIds:', docIds, 'currentWs:', currentWs?.id);
@@ -2120,7 +2204,7 @@ async function startResearch() {
   const scope = document.getElementById('researchScope')?.value || 'Asset';
   const rigor = document.getElementById('researchRigor')?.value || 'In Depth';
   
-  if (!focus) { alert('Select type and focus'); return; }
+  if (!focus) { await showAlert('Please select type and focus.', 'Required'); return; }
   
   // Create job with parent info if follow-up
   const jobName = followUpParentDoc ? `Follow-up: ${focus}` : focus;
@@ -2186,7 +2270,7 @@ The final output must be a document uploaded to the content object library.
       }
     } catch (error) {
       console.error('Failed to start research:', error);
-      alert('Failed to start research. Please try again.');
+      await showAlert('Failed to start research. Please try again.', 'Error');
       return;
     }
   } else {
@@ -2335,9 +2419,9 @@ function updateBatchTotal() {
   });
   document.getElementById('batchTotal').textContent = t;
 }
-function showBatchConfirm() {
+async function showBatchConfirm() {
   const sel = document.querySelectorAll('#batchTypes .research-type.selected');
-  if (!sel.length) { alert('Select at least one type'); return; }
+  if (!sel.length) { await showAlert('Please select at least one type.', 'Required'); return; }
   document.getElementById('confirmList').innerHTML = Array.from(sel).map(el => `
     <div class="confirm-item">
       <span class="confirm-item-name">${el.querySelector('.research-type-name').textContent}</span>
@@ -2431,9 +2515,9 @@ function updateReportBtn() {
 }
 async function generateReport() {
   const t = document.getElementById('reportTitle').value.trim();
-  if (!t) { alert('Enter a title'); return; }
+  if (!t) { await showAlert('Please enter a title.', 'Required'); return; }
   const sel = document.querySelectorAll('#reportPicker .doc-picker-item.selected');
-  if (!sel.length) { alert('Select documents'); return; }
+  if (!sel.length) { await showAlert('Please select documents.', 'Required'); return; }
   
   // Use defaults for reports - could add selectors to modal later
   const scope = 'Asset';
@@ -2473,7 +2557,7 @@ The final output must be a document uploaded to the content object library.`;
     } catch (error) {
       console.error('Report generation failed:', error);
       removeJob(jobName);
-      alert('Failed to start report generation. Please try again.');
+      await showAlert('Failed to start report generation. Please try again.', 'Error');
     }
   } else {
     // Demo mode
@@ -2504,12 +2588,12 @@ function addLibDoc(title, type) {
   workspaceDocs[currentWs.id] = documents;
   renderDocuments();
   renderSidebar();
-  alert('Added "' + title + '" to ' + currentWs.name);
+  showAlert('Added "' + title + '" to ' + currentWs.name, 'Success');
 }
 function renderPulse() {
   document.getElementById('pulseList').innerHTML = pulseArticles.map(t => {
     const safeT = t.replace(/'/g, "\\'");
-    return `<div class="pulse-item" onclick="alert('Opening: ${safeT}')">
+    return `<div class="pulse-item" onclick="showAlert('Opening: ', 'Pulse')">
       <div class="pulse-item-title">${t}</div>
     </div>`;
   }).join('');
@@ -2530,10 +2614,15 @@ async function sendChat() {
   
   // Check message limit
   if (chatMessageCount >= CHAT_LIMIT) {
-    const action = confirm(`You've reached the ${CHAT_LIMIT} message limit for this chat.\n\nClick OK to save/download this chat and start a new one, or Cancel to continue without sending.`);
+    const action = await showConfirm(`You've reached the ${CHAT_LIMIT} message limit for this chat.\n\nSave/download this chat and start a new one?`, 'Message Limit Reached');
     if (action) {
-      // Offer save or download
-      const saveChoice = confirm('Save to chat history?\n\nOK = Save to history\nCancel = Download as file');
+      const saveChoice = await showDialog({
+        title: 'Save Chat',
+        message: 'How would you like to save this chat?',
+        confirmText: 'Save to History',
+        cancelText: 'Download File',
+        showCancel: true
+      });
       if (saveChoice) {
         saveChat();
       } else {
@@ -2747,11 +2836,10 @@ function formatAIResponse(text) {
   return html;
 }
 
-function newChat() {
+async function newChat() {
   if (chatMessages.length > 0 && !chatIsSaved) {
-    if (!confirm('Start a new chat?\n\nYour current conversation is not saved. Click "Save" first to keep it, or continue to discard.')) {
-      return;
-    }
+    const confirmed = await showConfirm('Start a new chat?\n\nYour current conversation is not saved. Click "Save" first to keep it, or continue to discard.', 'New Chat');
+    if (!confirmed) return;
   }
   
   // Reset streaming state
@@ -2766,7 +2854,7 @@ function newChat() {
 
 function saveChat() {
   if (chatMessages.length === 0) {
-    alert('No messages to save.');
+    showAlert('No messages to save.', 'Notice');
     return;
   }
   
@@ -2870,12 +2958,11 @@ function renderChatHistory() {
   `).join('');
 }
 
-function loadSavedChat(chatId) {
+async function loadSavedChat(chatId) {
   // Check if current chat needs saving
   if (chatMessages.length > 0 && !chatIsSaved && currentChatId !== chatId) {
-    if (!confirm('Load saved chat?\n\nYour current conversation is not saved and will be lost.')) {
-      return;
-    }
+    const confirmed = await showConfirm('Load saved chat?\n\nYour current conversation is not saved and will be lost.', 'Load Chat');
+    if (!confirmed) return;
   }
   
   const chats = workspaceChats[currentWs.id] || [];
@@ -2945,8 +3032,9 @@ function renameSavedChat(chatId) {
   saveWorkspaceChats(); // Persist to localStorage
 }
 
-function deleteSavedChat(chatId) {
-  if (!confirm('Delete this saved conversation?')) return;
+async function deleteSavedChat(chatId) {
+  const confirmed = await showConfirm('Delete this saved conversation?', 'Delete Chat', true);
+  if (!confirmed) return;
   
   workspaceChats[currentWs.id] = (workspaceChats[currentWs.id] || []).filter(c => c.id !== chatId);
   
@@ -2962,7 +3050,7 @@ function deleteSavedChat(chatId) {
 
 function downloadChat() {
   if (chatMessages.length === 0) {
-    alert('No messages to download.');
+    showAlert('No messages to download.', 'Notice');
     return;
   }
   
@@ -3005,7 +3093,7 @@ function quoteMessage(btn) {
   // For demo, just show confirmation
   // In real implementation, this would save to a quotes collection
   const preview = text.length > 100 ? text.substring(0, 100) + '...' : text;
-  alert(`Quote saved:\n\n"${preview}"`);
+  showAlert(`Quote saved:\n\n"${preview}"`, 'Saved');
 }
 
 // ===== DOCUMENT VIEWER =====
@@ -3525,7 +3613,7 @@ function downloadDocPDF() {
   // Create print window
   const printWindow = window.open('', '_blank');
   if (!printWindow) {
-    alert('Pop-up blocked. Please allow pop-ups and try again.');
+    showAlert('Pop-up blocked. Please allow pop-ups and try again.', 'Error');
     return;
   }
   
@@ -3574,7 +3662,7 @@ async function generateFollowUp() {
   const parentDocId = currentViewDocId || currentViewDoc;
   
   if (!parentDocId) {
-    alert('No document selected for follow-up');
+    showAlert('No document selected for follow-up.', 'Error');
     return;
   }
   
@@ -3625,7 +3713,7 @@ FINAL STEP - CRITICAL: After uploading the document to the content library, you 
       }
     } catch (error) {
       console.error('Failed to start follow-up research:', error);
-      alert('Failed to start follow-up research. Please try again.');
+      await showAlert('Failed to start follow-up research. Please try again.', 'Error');
       return;
     }
   } else {
