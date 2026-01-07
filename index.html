@@ -1805,7 +1805,16 @@ async function syncDocuments() {
   btnText.textContent = 'Syncing...';
   btn.classList.add('syncing');
   
-  const syncPrompt = `Use facets on the parent field to find all parent documents with children. For each parent that belongs to a collection, search for its children and add them to the same collection(s) as the parent. Report which children were added to which collections.`;
+  const syncPrompt = `Use facets on the parent field to find all parent documents with children. For each parent-child relationship found:
+
+1. For each child document, update its properties to include:
+   - parent_document_id: [the parent's document ID]
+   - parent_document_title: [the parent's document name]
+   - relationship_type: "follow_up_research"
+
+2. For each parent that belongs to a collection, search for its children and add them to the same collection(s) as the parent.
+
+Report which children were updated with parent metadata and added to which collections.`;
   
   try {
     console.log('Starting document sync...');
@@ -2060,7 +2069,6 @@ async function startResearch() {
 
 First, access and analyze Document ID: ${followUpParentDoc.id} from the content object library.
 Parent document: ${followUpParentDoc.title}
-IMPORTANT: When creating the output document, set the parent metadata to reference document ID: ${followUpParentDoc.id}
 
 The user wants to explore: ${context || 'Further analysis based on the parent document'}
 
@@ -2074,6 +2082,11 @@ Context: ${context || 'General analysis'}
 
 Generate a comprehensive research document with hyperlinked sources.
 The final output must be a document uploaded to the content object library.
+
+CRITICAL METADATA - When creating/uploading the document, you MUST set these properties:
+- parent_document_id: "${followUpParentDoc.id}"
+- parent_document_title: "${followUpParentDoc.title}"
+- relationship_type: "follow_up_research"
 
 FINAL STEP - CRITICAL: After uploading the document to the content library, you MUST:
 - Search for collections containing the parent document ID: ${followUpParentDoc.id}
@@ -3506,7 +3519,6 @@ async function generateFollowUp() {
 
 First, access and analyze Document ID: ${parentDocId} from the content object library.
 Parent document: ${parentDocTitle}
-IMPORTANT: When creating the output document, set the parent metadata to reference document ID: ${parentDocId}
 
 Research Direction: ${context || 'Further analysis based on the parent document'}
 
@@ -3517,6 +3529,11 @@ Research Parameters:
 Use insights from the parent document to enhance this research.
 Generate a comprehensive research document with hyperlinked sources.
 The final output must be a document uploaded to the content object library.
+
+CRITICAL METADATA - When creating/uploading the document, you MUST set these properties:
+- parent_document_id: "${parentDocId}"
+- parent_document_title: "${parentDocTitle}"
+- relationship_type: "follow_up_research"
 
 FINAL STEP - CRITICAL: After uploading the document to the content library, you MUST:
 - Search for collections containing the parent document ID: ${parentDocId}
