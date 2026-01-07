@@ -85,6 +85,7 @@
     .workspace-meta { font-size: 11px; color: var(--muted); display: flex; align-items: center; gap: 6px; }
     .pin-icon { color: var(--warning); }
     .activity-dot { width: 6px; height: 6px; background: var(--warning); border-radius: 50%; animation: pulse 2s infinite; }
+    .activity-dot.done { background: var(--accent); animation: none; }
     @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
     
     .workspace-menu-btn { position: absolute; right: 8px; top: 50%; transform: translateY(-50%); width: 24px; height: 24px; border: none; background: none; color: var(--muted); cursor: pointer; border-radius: 4px; display: flex; align-items: center; justify-content: center; opacity: 0; }
@@ -144,6 +145,12 @@
     .job-name { font-size: 13px; font-weight: 500; color: var(--ink); }
     .job-progress { font-size: 11px; color: var(--muted); }
     .job-workspace { color: var(--accent); font-weight: 500; }
+    .job-item.completed { background: var(--accent-soft); cursor: pointer; }
+    .job-item.completed:hover { background: #cce8df; }
+    .job-done-icon { width: 20px; height: 20px; background: var(--accent); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; flex-shrink: 0; }
+    .job-done-icon svg { width: 12px; height: 12px; }
+    .job-dismiss { background: none; border: none; padding: 4px; cursor: pointer; color: var(--muted); opacity: 0.6; transition: opacity 0.15s; margin-left: auto; }
+    .job-dismiss:hover { opacity: 1; color: var(--ink); }
     .jobs-empty { padding: 20px; text-align: center; color: var(--muted); font-size: 12px; }
 
     /* DOCUMENTS */
@@ -1509,9 +1516,17 @@ function renderSidebar() {
 function wsItem(w) {
   const active = currentWs?.id === w.id ? 'active' : '';
   const pin = w.pinned ? '<svg class="pin-icon" width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z"/></svg>' : '';
-  const wsJobs = activeJobs.filter(j => j.wsId === w.id);
+  const wsRunning = activeJobs.filter(j => j.wsId === w.id && j.status !== 'completed');
+  const wsCompleted = activeJobs.filter(j => j.wsId === w.id && j.status === 'completed');
   const docCount = (workspaceDocs[w.id] || []).length;
-  const meta = wsJobs.length > 0 ? `<span class="activity-dot"></span> ${wsJobs.length} generating` : `${docCount} doc${docCount !== 1 ? 's' : ''}`;
+  let meta;
+  if (wsRunning.length > 0) {
+    meta = `<span class="activity-dot"></span> ${wsRunning.length} generating`;
+  } else if (wsCompleted.length > 0) {
+    meta = `<span class="activity-dot done"></span> ${wsCompleted.length} ready`;
+  } else {
+    meta = `${docCount} doc${docCount !== 1 ? 's' : ''}`;
+  }
   // Fix: Use escaped single quotes for string IDs
   const idAttr = typeof w.id === 'string' ? `'${w.id}'` : w.id;
   return `<div class="workspace-item ${active}" onclick="selectWs(${idAttr})">
@@ -2069,10 +2084,37 @@ function toggleJobs() {
   document.getElementById('jobsToast').classList.toggle('collapsed');
 }
 function updateJobs() {
-  document.getElementById('jobsBadge').textContent = activeJobs.length;
-  document.getElementById('jobsBody').innerHTML = activeJobs.length === 0
-    ? '<div class="jobs-empty">No research running</div>'
-    : activeJobs.map(j => `<div class="job-item"><div class="job-spinner"></div><div class="job-info"><div class="job-name">${j.name}</div><div class="job-progress">${j.wsName ? `<span class="job-workspace">${j.wsName}</span> · ` : ''}~${j.time} min</div></div></div>`).join('');
+  const runningJobs = activeJobs.filter(j => j.status !== 'completed');
+  const completedJobs = activeJobs.filter(j => j.status === 'completed');
+  
+  document.getElementById('jobsBadge').textContent = runningJobs.length || '';
+  
+  if (activeJobs.length === 0) {
+    document.getElementById('jobsBody').innerHTML = '<div class="jobs-empty">No research running</div>';
+  } else {
+    document.getElementById('jobsBody').innerHTML = activeJobs.map(j => {
+      if (j.status === 'completed') {
+        return `<div class="job-item completed" onclick="goToJobWorkspace('${j.wsId}')">
+          <div class="job-done-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg></div>
+          <div class="job-info">
+            <div class="job-name">${j.name}</div>
+            <div class="job-progress">Ready in <span class="job-workspace">${j.wsName}</span> · Click to view</div>
+          </div>
+          <button class="job-dismiss" onclick="event.stopPropagation();dismissJob('${j.name}')" title="Dismiss">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+          </button>
+        </div>`;
+      } else {
+        return `<div class="job-item">
+          <div class="job-spinner"></div>
+          <div class="job-info">
+            <div class="job-name">${j.name}</div>
+            <div class="job-progress">Generating in <span class="job-workspace">${j.wsName || 'workspace'}</span> · Est. ~${j.time} min</div>
+          </div>
+        </div>`;
+      }
+    }).join('');
+  }
   renderSidebar();
 }
 
@@ -2082,7 +2124,8 @@ function addJob(name, skipFakeTimer = false) {
     name, 
     time: Math.floor(Math.random() * 3) + 2, 
     wsId: currentWs.id,
-    wsName: currentWs.name 
+    wsName: currentWs.name,
+    status: 'running'
   };
   activeJobs.push(job);
   updateJobs();
@@ -2092,7 +2135,7 @@ function addJob(name, skipFakeTimer = false) {
   // Only use fake timer if not in live mode or if not skipFakeTimer
   if (!liveMode && !skipFakeTimer) {
     setTimeout(() => {
-      removeJob(name);
+      completeJob(name);
       
       // Add demo document to workspace
       const newDoc = { id: Date.now(), title: name, type: 'Research', date: 'Just now', parentId: null };
@@ -2108,10 +2151,32 @@ function addJob(name, skipFakeTimer = false) {
   }
 }
 
+function completeJob(name) {
+  const job = activeJobs.find(j => j.name === name);
+  if (job) {
+    job.status = 'completed';
+    updateJobs();
+    renderSidebar();
+  }
+}
+
 function removeJob(name) {
   activeJobs = activeJobs.filter(j => j.name !== name);
   updateJobs();
   renderSidebar();
+}
+
+function dismissJob(name) {
+  activeJobs = activeJobs.filter(j => j.name !== name);
+  updateJobs();
+  renderSidebar();
+}
+
+function goToJobWorkspace(wsId) {
+  const ws = workspaces.find(w => w.id === wsId);
+  if (ws) {
+    doSelectWs(wsId);
+  }
 }
 
 // DOC PICKERS
@@ -2314,7 +2379,7 @@ async function pollResearchCompletion(workflowId, runId, jobName) {
     attempts++;
     if (attempts > maxAttempts) {
       clearInterval(poll);
-      removeJob(jobName);
+      completeJob(jobName);
       console.log('Research timed out - reloading anyway');
       await reloadAfterResearch();
       return;
@@ -2327,13 +2392,13 @@ async function pollResearchCompletion(workflowId, runId, jobName) {
       
       if (['completed', 'success', 'finished', 'done', 'succeeded'].includes(runStatus)) {
         clearInterval(poll);
-        removeJob(jobName);
+        completeJob(jobName);
         console.log('Research completed successfully');
         await reloadAfterResearch();
         
       } else if (['failed', 'error', 'cancelled', 'canceled'].includes(runStatus)) {
         clearInterval(poll);
-        removeJob(jobName);
+        completeJob(jobName);
         // Still reload - the agent may have completed the work even if status shows failed
         console.log('Research reported as failed, but reloading anyway in case work was done...');
         await reloadAfterResearch();
