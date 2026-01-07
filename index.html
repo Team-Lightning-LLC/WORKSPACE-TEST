@@ -143,6 +143,7 @@
     .job-info { flex: 1; }
     .job-name { font-size: 13px; font-weight: 500; color: var(--ink); }
     .job-progress { font-size: 11px; color: var(--muted); }
+    .job-workspace { color: var(--accent); font-weight: 500; }
     .jobs-empty { padding: 20px; text-align: center; color: var(--muted); font-size: 12px; }
 
     /* DOCUMENTS */
@@ -2071,12 +2072,18 @@ function updateJobs() {
   document.getElementById('jobsBadge').textContent = activeJobs.length;
   document.getElementById('jobsBody').innerHTML = activeJobs.length === 0
     ? '<div class="jobs-empty">No research running</div>'
-    : activeJobs.map(j => `<div class="job-item"><div class="job-spinner"></div><div class="job-info"><div class="job-name">${j.name}</div><div class="job-progress">~${j.time} min</div></div></div>`).join('');
+    : activeJobs.map(j => `<div class="job-item"><div class="job-spinner"></div><div class="job-info"><div class="job-name">${j.name}</div><div class="job-progress">${j.wsName ? `<span class="job-workspace">${j.wsName}</span> · ` : ''}~${j.time} min</div></div></div>`).join('');
   renderSidebar();
 }
 
 function addJob(name, skipFakeTimer = false) {
-  const job = { id: ++jobId, name, time: Math.floor(Math.random() * 3) + 2, wsId: currentWs.id };
+  const job = { 
+    id: ++jobId, 
+    name, 
+    time: Math.floor(Math.random() * 3) + 2, 
+    wsId: currentWs.id,
+    wsName: currentWs.name 
+  };
   activeJobs.push(job);
   updateJobs();
   renderSidebar();
@@ -2251,6 +2258,10 @@ FINAL STEP - CRITICAL: After uploading the document to the content library, you 
 - Confirm completion by listing which collections now contain the new document
 `;
   } else {
+    // Get current workspace collection ID for assignment
+    const collectionId = typeof currentWs.id === 'string' ? currentWs.id : null;
+    const collectionName = currentWs.name || 'Unknown';
+    
     prompt = `Analysis Type: ${type || 'General'}
 Framework: ${focus}
 Scope: ${scope}
@@ -2259,7 +2270,11 @@ Context: ${context || 'General analysis'}
 
 Generate a comprehensive research document with hyperlinked sources.
 The final output must be a document uploaded to the content object library.
-`;
+${collectionId ? `
+FINAL STEP - CRITICAL: After uploading the document to the content library, you MUST:
+- Add the newly created document to collection ID: ${collectionId} (named "${collectionName}") using the add_to_collection tool
+- Confirm completion by confirming the document was added to the collection
+` : ''}`;
   }
 
   console.log('Starting research:', { focus, scope, rigor, context, hasParent: !!followUpParentDoc });
@@ -2468,6 +2483,10 @@ function startBatchResearch() {
   const rigor = document.getElementById('researchRigor')?.value || 'In Depth';
   const selected = document.querySelectorAll('#batchTypes .research-type.selected');
   
+  // Get current workspace collection ID for assignment
+  const collectionId = typeof currentWs.id === 'string' ? currentWs.id : null;
+  const collectionName = currentWs.name || 'Unknown';
+  
   selected.forEach(async (el) => {
     const name = el.querySelector('.research-type-name').textContent;
     const qty = parseInt(el.querySelector('.stepper-value').textContent.replace('×', ''));
@@ -2485,7 +2504,12 @@ Scope: ${scope}
 Analytical Rigor: ${rigor}
 
 Generate comprehensive research with hyperlinked sources.
-The final output must be a document uploaded to the content object library.`;
+The final output must be a document uploaded to the content object library.
+${collectionId ? `
+FINAL STEP - CRITICAL: After uploading the document to the content library, you MUST:
+- Add the newly created document to collection ID: ${collectionId} (named "${collectionName}") using the add_to_collection tool
+- Confirm completion by confirming the document was added to the collection
+` : ''}`;
           const response = await api.executeResearch(prompt);
           if (response.runId && response.workflowId) {
             pollResearchCompletion(response.workflowId, response.runId, jobName);
