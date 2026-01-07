@@ -1867,7 +1867,7 @@ async function syncDocuments() {
   
   const collectionName = currentWs?.name || 'Unknown';
   const docIds = documents.map(d => d.id).join(', ');
-  const task = `Collection Name: ${collectionName}\nDocuments in the collection: ${docIds}`;
+  const task = `The specific Collection Name for this collection is: "${collectionName}" and the Documents in this collection you will be organizing are: ${docIds}`;
   
   try {
     console.log('Starting document sync for collection:', collectionName);
@@ -1899,8 +1899,10 @@ function pollSyncCompletion(workflowId, runId) {
       const runStatus = status?.status?.toLowerCase();
       console.log('Sync status:', runStatus);
       
-      if (['completed', 'success'].includes(runStatus)) {
+      if (['completed', 'success', 'finished', 'done'].includes(runStatus)) {
         clearInterval(poll);
+        
+        console.log('Sync completed - reloading workspace data...');
         
         // Reload documents to get updated collection memberships
         const objects = await api.loadAllObjects();
@@ -1914,6 +1916,7 @@ function pollSyncCompletion(workflowId, runId) {
           parentTitle: o.parent?.name || o.properties?.parent_document_title || null
         }));
         libraryDocs = allVertesiaDocs;
+        console.log(`Reloaded ${allVertesiaDocs.length} documents`);
         
         // Reload collection members
         const collections = await api.loadCollections() || [];
@@ -1932,16 +1935,18 @@ function pollSyncCompletion(workflowId, runId) {
             .map(id => allVertesiaDocs.find(d => d.id === id))
             .filter(Boolean);
           workspaceDocs[currentWs.id] = documents;
+          console.log(`Workspace now has ${documents.length} documents`);
         }
         
         renderDocuments();
         renderSidebar();
+        renderLibrary();
         
         btn.disabled = false;
         btnText.textContent = 'Sync';
         btn.classList.remove('syncing');
         
-        console.log('Sync completed successfully');
+        console.log('Sync completed and UI refreshed');
         
       } else if (['failed', 'error'].includes(runStatus)) {
         clearInterval(poll);
