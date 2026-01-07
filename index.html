@@ -1077,13 +1077,13 @@ class VertesiaAPI {
     });
   }
 
-  // Execute GeneralChat - for sync and other admin tasks (requires JWT)
-  async executeGeneralChat(task) {
+  // Execute SyncRelationships - syncs child documents to parent collections (requires JWT)
+  async executeSyncRelationships(task) {
     return await this.callWithAuth('/execute/async', {
       method: 'POST',
       body: JSON.stringify({
         type: 'conversation',
-        interaction: 'GeneralChat',
+        interaction: 'SyncRelationships',
         data: { Task: task },
         config: { environment: VERTESIA_CONFIG.ENVIRONMENT_ID, model: VERTESIA_CONFIG.MODEL }
       })
@@ -1866,12 +1866,12 @@ async function syncDocuments() {
   btn.classList.add('syncing');
   
   const collectionName = currentWs?.name || 'Unknown';
-  const syncPrompt = `Use facets on the parent field to find all parent documents with children. For each parent that belongs to a collection, search for its children and add them to the same collection(s) as the parent. Report which children were added to which collections.
-Complete this task only for the specified collection: ${collectionName}`;
+  const docIds = documents.map(d => d.id).join(', ');
+  const task = `Collection Name: ${collectionName}\nDocuments in the collection: ${docIds}`;
   
   try {
     console.log('Starting document sync for collection:', collectionName);
-    const response = await api.executeGeneralChat(syncPrompt);
+    const response = await api.executeSyncRelationships(task);
     console.log('Sync initiated:', response);
     
     if (response && response.runId && response.workflowId) {
