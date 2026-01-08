@@ -99,14 +99,22 @@
     .ws-card-badge.docs { background: var(--soft); color: var(--muted); }
     .ws-card-badge.completed { background: #e8f5e9; color: #2e7d32; }
     
-    /* Workspace Card Actions */
-    .ws-card-actions { position: absolute; top: 8px; right: 8px; display: flex; gap: 2px; opacity: 0; transition: opacity 0.15s; }
-    .ws-card:hover .ws-card-actions { opacity: 1; }
-    .ws-card-action { background: var(--soft); border: none; width: 22px; height: 22px; border-radius: 4px; cursor: pointer; display: flex; align-items: center; justify-content: center; color: var(--muted); transition: all 0.15s; }
-    .ws-card-action:hover { background: var(--border); color: var(--ink); }
-    .ws-card-action.active { color: var(--warning); }
-    .ws-card-action.danger:hover { background: var(--danger-soft); color: var(--danger); }
-    .ws-card-action svg { width: 12px; height: 12px; }
+    /* Workspace Card Actions - Option B */
+    .ws-card-pin { position: absolute; top: 10px; right: 10px; background: none; border: none; cursor: pointer; color: var(--muted); padding: 4px; border-radius: 4px; transition: all 0.15s; }
+    .ws-card-pin:hover { background: var(--soft); }
+    .ws-card-pin.active { color: var(--warning); }
+    .ws-card-pin svg { width: 14px; height: 14px; }
+    .ws-card-menu { position: absolute; top: 8px; right: 36px; opacity: 0; transition: opacity 0.15s; }
+    .ws-card:hover .ws-card-menu { opacity: 1; }
+    .ws-card-menu-btn { background: var(--soft); border: none; width: 24px; height: 24px; border-radius: 4px; cursor: pointer; display: flex; align-items: center; justify-content: center; color: var(--muted); }
+    .ws-card-menu-btn:hover { background: var(--border); color: var(--ink); }
+    .ws-card-dropdown { position: absolute; top: 100%; right: 0; background: white; border: 1px solid var(--border); border-radius: 8px; box-shadow: var(--shadow-lg); min-width: 140px; z-index: 100; display: none; }
+    .ws-card-dropdown.open { display: block; }
+    .ws-card-dropdown-item { padding: 10px 14px; font-size: 13px; cursor: pointer; display: flex; align-items: center; gap: 8px; color: var(--ink); }
+    .ws-card-dropdown-item:hover { background: var(--soft); }
+    .ws-card-dropdown-item.danger { color: var(--danger); }
+    .ws-card-dropdown-item.danger:hover { background: var(--danger-soft); }
+    .ws-card-dropdown-item svg { width: 14px; height: 14px; }
     
     /* Home Grid */
     .home-grid { flex: 1; display: grid; grid-template-columns: 1.5fr 1fr; gap: 20px; min-height: 0; }
@@ -1933,32 +1941,37 @@ function renderHomeWorkspaces() {
     }
     
     const pinClass = w.pinned ? 'active' : '';
-    const completeIcon = w.status === 'completed' 
-      ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>'
-      : '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>';
-    const pin = w.pinned ? '<svg class="pin" width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z"/></svg>' : '';
+    const pinFill = w.pinned ? 'currentColor' : 'none';
     
     html += `
       <div class="ws-card" onclick="goToWorkspaceFromHome(${idAttr})">
-        <div class="ws-card-actions">
-          <button class="ws-card-action ${pinClass}" onclick="event.stopPropagation();homeWsAction('pin',${idAttr})" title="${w.pinned ? 'Unpin' : 'Pin'}">
-            <svg viewBox="0 0 24 24" fill="${w.pinned ? 'currentColor' : 'none'}" stroke="currentColor" stroke-width="2"><path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z"/></svg>
+        <button class="ws-card-pin ${pinClass}" onclick="event.stopPropagation();homeWsAction('pin',${idAttr})" title="${w.pinned ? 'Unpin' : 'Pin'}">
+          <svg viewBox="0 0 24 24" fill="${pinFill}" stroke="currentColor" stroke-width="2"><path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z"/></svg>
+        </button>
+        <div class="ws-card-menu">
+          <button class="ws-card-menu-btn" onclick="event.stopPropagation();toggleHomeWsMenu(${idAttr})">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="1"/><circle cx="12" cy="5" r="1"/><circle cx="12" cy="19" r="1"/></svg>
           </button>
-          <button class="ws-card-action" onclick="event.stopPropagation();homeWsAction('rename',${idAttr})" title="Rename">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
-          </button>
-          <button class="ws-card-action" onclick="event.stopPropagation();homeWsAction('complete',${idAttr})" title="${w.status === 'completed' ? 'Reopen' : 'Mark Complete'}">
-            ${completeIcon}
-          </button>
-          <button class="ws-card-action danger" onclick="event.stopPropagation();homeWsAction('delete',${idAttr})" title="Delete">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
-          </button>
+          <div class="ws-card-dropdown" id="homeWsMenu-${w.id}">
+            <div class="ws-card-dropdown-item" onclick="event.stopPropagation();homeWsAction('rename',${idAttr})">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+              Rename
+            </div>
+            <div class="ws-card-dropdown-item" onclick="event.stopPropagation();homeWsAction('complete',${idAttr})">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+              ${w.status === 'completed' ? 'Reopen' : 'Mark Complete'}
+            </div>
+            <div class="ws-card-dropdown-item danger" onclick="event.stopPropagation();homeWsAction('delete',${idAttr})">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+              Delete
+            </div>
+          </div>
         </div>
         <div class="ws-card-header">
           <div class="ws-card-icon">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
           </div>
-          <div class="ws-card-name">${w.name} ${pin}</div>
+          <div class="ws-card-name">${w.name}</div>
         </div>
         <div class="ws-card-meta">${docCount} doc${docCount !== 1 ? 's' : ''}</div>
         ${badge}
@@ -1969,7 +1982,17 @@ function renderHomeWorkspaces() {
   document.getElementById('homeWorkspacesScroll').innerHTML = html;
 }
 
+function toggleHomeWsMenu(id) {
+  // Close all other menus first
+  document.querySelectorAll('.ws-card-dropdown').forEach(d => d.classList.remove('open'));
+  const menu = document.getElementById('homeWsMenu-' + id);
+  if (menu) menu.classList.toggle('open');
+}
+
 async function homeWsAction(action, id) {
+  // Close any open menus
+  document.querySelectorAll('.ws-card-dropdown').forEach(d => d.classList.remove('open'));
+  
   switch(action) {
     case 'pin':
       togglePin(id);
@@ -1994,6 +2017,13 @@ function goToWorkspaceFromHome(id) {
   showView('workspaces');
   selectWs(id);
 }
+
+// Close home workspace dropdown menus when clicking outside
+document.addEventListener('click', (e) => {
+  if (!e.target.closest('.ws-card-menu')) {
+    document.querySelectorAll('.ws-card-dropdown').forEach(d => d.classList.remove('open'));
+  }
+});
 
 function renderHomeResearchProgress() {
   const jobs = activeJobs;
@@ -2030,7 +2060,7 @@ function renderHomeResearchProgress() {
               <div class="research-meta"><span class="quick-label">Quick Research</span> · Saved to Library</div>
             </div>
             <div class="research-actions">
-              <button class="research-action-btn primary" onclick="event.stopPropagation();viewQuickResearch('${job.name}')">View</button>
+              <button class="research-action-btn primary" onclick="event.stopPropagation();viewResearchDoc('${job.name}')">View</button>
               <button class="research-action-btn" onclick="event.stopPropagation();dismissJobFromHome('${job.name}')" title="Dismiss">
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
               </button>
@@ -2049,7 +2079,7 @@ function renderHomeResearchProgress() {
               <div class="research-meta">Ready in <span class="workspace">${job.wsName}</span></div>
             </div>
             <div class="research-actions">
-              <button class="research-action-btn" onclick="event.stopPropagation();viewQuickResearch('${job.name}')">View</button>
+              <button class="research-action-btn" onclick="event.stopPropagation();viewResearchDoc('${job.name}', ${wsIdAttr})">View</button>
               <button class="research-action-btn primary" onclick="event.stopPropagation();goToJobFromHome(${wsIdAttr})">Go to Workspace</button>
               <button class="research-action-btn" onclick="event.stopPropagation();dismissJobFromHome('${job.name}')" title="Dismiss">
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
@@ -2078,28 +2108,35 @@ function renderHomeResearchProgress() {
   document.getElementById('homeResearchProgress').innerHTML = html;
 }
 
-async function viewQuickResearch(name) {
-  // Find doc in library by name - try multiple matching strategies
-  let doc = libraryDocs.find(d => d.title === name);
+async function viewResearchDoc(jobName, wsId = null) {
+  // Try to find the document by name or get most recent
+  let doc = null;
   
-  // Try partial match if exact match fails
-  if (!doc) {
-    doc = libraryDocs.find(d => d.title.includes(name) || name.includes(d.title));
-  }
-  
-  // Try matching without "Follow-up: " prefix
-  if (!doc && name.startsWith('Follow-up: ')) {
-    const baseName = name.replace('Follow-up: ', '');
+  // First, try to find by exact or partial name match
+  doc = libraryDocs.find(d => d.title === jobName);
+  if (!doc) doc = libraryDocs.find(d => d.title.includes(jobName) || jobName.includes(d.title));
+  if (!doc && jobName.startsWith('Follow-up: ')) {
+    const baseName = jobName.replace('Follow-up: ', '');
     doc = libraryDocs.find(d => d.title.includes(baseName));
   }
   
-  if (doc) {
-    openDocViewer(doc);
-    return;
+  // If workspace research, check workspace docs
+  if (!doc && wsId) {
+    const wsDocs = workspaceDocs[wsId] || [];
+    doc = wsDocs.find(d => d.title === jobName);
+    if (!doc) doc = wsDocs.find(d => d.title.includes(jobName) || jobName.includes(d.title));
+    if (!doc && jobName.startsWith('Follow-up: ')) {
+      const baseName = jobName.replace('Follow-up: ', '');
+      doc = wsDocs.find(d => d.title.includes(baseName));
+    }
+    // If still not found, just get the most recent doc in workspace
+    if (!doc && wsDocs.length > 0) {
+      doc = wsDocs[0]; // First doc is usually most recent
+    }
   }
   
-  // Try refreshing library first (doc might have just been created)
-  if (liveMode) {
+  // Still not found? Try refreshing and get most recent
+  if (!doc && liveMode) {
     try {
       const objects = await api.loadAllObjects();
       allVertesiaDocs = objects.filter(o => o.content?.source).map(o => ({
@@ -2109,30 +2146,37 @@ async function viewQuickResearch(name) {
         date: formatApiDate(o.created_at),
         source: o.content?.source,
         parentId: o.parent?.id || o.parent || o.properties?.parent_document_id || null,
-        parentTitle: o.parent?.name || o.properties?.parent_document_title || null
+        parentTitle: o.parent?.name || o.properties?.parent_document_title || null,
+        created_at: o.created_at
       }));
       libraryDocs = allVertesiaDocs;
       
-      // Try finding again with all strategies
-      doc = libraryDocs.find(d => d.title === name);
-      if (!doc) doc = libraryDocs.find(d => d.title.includes(name) || name.includes(d.title));
-      if (!doc && name.startsWith('Follow-up: ')) {
-        const baseName = name.replace('Follow-up: ', '');
-        doc = libraryDocs.find(d => d.title.includes(baseName));
-      }
+      // Sort by creation date and get most recent
+      const sorted = [...libraryDocs].sort((a, b) => {
+        const dateA = new Date(a.created_at || 0);
+        const dateB = new Date(b.created_at || 0);
+        return dateB - dateA;
+      });
       
-      if (doc) {
-        openDocViewer(doc);
-        return;
+      // Try name match again first
+      doc = sorted.find(d => d.title === jobName);
+      if (!doc) doc = sorted.find(d => d.title.includes(jobName) || jobName.includes(d.title));
+      
+      // If still not found, just get the most recent document
+      if (!doc && sorted.length > 0) {
+        doc = sorted[0];
       }
     } catch (e) {
       console.error('Failed to refresh library:', e);
     }
   }
   
-  // Still not found - open library popup so user can find it
-  openModal('libraryPopup');
-  renderLibrary();
+  // Open the document if found
+  if (doc) {
+    openDocViewer(doc);
+  } else {
+    showAlert('Could not find the document. It may still be processing.', 'Document Not Found');
+  }
 }
 
 function goToJobFromHome(wsId) {
@@ -2161,7 +2205,7 @@ function renderHomeActivity() {
     
     if (isQuick) {
       html += `
-        <div class="activity-item clickable" onclick="viewQuickResearch('${job.name}')">
+        <div class="activity-item clickable" onclick="viewResearchDoc('${job.name}')">
           <div class="activity-icon complete">
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
           </div>
