@@ -1572,6 +1572,7 @@ let chatIsSaved = true; // Track if current chat is saved
 
 // FOLLOW-UP RESEARCH STATE
 let followUpParentDoc = null; // { id, title } when in follow-up mode
+let isQuickResearchMode = false; // true when Quick Research from Home
 
 // Chat persistence
 const WORKSPACE_CHATS_STORAGE_KEY = 'marketlens_workspace_chats';
@@ -2033,32 +2034,60 @@ function renderHomeResearchProgress() {
   let html = '';
   sorted.forEach(job => {
     const wsIdAttr = typeof job.wsId === 'string' ? `'${job.wsId}'` : job.wsId;
+    const isQuick = job.isQuickResearch || !job.wsId;
     
     if (job.status === 'completed') {
-      html += `
-        <div class="research-item completed" onclick="goToJobFromHome(${wsIdAttr})">
-          <div class="research-done">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>
+      if (isQuick) {
+        // Quick Research - no workspace, just View button
+        html += `
+          <div class="research-item completed">
+            <div class="research-done">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>
+            </div>
+            <div class="research-info">
+              <div class="research-name">${job.name}</div>
+              <div class="research-meta"><span class="quick-label">Quick Research</span> · Saved to Library</div>
+            </div>
+            <div class="research-actions">
+              <button class="research-action-btn primary" onclick="event.stopPropagation();viewQuickResearch('${job.name}')">View</button>
+              <button class="research-action-btn" onclick="event.stopPropagation();dismissJobFromHome('${job.name}')" title="Dismiss">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+              </button>
+            </div>
           </div>
-          <div class="research-info">
-            <div class="research-name">${job.name}</div>
-            <div class="research-meta">Ready in <span class="workspace">${job.wsName}</span></div>
+        `;
+      } else {
+        // Workspace research
+        html += `
+          <div class="research-item completed" onclick="goToJobFromHome(${wsIdAttr})">
+            <div class="research-done">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>
+            </div>
+            <div class="research-info">
+              <div class="research-name">${job.name}</div>
+              <div class="research-meta">Ready in <span class="workspace">${job.wsName}</span></div>
+            </div>
+            <div class="research-actions">
+              <button class="research-action-btn" onclick="event.stopPropagation();viewQuickResearch('${job.name}')">View</button>
+              <button class="research-action-btn primary" onclick="event.stopPropagation();goToJobFromHome(${wsIdAttr})">Go to Workspace</button>
+              <button class="research-action-btn" onclick="event.stopPropagation();dismissJobFromHome('${job.name}')" title="Dismiss">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+              </button>
+            </div>
           </div>
-          <div class="research-actions">
-            <button class="research-action-btn primary" onclick="event.stopPropagation();goToJobFromHome(${wsIdAttr})">Go to Workspace</button>
-            <button class="research-action-btn" onclick="event.stopPropagation();dismissJobFromHome('${job.name}')" title="Dismiss">
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-            </button>
-          </div>
-        </div>
-      `;
+        `;
+      }
     } else {
+      // Running job
+      const locationText = isQuick 
+        ? '<span class="quick-label">Quick Research</span>' 
+        : `Generating in <span class="workspace">${job.wsName}</span>`;
       html += `
         <div class="research-item">
           <div class="research-spinner"></div>
           <div class="research-info">
             <div class="research-name">${job.name}</div>
-            <div class="research-meta">Generating in <span class="workspace">${job.wsName}</span> · Est. ~${job.time} min</div>
+            <div class="research-meta">${locationText} · Est. ~${job.time} min</div>
           </div>
         </div>
       `;
@@ -2066,6 +2095,17 @@ function renderHomeResearchProgress() {
   });
   
   document.getElementById('homeResearchProgress').innerHTML = html;
+}
+
+function viewQuickResearch(name) {
+  // Find doc in library by name and open viewer
+  const doc = libraryDocs.find(d => d.title === name || d.title.includes(name));
+  if (doc) {
+    openDocViewer(doc);
+  } else {
+    // Refresh library and try again
+    showAlert('Document is being indexed. Please check the Library in a moment.', 'Document Loading');
+  }
 }
 
 function goToJobFromHome(wsId) {
@@ -2089,31 +2129,50 @@ function renderHomeActivity() {
   
   let html = '';
   completed.forEach(job => {
+    const isQuick = job.isQuickResearch || !job.wsId;
     const wsIdAttr = typeof job.wsId === 'string' ? `'${job.wsId}'` : job.wsId;
-    html += `
-      <div class="activity-item clickable" onclick="goToJobFromHome(${wsIdAttr})">
-        <div class="activity-icon complete">
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+    
+    if (isQuick) {
+      html += `
+        <div class="activity-item clickable" onclick="viewQuickResearch('${job.name}')">
+          <div class="activity-icon complete">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+          </div>
+          <div class="activity-content">
+            <div class="activity-text"><strong>${job.name}</strong> completed</div>
+            <div class="activity-time"><span class="activity-workspace">Quick Research</span> · Saved to Library</div>
+          </div>
+          <svg class="activity-arrow" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
         </div>
-        <div class="activity-content">
-          <div class="activity-text"><strong>${job.name}</strong> completed</div>
-          <div class="activity-time"><span class="activity-workspace">${job.wsName}</span></div>
+      `;
+    } else {
+      html += `
+        <div class="activity-item clickable" onclick="goToJobFromHome(${wsIdAttr})">
+          <div class="activity-icon complete">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+          </div>
+          <div class="activity-content">
+            <div class="activity-text"><strong>${job.name}</strong> completed</div>
+            <div class="activity-time"><span class="activity-workspace">${job.wsName}</span></div>
+          </div>
+          <svg class="activity-arrow" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
         </div>
-        <svg class="activity-arrow" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
-      </div>
-    `;
+      `;
+    }
   });
   
   document.getElementById('homeRecentActivity').innerHTML = html;
 }
 
 function openQuickResearch() {
-  // For now, just open the research modal
-  // In the future, this could be workspace-less research
-  if (!currentWs) {
-    showAlert('Please select or create a workspace first to generate research.', 'No Workspace Selected');
-    return;
-  }
+  // Set quick research mode - no workspace assignment
+  isQuickResearchMode = true;
+  
+  // Update modal for quick research mode
+  document.getElementById('researchModalTitle').textContent = 'Quick Research';
+  document.getElementById('researchModalDesc').textContent = 'Generate research saved directly to your Library (not tied to a workspace).';
+  document.getElementById('researchSubmitBtn').textContent = 'Generate Research';
+  
   openModal('research');
 }
 
@@ -2785,37 +2844,45 @@ function updateJobs() {
   renderSidebar();
 }
 
-function addJob(name, skipFakeTimer = false, workflowId = null, runId = null) {
+function addJob(name, skipFakeTimer = false, workflowId = null, runId = null, isQuickResearch = false) {
   const job = { 
     id: ++jobId, 
     name, 
     time: Math.floor(Math.random() * 3) + 2, 
-    wsId: currentWs.id,
-    wsName: currentWs.name,
+    wsId: isQuickResearch ? null : currentWs?.id,
+    wsName: isQuickResearch ? null : currentWs?.name,
     status: 'running',
     workflowId,
     runId,
-    startedAt: Date.now()
+    startedAt: Date.now(),
+    isQuickResearch
   };
   activeJobs.push(job);
   saveJobs();
   updateJobs();
   renderSidebar();
-  document.getElementById('jobsToast').classList.remove('collapsed');
+  if (currentView === 'home') renderHome();
+  
+  // Only show toast if in workspaces view
+  if (currentView === 'workspaces') {
+    document.getElementById('jobsToast').classList.remove('collapsed');
+  }
   
   // Only use fake timer if not in live mode or if not skipFakeTimer
   if (!liveMode && !skipFakeTimer) {
     setTimeout(() => {
       completeJob(name);
       
-      // Add demo document to workspace
-      const newDoc = { id: Date.now(), title: name, type: 'Research', date: 'Just now', parentId: null };
-      if (!workspaceDocs[job.wsId]) workspaceDocs[job.wsId] = [];
-      workspaceDocs[job.wsId].unshift(newDoc);
-      
-      if (currentWs.id === job.wsId) {
-        documents = workspaceDocs[job.wsId];
-        renderDocuments();
+      // Add demo document to workspace (if not quick research)
+      if (!isQuickResearch && job.wsId) {
+        const newDoc = { id: Date.now(), title: name, type: 'Research', date: 'Just now', parentId: null };
+        if (!workspaceDocs[job.wsId]) workspaceDocs[job.wsId] = [];
+        workspaceDocs[job.wsId].unshift(newDoc);
+        
+        if (currentWs?.id === job.wsId) {
+          documents = workspaceDocs[job.wsId];
+          renderDocuments();
+        }
       }
       renderSidebar();
     }, 5000 + Math.random() * 5000);
@@ -3026,10 +3093,22 @@ FINAL STEP - CRITICAL: After uploading the document to the content library, you 
 - Add the newly created document to ALL of those collections using the add_to_collection tool
 - Confirm completion by listing which collections now contain the new document
 `;
+  } else if (isQuickResearchMode) {
+    // Quick Research - no workspace assignment
+    prompt = `Analysis Type: ${type || 'General'}
+Framework: ${focus}
+Scope: ${scope}
+Analytical Rigor: ${rigor}
+Context: ${context || 'General analysis'}
+
+Generate a comprehensive research document with hyperlinked sources.
+The final output must be a document uploaded to the content object library.
+
+NOTE: This is a Quick Research request. Save the document to the library only - do NOT add it to any collection.`;
   } else {
     // Get current workspace collection ID for assignment
-    const collectionId = typeof currentWs.id === 'string' ? currentWs.id : null;
-    const collectionName = currentWs.name || 'Unknown';
+    const collectionId = typeof currentWs?.id === 'string' ? currentWs.id : null;
+    const collectionName = currentWs?.name || 'Unknown';
     
     prompt = `Analysis Type: ${type || 'General'}
 Framework: ${focus}
@@ -3046,7 +3125,7 @@ FINAL STEP - CRITICAL: After uploading the document to the content library, you 
 ` : ''}`;
   }
 
-  console.log('Starting research:', { focus, scope, rigor, context, hasParent: !!followUpParentDoc });
+  console.log('Starting research:', { focus, scope, rigor, context, hasParent: !!followUpParentDoc, isQuickResearch: isQuickResearchMode });
   
   // Call API if in live mode
   if (liveMode) {
@@ -3055,7 +3134,7 @@ FINAL STEP - CRITICAL: After uploading the document to the content library, you 
       console.log('Research started:', response);
       
       // Add to active jobs with workflow IDs for persistence
-      addJob(jobName, true, response.workflowId, response.runId);
+      addJob(jobName, true, response.workflowId, response.runId, isQuickResearchMode);
       
       // Poll for completion
       if (response.runId && response.workflowId) {
@@ -3068,7 +3147,7 @@ FINAL STEP - CRITICAL: After uploading the document to the content library, you 
     }
   } else {
     // Demo mode
-    addJob(jobName, false);
+    addJob(jobName, false, null, null, isQuickResearchMode);
   }
   
   closeModal('research');
@@ -3161,6 +3240,7 @@ async function reloadAfterResearch() {
 
 function resetResearchModal() {
   followUpParentDoc = null;
+  isQuickResearchMode = false;
   document.getElementById('researchModalTitle').textContent = 'Research';
   document.getElementById('researchModalDesc').textContent = 'Generate a single research document. Output will be added to this workspace.';
   document.getElementById('researchSubmitBtn').textContent = 'Generate Research';
