@@ -100,21 +100,21 @@
     .ws-card-badge.completed { background: #e8f5e9; color: #2e7d32; }
     
     /* Workspace Card Actions - Option B */
-    .ws-card-pin { position: absolute; top: 10px; right: 10px; background: none; border: none; cursor: pointer; color: var(--muted); padding: 4px; border-radius: 4px; transition: all 0.15s; }
+    .ws-card-pin { position: absolute; top: 8px; right: 8px; background: none; border: none; cursor: pointer; color: var(--muted); padding: 3px; border-radius: 4px; transition: all 0.15s; z-index: 2; }
     .ws-card-pin:hover { background: var(--soft); }
     .ws-card-pin.active { color: var(--warning); }
-    .ws-card-pin svg { width: 14px; height: 14px; }
-    .ws-card-menu { position: absolute; top: 8px; right: 36px; opacity: 0; transition: opacity 0.15s; }
+    .ws-card-pin svg { width: 12px; height: 12px; }
+    .ws-card-menu { position: absolute; top: 6px; right: 30px; opacity: 0; transition: opacity 0.15s; z-index: 2; }
     .ws-card:hover .ws-card-menu { opacity: 1; }
-    .ws-card-menu-btn { background: var(--soft); border: none; width: 24px; height: 24px; border-radius: 4px; cursor: pointer; display: flex; align-items: center; justify-content: center; color: var(--muted); }
+    .ws-card-menu-btn { background: var(--soft); border: none; width: 20px; height: 20px; border-radius: 4px; cursor: pointer; display: flex; align-items: center; justify-content: center; color: var(--muted); }
     .ws-card-menu-btn:hover { background: var(--border); color: var(--ink); }
-    .ws-card-dropdown { position: absolute; top: 100%; right: 0; background: white; border: 1px solid var(--border); border-radius: 8px; box-shadow: var(--shadow-lg); min-width: 140px; z-index: 100; display: none; }
+    .ws-card-dropdown { position: fixed; background: white; border: 1px solid var(--border); border-radius: 6px; box-shadow: var(--shadow-lg); min-width: 120px; z-index: 1000; display: none; }
     .ws-card-dropdown.open { display: block; }
-    .ws-card-dropdown-item { padding: 10px 14px; font-size: 13px; cursor: pointer; display: flex; align-items: center; gap: 8px; color: var(--ink); }
+    .ws-card-dropdown-item { padding: 7px 12px; font-size: 12px; cursor: pointer; display: flex; align-items: center; gap: 6px; color: var(--ink); }
     .ws-card-dropdown-item:hover { background: var(--soft); }
     .ws-card-dropdown-item.danger { color: var(--danger); }
     .ws-card-dropdown-item.danger:hover { background: var(--danger-soft); }
-    .ws-card-dropdown-item svg { width: 14px; height: 14px; }
+    .ws-card-dropdown-item svg { width: 12px; height: 12px; }
     
     /* Home Grid */
     .home-grid { flex: 1; display: grid; grid-template-columns: 1.5fr 1fr; gap: 20px; min-height: 0; }
@@ -1557,6 +1557,7 @@ let researchTypes = [
 const JOBS_STORAGE_KEY = 'marketlens_active_jobs';
 let activeJobs = JSON.parse(localStorage.getItem(JOBS_STORAGE_KEY) || '[]');
 let jobId = activeJobs.length > 0 ? Math.max(...activeJobs.map(j => j.id)) : 0;
+const jobPollingIntervals = new Map(); // Track polling intervals by job name
 
 function saveJobs() {
   localStorage.setItem(JOBS_STORAGE_KEY, JSON.stringify(activeJobs));
@@ -1949,8 +1950,8 @@ function renderHomeWorkspaces() {
           <svg viewBox="0 0 24 24" fill="${pinFill}" stroke="currentColor" stroke-width="2"><path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z"/></svg>
         </button>
         <div class="ws-card-menu">
-          <button class="ws-card-menu-btn" onclick="event.stopPropagation();toggleHomeWsMenu(${idAttr})">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="1"/><circle cx="12" cy="5" r="1"/><circle cx="12" cy="19" r="1"/></svg>
+          <button class="ws-card-menu-btn" onclick="event.stopPropagation();toggleHomeWsMenu(${idAttr}, event)">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="1"/><circle cx="12" cy="5" r="1"/><circle cx="12" cy="19" r="1"/></svg>
           </button>
           <div class="ws-card-dropdown" id="homeWsMenu-${w.id}">
             <div class="ws-card-dropdown-item" onclick="event.stopPropagation();homeWsAction('rename',${idAttr})">
@@ -1982,11 +1983,22 @@ function renderHomeWorkspaces() {
   document.getElementById('homeWorkspacesScroll').innerHTML = html;
 }
 
-function toggleHomeWsMenu(id) {
+function toggleHomeWsMenu(id, event) {
   // Close all other menus first
   document.querySelectorAll('.ws-card-dropdown').forEach(d => d.classList.remove('open'));
   const menu = document.getElementById('homeWsMenu-' + id);
-  if (menu) menu.classList.toggle('open');
+  if (menu) {
+    menu.classList.toggle('open');
+    // Position the dropdown near the button
+    if (menu.classList.contains('open') && event) {
+      const btn = event.target.closest('.ws-card-menu-btn');
+      if (btn) {
+        const rect = btn.getBoundingClientRect();
+        menu.style.top = (rect.bottom + 4) + 'px';
+        menu.style.right = (window.innerWidth - rect.right) + 'px';
+      }
+    }
+  }
 }
 
 async function homeWsAction(action, id) {
@@ -2070,7 +2082,7 @@ function renderHomeResearchProgress() {
       } else {
         // Workspace research
         html += `
-          <div class="research-item completed" onclick="goToJobFromHome(${wsIdAttr})">
+          <div class="research-item completed">
             <div class="research-done">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>
             </div>
@@ -2080,7 +2092,7 @@ function renderHomeResearchProgress() {
             </div>
             <div class="research-actions">
               <button class="research-action-btn" onclick="event.stopPropagation();viewResearchDoc('${job.name}', ${wsIdAttr})">View</button>
-              <button class="research-action-btn primary" onclick="event.stopPropagation();goToJobFromHome(${wsIdAttr})">Go to Workspace</button>
+              <button class="research-action-btn primary" onclick="event.stopPropagation();openInWorkspace('${job.name}', ${wsIdAttr})">Open in Workspace</button>
               <button class="research-action-btn" onclick="event.stopPropagation();dismissJobFromHome('${job.name}')" title="Dismiss">
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
               </button>
@@ -2099,6 +2111,12 @@ function renderHomeResearchProgress() {
           <div class="research-info">
             <div class="research-name">${job.name}</div>
             <div class="research-meta">${locationText} · Est. ~${job.time} min</div>
+          </div>
+          <div class="research-actions">
+            <button class="research-action-btn" onclick="event.stopPropagation();cancelResearchJob('${job.name}')" title="Cancel">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+              Cancel
+            </button>
           </div>
         </div>
       `;
@@ -2173,7 +2191,17 @@ async function viewResearchDoc(jobName, wsId = null) {
   
   // Open the document if found
   if (doc) {
-    openDocViewer(doc);
+    // Use viewDocFromAPI for live docs with source URL
+    if (liveMode && doc.source) {
+      viewDocFromAPI(doc);
+    } else if (doc.source && typeof doc.source === 'string' && doc.source.startsWith('#')) {
+      // Direct markdown content
+      openDocViewer(doc.source, doc.title);
+    } else {
+      // Generate placeholder for demo
+      const content = sampleDocuments[doc.title] || generatePlaceholderDoc(doc.title);
+      openDocViewer(content, doc.title);
+    }
   } else {
     showAlert('Could not find the document. It may still be processing.', 'Document Not Found');
   }
@@ -2182,6 +2210,42 @@ async function viewResearchDoc(jobName, wsId = null) {
 function goToJobFromHome(wsId) {
   showView('workspaces');
   selectWs(wsId);
+}
+
+async function openInWorkspace(jobName, wsId) {
+  // Switch to workspaces view and select the workspace
+  showView('workspaces');
+  selectWs(wsId);
+  
+  // Wait a moment for the workspace to load, then open the document
+  setTimeout(async () => {
+    // Find the document by name in workspace docs or library
+    let doc = null;
+    const wsDocs = workspaceDocs[wsId] || [];
+    
+    doc = wsDocs.find(d => d.title === jobName);
+    if (!doc) doc = wsDocs.find(d => d.title.includes(jobName) || jobName.includes(d.title));
+    if (!doc && jobName.startsWith('Follow-up: ')) {
+      const baseName = jobName.replace('Follow-up: ', '');
+      doc = wsDocs.find(d => d.title.includes(baseName));
+    }
+    
+    // Try library docs if not in workspace
+    if (!doc) {
+      doc = libraryDocs.find(d => d.title === jobName);
+      if (!doc) doc = libraryDocs.find(d => d.title.includes(jobName) || jobName.includes(d.title));
+    }
+    
+    // Open the document
+    if (doc) {
+      if (liveMode && doc.source) {
+        viewDocFromAPI(doc);
+      } else {
+        const content = sampleDocuments[doc.title] || generatePlaceholderDoc(doc.title);
+        openDocViewer(content, doc.title);
+      }
+    }
+  }, 300);
 }
 
 function dismissJobFromHome(name) {
@@ -2218,7 +2282,7 @@ function renderHomeActivity() {
       `;
     } else {
       html += `
-        <div class="activity-item clickable" onclick="goToJobFromHome(${wsIdAttr})">
+        <div class="activity-item clickable" onclick="openInWorkspace('${job.name}', ${wsIdAttr})">
           <div class="activity-icon complete">
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
           </div>
@@ -2883,17 +2947,33 @@ function updateJobs() {
     document.getElementById('jobsBody').innerHTML = '<div class="jobs-empty">No research running</div>';
   } else {
     document.getElementById('jobsBody').innerHTML = activeJobs.map(j => {
+      const isQuick = j.isQuickResearch || !j.wsId;
+      const wsIdAttr = typeof j.wsId === 'string' ? `'${j.wsId}'` : j.wsId;
+      
       if (j.status === 'completed') {
-        return `<div class="job-item completed" onclick="goToJobWorkspace('${j.wsId}')">
-          <div class="job-done-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg></div>
-          <div class="job-info">
-            <div class="job-name">${j.name}</div>
-            <div class="job-progress">Ready in <span class="job-workspace">${j.wsName}</span> · Click to view</div>
-          </div>
-          <button class="job-dismiss" onclick="event.stopPropagation();dismissJob('${j.name}')" title="Dismiss">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-          </button>
-        </div>`;
+        if (isQuick) {
+          return `<div class="job-item completed" onclick="viewResearchDoc('${j.name}')">
+            <div class="job-done-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg></div>
+            <div class="job-info">
+              <div class="job-name">${j.name}</div>
+              <div class="job-progress"><span class="job-workspace">Quick Research</span> · Click to view</div>
+            </div>
+            <button class="job-dismiss" onclick="event.stopPropagation();dismissJob('${j.name}')" title="Dismiss">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            </button>
+          </div>`;
+        } else {
+          return `<div class="job-item completed" onclick="openJobDoc('${j.name}', ${wsIdAttr})">
+            <div class="job-done-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg></div>
+            <div class="job-info">
+              <div class="job-name">${j.name}</div>
+              <div class="job-progress">Ready in <span class="job-workspace">${j.wsName}</span> · Click to view</div>
+            </div>
+            <button class="job-dismiss" onclick="event.stopPropagation();dismissJob('${j.name}')" title="Dismiss">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            </button>
+          </div>`;
+        }
       } else {
         return `<div class="job-item">
           <div class="job-spinner"></div>
@@ -2901,6 +2981,9 @@ function updateJobs() {
             <div class="job-name">${j.name}</div>
             <div class="job-progress">Generating in <span class="job-workspace">${j.wsName || 'workspace'}</span> · Est. ~${j.time} min</div>
           </div>
+          <button class="job-dismiss" onclick="event.stopPropagation();cancelResearchJob('${j.name}')" title="Cancel">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+          </button>
         </div>`;
       }
     }).join('');
@@ -2987,14 +3070,49 @@ function goToJobWorkspace(wsId) {
   }
 }
 
+async function openJobDoc(jobName, wsId) {
+  // Select workspace if different
+  if (currentWs?.id !== wsId) {
+    doSelectWs(wsId);
+    // Wait for workspace to load
+    await new Promise(r => setTimeout(r, 200));
+  }
+  
+  // Find and open the document
+  let doc = null;
+  const wsDocs = workspaceDocs[wsId] || [];
+  
+  doc = wsDocs.find(d => d.title === jobName);
+  if (!doc) doc = wsDocs.find(d => d.title.includes(jobName) || jobName.includes(d.title));
+  if (!doc && jobName.startsWith('Follow-up: ')) {
+    const baseName = jobName.replace('Follow-up: ', '');
+    doc = wsDocs.find(d => d.title.includes(baseName));
+  }
+  
+  // Try library docs
+  if (!doc) {
+    doc = libraryDocs.find(d => d.title === jobName);
+    if (!doc) doc = libraryDocs.find(d => d.title.includes(jobName) || jobName.includes(d.title));
+  }
+  
+  if (doc) {
+    if (liveMode && doc.source) {
+      viewDocFromAPI(doc);
+    } else {
+      const content = sampleDocuments[doc.title] || generatePlaceholderDoc(doc.title);
+      openDocViewer(content, doc.title);
+    }
+  }
+}
+
 // Resume polling for any running jobs from previous session
 function resumeJobPolling() {
-  // First, clean up jobs that reference non-existent workspaces
+  // First, clean up jobs that reference non-existent workspaces (but keep Quick Research jobs)
   const validWsIds = workspaces.map(w => w.id);
-  const staleJobs = activeJobs.filter(j => !validWsIds.includes(j.wsId));
+  const staleJobs = activeJobs.filter(j => j.wsId && !j.isQuickResearch && !validWsIds.includes(j.wsId));
   if (staleJobs.length > 0) {
     console.log(`Removing ${staleJobs.length} stale jobs from non-existent workspaces`);
-    activeJobs = activeJobs.filter(j => validWsIds.includes(j.wsId));
+    activeJobs = activeJobs.filter(j => !j.wsId || j.isQuickResearch || validWsIds.includes(j.wsId));
     saveJobs();
     updateJobs();
   }
@@ -3226,6 +3344,7 @@ async function pollResearchCompletion(workflowId, runId, jobName) {
     attempts++;
     if (attempts > maxAttempts) {
       clearInterval(poll);
+      jobPollingIntervals.delete(jobName);
       completeJob(jobName);
       console.log('Research timed out - reloading anyway');
       await reloadAfterResearch();
@@ -3239,12 +3358,14 @@ async function pollResearchCompletion(workflowId, runId, jobName) {
       
       if (['completed', 'success', 'finished', 'done', 'succeeded'].includes(runStatus)) {
         clearInterval(poll);
+        jobPollingIntervals.delete(jobName);
         completeJob(jobName);
         console.log('Research completed successfully');
         await reloadAfterResearch();
         
       } else if (['failed', 'error', 'cancelled', 'canceled'].includes(runStatus)) {
         clearInterval(poll);
+        jobPollingIntervals.delete(jobName);
         completeJob(jobName);
         // Still reload - the agent may have completed the work even if status shows failed
         console.log('Research reported as failed, but reloading anyway in case work was done...');
@@ -3254,6 +3375,38 @@ async function pollResearchCompletion(workflowId, runId, jobName) {
       console.error('Research poll error:', e);
     }
   }, 5000); // Check every 5 seconds
+  
+  // Track the interval so we can cancel it
+  jobPollingIntervals.set(jobName, poll);
+}
+
+async function cancelResearchJob(name) {
+  const confirmed = await showDialog({
+    title: 'Cancel Research',
+    message: `Cancel "${name}"? The backend process may continue, but it will be removed from your view.`,
+    confirmText: 'Cancel Research',
+    cancelText: 'Keep Running',
+    danger: true
+  });
+  
+  if (!confirmed) return;
+  
+  // Stop polling if active
+  const interval = jobPollingIntervals.get(name);
+  if (interval) {
+    clearInterval(interval);
+    jobPollingIntervals.delete(name);
+    console.log('Stopped polling for:', name);
+  }
+  
+  // Remove from active jobs
+  activeJobs = activeJobs.filter(j => j.name !== name);
+  saveJobs();
+  updateJobs();
+  renderSidebar();
+  if (currentView === 'home') renderHome();
+  
+  console.log('Cancelled job:', name);
 }
 
 async function reloadAfterResearch() {
