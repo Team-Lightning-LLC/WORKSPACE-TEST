@@ -506,7 +506,7 @@
 
     <main class="main-content">
       <div class="workspace-header">
-        <h1 class="workspace-title" id="workspaceTitle">Semiconductor Risk <svg class="pin-icon" width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z"/></svg></h1>
+        <h1 class="workspace-title" id="workspaceTitle">Select a Workspace</h1>
         <div class="workspace-actions">
           <button class="action-btn" onclick="openModal('research')">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
@@ -584,35 +584,7 @@
             </div>
           </div>
           <div class="chat-messages" id="chatMessages">
-            <div class="chat-message ai">
-              <div class="message-bubble">I've loaded the contents of this workspace. What would you like to explore?</div>
-              <div class="message-footer">
-                <span class="message-time">MarketLens · Just now</span>
-                <div class="message-actions">
-                  <button class="msg-action-btn" onclick="copyMessage(this)" title="Copy"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></button>
-                </div>
-              </div>
-            </div>
-            <div class="chat-message user">
-              <div class="message-bubble">What's the key risk if Taiwan operations are disrupted?</div>
-              <div class="message-footer">
-                <span class="message-time">You · 2:36 PM</span>
-                <div class="message-actions">
-                  <button class="msg-action-btn" onclick="copyMessage(this)" title="Copy"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></button>
-                </div>
-              </div>
-            </div>
-            <div class="chat-message ai">
-              <div class="message-bubble">Based on the Ecosystem Mapping doc, <strong>TSMC controls 54% of global advanced foundry capacity</strong>. NVIDIA and Apple are most exposed—they source 85%+ of advanced chips from TSMC.<br><br>The Supply Chain Contagion analysis (generating now) will have specific timeline projections.</div>
-              <div class="message-sources">Sources: <a href="#" onclick="event.preventDefault();viewDoc('Semiconductor Ecosystem: TSMC Dependencies')">TSMC Dependencies</a>, <a href="#" onclick="event.preventDefault();viewDoc('Competitive Dynamics: Foundry Market')">Foundry Market Analysis</a></div>
-              <div class="message-footer">
-                <span class="message-time">Scout · 2:37 PM</span>
-                <div class="message-actions">
-                  <button class="msg-action-btn" onclick="copyMessage(this)" title="Copy"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></button>
-                  <button class="msg-action-btn" onclick="quoteMessage(this)" title="Save Quote"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 21c3 0 7-1 7-8V5c0-1.25-.756-2.017-2-2H4c-1.25 0-2 .75-2 1.972V11c0 1.25.75 2 2 2 1 0 1 0 1 1v1c0 1-1 2-2 2s-1 .008-1 1.031V21"/><path d="M15 21c3 0 7-1 7-8V5c0-1.25-.757-2.017-2-2h-4c-1.25 0-2 .75-2 1.972V11c0 1.25.75 2 2 2h.75c0 2.25.25 4-2.75 4v3"/></svg></button>
-                </div>
-              </div>
-            </div>
+            <!-- Populated by JS -->
           </div>
           <div class="chat-input-area">
             <div class="chat-input-wrapper">
@@ -750,7 +722,7 @@
           <p class="modal-desc">Simultaneously run multiple research queries to build more robust insight.</p>
           <div class="form-group">
             <label class="form-label">Topic</label>
-            <textarea class="form-input" rows="2" id="batchTopic" placeholder="e.g., Taiwan disruption impact"></textarea>
+            <textarea class="form-input" rows="2" id="batchTopic" placeholder="e.g., Market analysis, Industry trends"></textarea>
           </div>
           <div class="form-group">
             <label class="form-label">Research Types</label>
@@ -783,7 +755,7 @@
         <p class="modal-desc">Synthesize your workspace documents into a cohesive report.</p>
         <div class="form-group">
           <label class="form-label">Report Title</label>
-          <input type="text" class="form-input" id="reportTitle" value="Semiconductor Supply Chain Risk Report">
+          <input type="text" class="form-input" id="reportTitle" placeholder="e.g., Q1 Market Analysis Report">
         </div>
         <div class="form-group">
           <label class="form-label">Documents <button class="select-all-btn" onclick="toggleAllReportDocs()">Deselect All</button></label>
@@ -1206,57 +1178,14 @@ let allVertesiaDocs = [];      // All documents from API
 let vertesiaCollections = [];  // Collections (workspaces) from API
 let collectionMembers = {};    // collectionId -> [docIds]
 
-// ===== DEMO DATA (FALLBACK) =====
-// DATA
-let workspaces = [
-  { id: 1, name: 'Semiconductor Risk', pinned: true, status: 'active' },
-  { id: 2, name: 'Energy M&A Analysis', pinned: false, status: 'active' },
-  { id: 3, name: 'Q1 Portfolio Strategy', pinned: false, status: 'active' },
-  { id: 4, name: 'Q3 Portfolio Review', pinned: false, status: 'completed' }
-];
+// ===== DATA (populated from API) =====
+let workspaces = [];
+let workspaceDocs = {};
+let currentWs = null;
+let documents = [];
 
-// Documents stored per workspace
-let workspaceDocs = {
-  1: [
-    { id: 1, title: 'Semiconductor Ecosystem: TSMC Dependencies', type: 'Ecosystem Mapping', date: 'Dec 28 · 2:34 PM', parentId: null },
-    { id: 2, title: 'ASML Equipment Dependency Analysis', type: 'Deep Dive', date: 'Dec 28 · 4:15 PM', parentId: 1 },
-    { id: 3, title: 'Competitive Dynamics: Foundry Market', type: "Porter's Five Forces", date: 'Dec 27 · 10:15 AM', parentId: null },
-    { id: 4, title: 'NVDA vs AMD Valuation Comparison', type: 'DCF Valuation', date: 'Dec 26 · 3:45 PM', parentId: null }
-  ],
-  2: [
-    { id: 10, title: 'Chevron Acquisition Analysis', type: 'M&A Analysis', date: 'Dec 27', parentId: null },
-    { id: 11, title: 'Exxon Portfolio Synergies', type: 'Research', date: 'Dec 26', parentId: null },
-    { id: 12, title: 'Energy Sector Consolidation Trends', type: 'Industry Analysis', date: 'Dec 25', parentId: null }
-  ],
-  3: [
-    { id: 20, title: 'Q1 Macro Outlook', type: 'Research', date: 'Dec 28', parentId: null },
-    { id: 21, title: 'Sector Rotation Analysis', type: 'Research', date: 'Dec 27', parentId: null },
-    { id: 22, title: 'Fixed Income Strategy', type: 'Research', date: 'Dec 26', parentId: null },
-    { id: 23, title: 'Equity Allocation Model', type: 'DCF Valuation', date: 'Dec 25', parentId: null },
-    { id: 24, title: 'Risk Parity Assessment', type: 'Risk Modeling', date: 'Dec 24', parentId: null }
-  ],
-  4: [
-    { id: 30, title: 'Q3 Performance Summary', type: 'Report', date: 'Dec 15', parentId: null },
-    { id: 31, title: 'Attribution Analysis', type: 'Research', date: 'Dec 14', parentId: null }
-  ]
-};
-
-let currentWs = workspaces[0];
-let documents = workspaceDocs[1]; // Current workspace's docs
-
-let libraryDocs = [
-  { id: 101, title: "Sub Zero's AI Adoption Positioning", type: 'Research', date: 'Dec 29' },
-  { id: 102, title: 'Integrated Investment Strategy Report', type: 'Report', date: 'Dec 29' },
-  { id: 103, title: 'Intel Foundry Services Analysis', type: 'Research', date: 'Dec 27' },
-  { id: 104, title: 'GlobalFoundries Capacity Report', type: 'Research', date: 'Dec 26' },
-  { id: 105, title: 'Taiwan Geopolitical Risk Assessment', type: 'Research', date: 'Dec 20' }
-];
-let relatedDocs = [
-  { id: 201, title: 'Intel Foundry Services Analysis', match: 'semiconductor manufacturing' },
-  { id: 202, title: 'Taiwan Geopolitical Risk Assessment', match: 'supply chain risk' },
-  { id: 203, title: 'NVIDIA Q3 Earnings Analysis', match: 'NVDA, technology' },
-  { id: 204, title: 'Advanced Packaging Technology Trends', match: 'semiconductor, TSMC' }
-];
+let libraryDocs = [];
+let relatedDocs = [];
 let researchTypes = [
   { id: 'supply', name: 'Supply Chain Contagion', desc: 'Disruption effects' },
   { id: 'risk', name: 'Risk Modeling', desc: 'Portfolio impact' },
@@ -1344,6 +1273,14 @@ document.addEventListener('DOMContentLoaded', async () => {
   updateJobs();
   updateChatUsage();
   renderChatHistory();
+  
+  // Update header and chat with current workspace
+  if (currentWs) {
+    updateHeader();
+    resetChat();
+  } else {
+    document.getElementById('workspaceTitle').textContent = 'Select a Workspace';
+  }
 });
 
 async function loadFromAPI() {
@@ -2212,6 +2149,16 @@ function goToJobWorkspace(wsId) {
 
 // Resume polling for any running jobs from previous session
 function resumeJobPolling() {
+  // First, clean up jobs that reference non-existent workspaces
+  const validWsIds = workspaces.map(w => w.id);
+  const staleJobs = activeJobs.filter(j => !validWsIds.includes(j.wsId));
+  if (staleJobs.length > 0) {
+    console.log(`Removing ${staleJobs.length} stale jobs from non-existent workspaces`);
+    activeJobs = activeJobs.filter(j => validWsIds.includes(j.wsId));
+    saveJobs();
+    updateJobs();
+  }
+  
   const runningJobs = activeJobs.filter(j => j.status === 'running' && j.workflowId && j.runId);
   console.log(`Resuming polling for ${runningJobs.length} jobs from previous session`);
   
@@ -2945,8 +2892,8 @@ function simulateChatResponse(chat) {
   setTimeout(() => {
     const responses = [
       { text: `Based on the ${documents.length} documents in this workspace, I can help analyze the topics covered. What specific aspect would you like to explore?`, sources: [] },
-      { text: `Looking at the research in this workspace, there are several interconnected themes. The semiconductor supply chain analysis shows significant concentration risk, particularly around TSMC's dominance in advanced nodes.`, sources: ['TSMC Dependencies', 'Foundry Market Analysis'] },
-      { text: `The documents suggest a few key risk factors to consider. Would you like me to summarize the main findings or dive deeper into a specific area?`, sources: ['Risk Modeling'] }
+      { text: `I've reviewed the documents in this workspace. There are several interesting themes and connections I can help you explore. Would you like me to summarize the main findings?`, sources: [] },
+      { text: `The documents suggest a few key areas to consider. Would you like me to dive deeper into a specific topic or provide an overview?`, sources: [] }
     ];
     const response = responses[Math.floor(Math.random() * responses.length)];
     addAIResponse(chat, response.text, response.sources);
