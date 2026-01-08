@@ -63,13 +63,113 @@
     .nav-divider { width: 1px; height: 20px; background: rgba(255,255,255,0.2); margin: 0 8px; }
 
     /* HOME VIEW */
-    .home-view { height: calc(100vh - 56px); margin-top: 56px; display: flex; align-items: center; justify-content: center; background: var(--bg); }
-    .home-placeholder { text-align: center; max-width: 400px; padding: 40px; }
-    .home-icon { color: var(--muted); margin-bottom: 20px; }
-    .home-placeholder h2 { font-size: 24px; font-weight: 600; color: var(--ink); margin-bottom: 12px; }
-    .home-placeholder p { color: var(--muted); font-size: 14px; line-height: 1.6; margin-bottom: 8px; }
-    .home-placeholder .home-hint { color: var(--muted); font-size: 13px; margin-top: 20px; padding-top: 20px; border-top: 1px solid var(--border); }
-    .home-placeholder .home-hint strong { color: var(--accent); }
+    .home-view { height: calc(100vh - 56px); margin-top: 56px; background: var(--bg); overflow: hidden; display: flex; flex-direction: column; }
+    .home-main { flex: 1; display: flex; flex-direction: column; padding: 28px 32px 24px; overflow: hidden; max-width: 1400px; width: 100%; margin: 0 auto; }
+    
+    /* Welcome Row */
+    .welcome-row { display: flex; align-items: flex-end; justify-content: space-between; margin-bottom: 24px; flex-shrink: 0; }
+    .welcome { flex: 1; }
+    .greeting { font-size: 26px; font-weight: 400; color: var(--ink); margin-bottom: 4px; }
+    .greeting strong { font-weight: 600; }
+    .subgreeting { font-size: 14px; color: var(--muted); }
+    
+    /* Workspaces Carousel */
+    .workspaces-section { margin-bottom: 20px; flex-shrink: 0; }
+    .home-section-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+    .home-section-title { font-size: 13px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px; }
+    .workspaces-scroll { display: flex; gap: 12px; overflow-x: auto; padding-bottom: 8px; scrollbar-width: thin; scrollbar-color: var(--border) transparent; }
+    .workspaces-scroll::-webkit-scrollbar { height: 6px; }
+    .workspaces-scroll::-webkit-scrollbar-track { background: transparent; }
+    .workspaces-scroll::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+    
+    /* Workspace Card */
+    .ws-card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 16px 20px; min-width: 220px; max-width: 220px; cursor: pointer; transition: all 0.15s ease; flex-shrink: 0; position: relative; }
+    .ws-card:hover { border-color: var(--accent); box-shadow: 0 2px 8px rgba(74, 157, 168, 0.12); }
+    .ws-card.new { border-style: dashed; border-color: var(--border); background: transparent; display: flex; flex-direction: column; align-items: center; justify-content: center; color: var(--muted); min-height: 110px; }
+    .ws-card.new:hover { border-color: var(--accent); color: var(--accent); background: var(--accent-soft); }
+    .ws-card.new svg { margin-bottom: 8px; }
+    .ws-card.new span { font-size: 13px; font-weight: 500; }
+    .ws-card-header { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+    .ws-card-icon { width: 36px; height: 36px; background: var(--accent-soft); border-radius: 8px; display: flex; align-items: center; justify-content: center; color: var(--accent); flex-shrink: 0; }
+    .ws-card-name { font-size: 14px; font-weight: 600; color: var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: flex; align-items: center; gap: 5px; flex: 1; min-width: 0; }
+    .ws-card-name .pin { color: var(--warning); flex-shrink: 0; }
+    .ws-card-meta { font-size: 12px; color: var(--muted); margin-bottom: 10px; }
+    .ws-card-badge { font-size: 11px; padding: 4px 10px; border-radius: 10px; font-weight: 500; display: inline-block; }
+    .ws-card-badge.generating { background: var(--accent-soft); color: var(--accent); }
+    .ws-card-badge.docs { background: var(--soft); color: var(--muted); }
+    .ws-card-badge.completed { background: #e8f5e9; color: #2e7d32; }
+    
+    /* Workspace Card Menu */
+    .ws-card-menu { position: absolute; top: 8px; right: 8px; opacity: 0; transition: opacity 0.15s; }
+    .ws-card:hover .ws-card-menu { opacity: 1; }
+    .ws-card-menu-btn { background: var(--soft); border: none; width: 24px; height: 24px; border-radius: 4px; cursor: pointer; display: flex; align-items: center; justify-content: center; color: var(--muted); }
+    .ws-card-menu-btn:hover { background: var(--border); color: var(--ink); }
+    .ws-card-dropdown { position: absolute; top: 100%; right: 0; background: white; border: 1px solid var(--border); border-radius: 8px; box-shadow: var(--shadow-lg); min-width: 150px; z-index: 100; display: none; }
+    .ws-card-dropdown.open { display: block; }
+    .ws-card-dropdown-item { padding: 10px 14px; font-size: 13px; cursor: pointer; display: flex; align-items: center; gap: 8px; color: var(--ink); }
+    .ws-card-dropdown-item:hover { background: var(--soft); }
+    .ws-card-dropdown-item.danger { color: var(--danger); }
+    .ws-card-dropdown-item.danger:hover { background: var(--danger-soft); }
+    .ws-card-dropdown-item svg { width: 14px; height: 14px; }
+    
+    /* Home Grid */
+    .home-grid { flex: 1; display: grid; grid-template-columns: 1.5fr 1fr; gap: 20px; min-height: 0; }
+    
+    /* Home Cards */
+    .home-card { background: var(--card); border-radius: 12px; border: 1px solid var(--border); display: flex; flex-direction: column; overflow: hidden; }
+    .home-card-header { padding: 14px 18px; border-bottom: 1px solid var(--hair); display: flex; align-items: center; justify-content: space-between; flex-shrink: 0; }
+    .home-card-title { font-size: 13px; font-weight: 600; color: var(--ink); display: flex; align-items: center; gap: 8px; }
+    .home-card-title svg { color: var(--muted); }
+    .home-card-title .count { background: var(--accent); color: white; font-size: 11px; padding: 2px 7px; border-radius: 10px; font-weight: 600; }
+    .home-card-body { flex: 1; overflow-y: auto; scrollbar-width: thin; scrollbar-color: var(--border) transparent; }
+    .home-card-body::-webkit-scrollbar { width: 6px; }
+    .home-card-body::-webkit-scrollbar-track { background: transparent; }
+    .home-card-body::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+    .home-card-empty { padding: 24px; text-align: center; color: var(--muted); font-size: 13px; }
+    
+    /* Right Column */
+    .home-right-col { display: flex; flex-direction: column; gap: 16px; min-height: 0; }
+    
+    /* Quick Research Button */
+    .quick-research-btn { display: flex; align-items: center; justify-content: center; gap: 10px; padding: 14px 20px; background: var(--accent); color: white; border: none; border-radius: 10px; font-size: 14px; font-weight: 600; cursor: pointer; transition: all 0.15s; flex-shrink: 0; }
+    .quick-research-btn:hover { background: var(--accent-hover); }
+    
+    /* Research Progress Items */
+    .research-item { padding: 12px 18px; display: flex; align-items: center; gap: 12px; border-bottom: 1px solid var(--hair); }
+    .research-item:last-child { border-bottom: none; }
+    .research-item.completed { background: var(--accent-soft); cursor: pointer; }
+    .research-item.completed:hover { background: #d5eaed; }
+    .research-spinner { width: 18px; height: 18px; border: 2px solid var(--border); border-top-color: var(--accent); border-radius: 50%; animation: spin 1s linear infinite; flex-shrink: 0; }
+    .research-done { width: 18px; height: 18px; background: var(--accent); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; flex-shrink: 0; }
+    .research-done svg { width: 10px; height: 10px; }
+    .research-info { flex: 1; min-width: 0; }
+    .research-name { font-size: 13px; font-weight: 500; color: var(--ink); margin-bottom: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .research-meta { font-size: 11px; color: var(--muted); }
+    .research-meta .workspace { color: var(--accent); font-weight: 500; }
+    .research-meta .quick-label { color: var(--accent); font-weight: 500; }
+    .research-actions { display: flex; gap: 4px; margin-left: auto; }
+    .research-action-btn { background: none; border: none; padding: 6px 10px; cursor: pointer; color: var(--muted); font-size: 11px; border-radius: 4px; display: flex; align-items: center; gap: 4px; transition: all 0.15s; }
+    .research-action-btn:hover { background: rgba(0,0,0,0.05); color: var(--ink); }
+    .research-action-btn.primary { background: var(--accent); color: white; }
+    .research-action-btn.primary:hover { background: var(--accent-hover); }
+    
+    /* Activity Items */
+    .activity-item { padding: 12px 18px; display: flex; align-items: flex-start; gap: 10px; border-bottom: 1px solid var(--hair); }
+    .activity-item:last-child { border-bottom: none; }
+    .activity-item.clickable { cursor: pointer; transition: background 0.15s; }
+    .activity-item.clickable:hover { background: var(--soft); }
+    .activity-arrow { color: var(--muted); opacity: 0; transition: opacity 0.15s; flex-shrink: 0; margin-top: 2px; }
+    .activity-item.clickable:hover .activity-arrow { opacity: 1; }
+    .activity-icon { width: 28px; height: 28px; border-radius: 6px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+    .activity-icon.complete { background: var(--accent-soft); color: var(--accent); }
+    .activity-icon.added { background: #e3f2fd; color: #1976d2; }
+    .activity-icon.research { background: #f3e5f5; color: #7b1fa2; }
+    .activity-icon.workspace { background: var(--warning-soft); color: #b45309; }
+    .activity-content { flex: 1; min-width: 0; }
+    .activity-text { font-size: 12px; color: var(--ink); margin-bottom: 2px; }
+    .activity-text strong { font-weight: 600; }
+    .activity-time { font-size: 11px; color: var(--muted); }
+    .activity-workspace { color: var(--accent); font-weight: 500; }
 
     .app-container { display: flex; height: calc(100vh - 56px); margin-top: 56px; }
 
@@ -522,8 +622,8 @@
       <span class="brand-name">MarketLens</span>
     </div>
     <nav class="header-nav">
-      <button class="nav-tab" id="navHome" onclick="showView('home')">Home</button>
-      <button class="nav-tab active" id="navWorkspaces" onclick="showView('workspaces')">Workspaces</button>
+      <button class="nav-tab active" id="navHome" onclick="showView('home')">Home</button>
+      <button class="nav-tab" id="navWorkspaces" onclick="showView('workspaces')">Workspaces</button>
       <span class="nav-divider"></span>
       <button class="nav-tab" onclick="openModal('profileModal')">Profile</button>
       <button class="nav-tab" onclick="openModal('supportModal')">Support</button>
@@ -531,25 +631,69 @@
     </nav>
   </header>
 
-  <!-- Home View (placeholder) -->
-  <div class="home-view" id="homeView" style="display: none;">
-    <div class="home-placeholder">
-      <div class="home-icon">
-        <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-          <polyline points="14 2 14 8 20 8"/>
-          <line x1="16" y1="13" x2="8" y2="13"/>
-          <line x1="16" y1="17" x2="8" y2="17"/>
-          <polyline points="10 9 9 9 8 9"/>
-        </svg>
+  <!-- Home View -->
+  <div class="home-view" id="homeView">
+    <main class="home-main">
+      <!-- Welcome Row -->
+      <div class="welcome-row">
+        <div class="welcome">
+          <h1 class="greeting" id="homeGreeting">Welcome Back</h1>
+          <p class="subgreeting" id="homeSubgreeting">Loading your research...</p>
+        </div>
       </div>
-      <h2>Library Experience</h2>
-      <p>The full library-first research experience is coming soon.</p>
-      <p class="home-hint">For now, use <strong>Workspaces</strong> to organize and generate research.</p>
-    </div>
+
+      <!-- Workspaces Horizontal Scroll -->
+      <section class="workspaces-section">
+        <div class="home-section-header">
+          <span class="home-section-title">Workspaces</span>
+        </div>
+        <div class="workspaces-scroll" id="homeWorkspacesScroll">
+          <!-- Rendered by JS -->
+        </div>
+      </section>
+
+      <!-- Main Grid -->
+      <div class="home-grid">
+        <!-- Research Progress Card -->
+        <div class="home-card">
+          <div class="home-card-header">
+            <h2 class="home-card-title">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+              Research Progress
+              <span class="count" id="homeJobsCount">0</span>
+            </h2>
+          </div>
+          <div class="home-card-body" id="homeResearchProgress">
+            <div class="home-card-empty">No research jobs</div>
+          </div>
+        </div>
+
+        <!-- Right Column -->
+        <div class="home-right-col">
+          <!-- Quick Research Button -->
+          <button class="quick-research-btn" onclick="openQuickResearch()">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            Quick Research
+          </button>
+          
+          <!-- Recent Activity -->
+          <div class="home-card" style="flex:1;">
+            <div class="home-card-header">
+              <h2 class="home-card-title">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+                Recent Activity
+              </h2>
+            </div>
+            <div class="home-card-body" id="homeRecentActivity">
+              <div class="home-card-empty">No recent activity</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
   </div>
 
-  <div class="app-container" id="appContainer">
+  <div class="app-container" id="appContainer" style="display: none;">
     <aside class="sidebar">
       <div class="sidebar-header">
         <button class="new-workspace-btn" onclick="openModal('newWorkspace')">
@@ -1482,6 +1626,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   updateJobs();
   updateChatUsage();
   renderChatHistory();
+  renderHome(); // Render home dashboard
   
   // Update header and chat with current workspace
   if (currentWs) {
@@ -1667,7 +1812,7 @@ function closeModal(id) {
 }
 
 // VIEW SWITCHING
-let currentView = 'workspaces';
+let currentView = 'home';
 function showView(view) {
   currentView = view;
   const homeView = document.getElementById('homeView');
@@ -1680,6 +1825,7 @@ function showView(view) {
     appContainer.style.display = 'none';
     navHome.classList.add('active');
     navWorkspaces.classList.remove('active');
+    renderHome();
   } else {
     homeView.style.display = 'none';
     appContainer.style.display = 'flex';
@@ -1687,6 +1833,296 @@ function showView(view) {
     navWorkspaces.classList.add('active');
   }
 }
+
+// ===== HOME VIEW RENDERING =====
+
+// Time-based greetings
+const homeGreetings = {
+  earlyMorning: [
+    { main: "Early Bird Gets the Alpha", sub: "The markets aren't even awake yet." },
+    { main: "Dawn Patrol", sub: "Coffee's brewing. Research is waiting." },
+    { main: "Pre-Market Prep", sub: "Get ahead while others sleep." }
+  ],
+  morning: [
+    { main: "Morning Coffee & Research", sub: "Let's see what needs your attention." },
+    { main: "Rise & Analyze", sub: "Fresh day, fresh insights." },
+    { main: "Good Morning, Analyst", sub: "Your research workspace is ready." },
+    { main: "Markets Open, Mind Sharp", sub: "What are we diving into today?" }
+  ],
+  afternoon: [
+    { main: "Afternoon Deep Dive", sub: "Peak productivity hours. Let's go." },
+    { main: "Mid-Day Momentum", sub: "Keep the research rolling." },
+    { main: "Post-Lunch Analysis", sub: "Time to turn caffeine into insights." }
+  ],
+  evening: [
+    { main: "Evening Research Session", sub: "Wrapping up or just getting started?" },
+    { main: "Golden Hour Analysis", sub: "Some of the best thinking happens now." },
+    { main: "After Hours", sub: "The quiet time for deep work." }
+  ],
+  night: [
+    { main: "Night Owl Mode", sub: "When the world sleeps, analysts think." },
+    { main: "Burning the Midnight Oil", sub: "Great research doesn't clock out." },
+    { main: "Late Night Insights", sub: "The best ideas come at odd hours." },
+    { main: "After Midnight", sub: "Dedication looks good on you." }
+  ]
+};
+
+function getTimeCategory() {
+  const hour = new Date().getHours();
+  if (hour >= 5 && hour < 8) return 'earlyMorning';
+  if (hour >= 8 && hour < 12) return 'morning';
+  if (hour >= 12 && hour < 17) return 'afternoon';
+  if (hour >= 17 && hour < 21) return 'evening';
+  return 'night';
+}
+
+function renderHome() {
+  renderHomeGreeting();
+  renderHomeWorkspaces();
+  renderHomeResearchProgress();
+  renderHomeActivity();
+}
+
+function renderHomeGreeting() {
+  const category = getTimeCategory();
+  const options = homeGreetings[category];
+  const choice = options[Math.floor(Math.random() * options.length)];
+  
+  document.getElementById('homeGreeting').textContent = choice.main;
+  
+  // Dynamic subgreeting with actual stats
+  const running = activeJobs.filter(j => j.status === 'running').length;
+  const completed = activeJobs.filter(j => j.status === 'completed').length;
+  let sub = choice.sub;
+  if (running > 0 || completed > 0) {
+    const parts = [];
+    if (running > 0) parts.push(`${running} research job${running !== 1 ? 's' : ''} running`);
+    if (completed > 0) parts.push(`${completed} completed`);
+    sub = parts.join(' · ');
+  }
+  document.getElementById('homeSubgreeting').textContent = sub;
+}
+
+function renderHomeWorkspaces() {
+  let html = `
+    <div class="ws-card new" onclick="openModal('newWorkspace')">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+      <span>New Workspace</span>
+    </div>
+  `;
+  
+  // Sort: pinned first, then by most recent activity
+  const sorted = [...workspaces].sort((a, b) => {
+    if (a.pinned && !b.pinned) return -1;
+    if (!a.pinned && b.pinned) return 1;
+    return 0;
+  });
+  
+  sorted.forEach(w => {
+    const wsRunning = activeJobs.filter(j => j.wsId === w.id && j.status === 'running');
+    const wsCompleted = activeJobs.filter(j => j.wsId === w.id && j.status === 'completed');
+    const docCount = (workspaceDocs[w.id] || []).length;
+    const idAttr = typeof w.id === 'string' ? `'${w.id}'` : w.id;
+    
+    let badge = '';
+    if (wsRunning.length > 0) {
+      badge = `<span class="ws-card-badge generating">${wsRunning.length} generating</span>`;
+    } else if (wsCompleted.length > 0) {
+      badge = `<span class="ws-card-badge completed">${wsCompleted.length} ready</span>`;
+    } else if (w.status === 'completed') {
+      badge = `<span class="ws-card-badge docs">Completed</span>`;
+    } else {
+      badge = `<span class="ws-card-badge docs">${docCount} doc${docCount !== 1 ? 's' : ''}</span>`;
+    }
+    
+    const pin = w.pinned ? '<svg class="pin" width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z"/></svg>' : '';
+    
+    html += `
+      <div class="ws-card" onclick="goToWorkspaceFromHome(${idAttr})">
+        <div class="ws-card-menu">
+          <button class="ws-card-menu-btn" onclick="event.stopPropagation();toggleHomeWsMenu(${idAttr})">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="1"/><circle cx="12" cy="5" r="1"/><circle cx="12" cy="19" r="1"/></svg>
+          </button>
+          <div class="ws-card-dropdown" id="homeWsMenu-${w.id}">
+            <div class="ws-card-dropdown-item" onclick="event.stopPropagation();homeWsAction('pin',${idAttr})">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z"/></svg>
+              ${w.pinned ? 'Unpin' : 'Pin'}
+            </div>
+            <div class="ws-card-dropdown-item" onclick="event.stopPropagation();homeWsAction('rename',${idAttr})">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+              Rename
+            </div>
+            <div class="ws-card-dropdown-item" onclick="event.stopPropagation();homeWsAction('complete',${idAttr})">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+              ${w.status === 'completed' ? 'Reopen' : 'Mark Complete'}
+            </div>
+            <div class="ws-card-dropdown-item danger" onclick="event.stopPropagation();homeWsAction('delete',${idAttr})">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+              Delete
+            </div>
+          </div>
+        </div>
+        <div class="ws-card-header">
+          <div class="ws-card-icon">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+          </div>
+          <div class="ws-card-name">${w.name} ${pin}</div>
+        </div>
+        <div class="ws-card-meta">${docCount} doc${docCount !== 1 ? 's' : ''}</div>
+        ${badge}
+      </div>
+    `;
+  });
+  
+  document.getElementById('homeWorkspacesScroll').innerHTML = html;
+}
+
+function toggleHomeWsMenu(id) {
+  // Close all other menus first
+  document.querySelectorAll('.ws-card-dropdown').forEach(d => d.classList.remove('open'));
+  const menu = document.getElementById('homeWsMenu-' + id);
+  if (menu) menu.classList.toggle('open');
+}
+
+async function homeWsAction(action, id) {
+  // Close menu
+  document.querySelectorAll('.ws-card-dropdown').forEach(d => d.classList.remove('open'));
+  
+  switch(action) {
+    case 'pin':
+      togglePin(id);
+      renderHomeWorkspaces();
+      break;
+    case 'rename':
+      await renameWs(id);
+      renderHomeWorkspaces();
+      break;
+    case 'complete':
+      toggleComplete(id);
+      renderHomeWorkspaces();
+      break;
+    case 'delete':
+      await deleteWs(id);
+      renderHomeWorkspaces();
+      break;
+  }
+}
+
+function goToWorkspaceFromHome(id) {
+  showView('workspaces');
+  selectWs(id);
+}
+
+function renderHomeResearchProgress() {
+  const jobs = activeJobs;
+  const count = jobs.length;
+  document.getElementById('homeJobsCount').textContent = count;
+  
+  if (count === 0) {
+    document.getElementById('homeResearchProgress').innerHTML = '<div class="home-card-empty">No research jobs</div>';
+    return;
+  }
+  
+  // Show completed first, then running
+  const sorted = [...jobs].sort((a, b) => {
+    if (a.status === 'completed' && b.status !== 'completed') return -1;
+    if (a.status !== 'completed' && b.status === 'completed') return 1;
+    return 0;
+  });
+  
+  let html = '';
+  sorted.forEach(job => {
+    const wsIdAttr = typeof job.wsId === 'string' ? `'${job.wsId}'` : job.wsId;
+    
+    if (job.status === 'completed') {
+      html += `
+        <div class="research-item completed" onclick="goToJobFromHome(${wsIdAttr})">
+          <div class="research-done">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>
+          </div>
+          <div class="research-info">
+            <div class="research-name">${job.name}</div>
+            <div class="research-meta">Ready in <span class="workspace">${job.wsName}</span></div>
+          </div>
+          <div class="research-actions">
+            <button class="research-action-btn primary" onclick="event.stopPropagation();goToJobFromHome(${wsIdAttr})">Go to Workspace</button>
+            <button class="research-action-btn" onclick="event.stopPropagation();dismissJobFromHome('${job.name}')" title="Dismiss">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            </button>
+          </div>
+        </div>
+      `;
+    } else {
+      html += `
+        <div class="research-item">
+          <div class="research-spinner"></div>
+          <div class="research-info">
+            <div class="research-name">${job.name}</div>
+            <div class="research-meta">Generating in <span class="workspace">${job.wsName}</span> · Est. ~${job.time} min</div>
+          </div>
+        </div>
+      `;
+    }
+  });
+  
+  document.getElementById('homeResearchProgress').innerHTML = html;
+}
+
+function goToJobFromHome(wsId) {
+  showView('workspaces');
+  selectWs(wsId);
+}
+
+function dismissJobFromHome(name) {
+  dismissJob(name);
+  // dismissJob now handles renderHome() if on home view
+}
+
+function renderHomeActivity() {
+  // Show completed jobs as activity
+  const completed = activeJobs.filter(j => j.status === 'completed');
+  
+  if (completed.length === 0) {
+    document.getElementById('homeRecentActivity').innerHTML = '<div class="home-card-empty">No recent activity</div>';
+    return;
+  }
+  
+  let html = '';
+  completed.forEach(job => {
+    const wsIdAttr = typeof job.wsId === 'string' ? `'${job.wsId}'` : job.wsId;
+    html += `
+      <div class="activity-item clickable" onclick="goToJobFromHome(${wsIdAttr})">
+        <div class="activity-icon complete">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+        </div>
+        <div class="activity-content">
+          <div class="activity-text"><strong>${job.name}</strong> completed</div>
+          <div class="activity-time"><span class="activity-workspace">${job.wsName}</span></div>
+        </div>
+        <svg class="activity-arrow" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
+      </div>
+    `;
+  });
+  
+  document.getElementById('homeRecentActivity').innerHTML = html;
+}
+
+function openQuickResearch() {
+  // For now, just open the research modal
+  // In the future, this could be workspace-less research
+  if (!currentWs) {
+    showAlert('Please select or create a workspace first to generate research.', 'No Workspace Selected');
+    return;
+  }
+  openModal('research');
+}
+
+// Close home workspace menus when clicking outside
+document.addEventListener('click', (e) => {
+  if (!e.target.closest('.ws-card-menu')) {
+    document.querySelectorAll('.ws-card-dropdown').forEach(d => d.classList.remove('open'));
+  }
+});
 
 // LOGOUT
 function doLogout() {
@@ -2393,6 +2829,7 @@ function completeJob(name) {
     saveJobs();
     updateJobs();
     renderSidebar();
+    if (currentView === 'home') renderHome();
   }
 }
 
@@ -2401,6 +2838,7 @@ function removeJob(name) {
   saveJobs();
   updateJobs();
   renderSidebar();
+  if (currentView === 'home') renderHome();
 }
 
 function dismissJob(name) {
@@ -2408,6 +2846,7 @@ function dismissJob(name) {
   saveJobs();
   updateJobs();
   renderSidebar();
+  if (currentView === 'home') renderHome();
 }
 
 function goToJobWorkspace(wsId) {
