@@ -55,10 +55,20 @@
     .logo-section { display: flex; align-items: center; gap: 10px; }
     .logo { width: 32px; height: 32px; background: var(--accent); border-radius: 8px; display: flex; align-items: center; justify-content: center; color: white; font-weight: 700; font-size: 12px; }
     .brand-name { color: white; font-size: 17px; font-weight: 600; }
-    .header-nav { display: flex; gap: 4px; }
-    .nav-tab { padding: 6px 14px; color: rgba(255,255,255,0.65); font-size: 13px; font-weight: 500; border-radius: 6px; cursor: pointer; border: none; background: none; }
+    .header-nav { display: flex; gap: 4px; align-items: center; }
+    .nav-tab { padding: 6px 14px; color: rgba(255,255,255,0.65); font-size: 13px; font-weight: 500; border-radius: 6px; cursor: pointer; border: none; background: none; transition: all 0.15s; }
     .nav-tab:hover { color: white; background: rgba(255,255,255,0.1); }
     .nav-tab.active { color: white; background: rgba(255,255,255,0.15); }
+    .nav-divider { width: 1px; height: 20px; background: rgba(255,255,255,0.2); margin: 0 8px; }
+
+    /* HOME VIEW */
+    .home-view { height: calc(100vh - 56px); margin-top: 56px; display: flex; align-items: center; justify-content: center; background: var(--bg); }
+    .home-placeholder { text-align: center; max-width: 400px; padding: 40px; }
+    .home-icon { color: var(--muted); margin-bottom: 20px; }
+    .home-placeholder h2 { font-size: 24px; font-weight: 600; color: var(--ink); margin-bottom: 12px; }
+    .home-placeholder p { color: var(--muted); font-size: 14px; line-height: 1.6; margin-bottom: 8px; }
+    .home-placeholder .home-hint { color: var(--muted); font-size: 13px; margin-top: 20px; padding-top: 20px; border-top: 1px solid var(--border); }
+    .home-placeholder .home-hint strong { color: var(--accent); }
 
     .app-container { display: flex; height: calc(100vh - 56px); margin-top: 56px; }
 
@@ -275,6 +285,50 @@
     .modal-close:hover { background: var(--soft); }
     .modal-body { padding: 0 20px 20px; overflow-y: auto; max-height: calc(85vh - 130px); }
     .modal-footer { padding: 14px 20px; border-top: 1px solid var(--hair); display: flex; justify-content: flex-end; gap: 8px; }
+    .modal.modal-sm { max-width: 380px; }
+    
+    /* PROFILE MODAL */
+    .profile-avatar { width: 80px; height: 80px; background: var(--soft); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 20px; color: var(--muted); }
+    .profile-form { display: flex; flex-direction: column; gap: 14px; margin-bottom: 20px; }
+    .form-field { display: flex; flex-direction: column; gap: 6px; }
+    .form-field label { font-size: 12px; font-weight: 600; color: var(--ink); }
+    .form-field input { padding: 10px 12px; border: 1px solid var(--border); border-radius: 8px; font-size: 13px; font-family: inherit; }
+    .form-field input:focus { outline: none; border-color: var(--accent); }
+    .profile-section { border-top: 1px solid var(--hair); padding-top: 16px; }
+    .profile-section h4 { font-size: 13px; font-weight: 600; margin-bottom: 12px; }
+    .profile-toggle { display: flex; align-items: center; justify-content: space-between; padding: 8px 0; font-size: 13px; color: var(--ink); }
+    .toggle-switch { position: relative; width: 40px; height: 22px; }
+    .toggle-switch input { opacity: 0; width: 0; height: 0; }
+    .toggle-slider { position: absolute; cursor: pointer; inset: 0; background: var(--border); border-radius: 22px; transition: 0.2s; }
+    .toggle-slider:before { position: absolute; content: ""; height: 16px; width: 16px; left: 3px; bottom: 3px; background: white; border-radius: 50%; transition: 0.2s; }
+    .toggle-switch input:checked + .toggle-slider { background: var(--accent); }
+    .toggle-switch input:checked + .toggle-slider:before { transform: translateX(18px); }
+
+    /* SUPPORT MODAL */
+    .support-body { padding-top: 10px !important; }
+    .help-options { display: flex; flex-direction: column; gap: 8px; }
+    .help-option { display: flex; align-items: center; gap: 14px; padding: 14px; border: 1px solid var(--border); border-radius: 10px; text-decoration: none; color: inherit; transition: all 0.15s; }
+    .help-option:hover { border-color: var(--accent); background: var(--accent-soft); }
+    .help-option-icon { width: 40px; height: 40px; background: var(--soft); border-radius: 10px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+    .help-option-icon svg { width: 20px; height: 20px; color: var(--accent); }
+    .help-option-content { flex: 1; min-width: 0; }
+    .help-option-content h4 { font-size: 14px; font-weight: 600; margin-bottom: 2px; }
+    .help-option-content p { font-size: 12px; color: var(--muted); margin: 0; }
+    .help-option-arrow { color: var(--muted); font-size: 16px; }
+    .help-divider { display: flex; align-items: center; gap: 12px; margin: 20px 0; color: var(--muted); font-size: 12px; }
+    .help-divider::before, .help-divider::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+    .contact-info { text-align: center; font-size: 13px; color: var(--muted); }
+    .contact-info a { color: var(--accent); text-decoration: none; font-weight: 500; }
+    .contact-info a:hover { text-decoration: underline; }
+
+    /* LOGOFF MODAL */
+    .logoff-body { text-align: center; padding: 30px 20px !important; }
+    .logoff-icon { color: var(--muted); margin-bottom: 16px; }
+    .logoff-body h3 { font-size: 18px; font-weight: 600; margin-bottom: 8px; }
+    .logoff-body p { font-size: 14px; color: var(--muted); margin-bottom: 24px; }
+    .logoff-actions { display: flex; gap: 10px; justify-content: center; }
+    .btn.danger { background: var(--danger); color: white; border-color: var(--danger); }
+    .btn.danger:hover { background: #a82f24; }
     
     .form-group { margin-bottom: 14px; }
     .form-label { display: flex; align-items: center; justify-content: space-between; font-size: 12px; font-weight: 600; color: var(--ink); margin-bottom: 6px; }
@@ -445,13 +499,6 @@
     @keyframes spin { to { transform: rotate(360deg); } }
     .loading-text { margin-top: 14px; color: var(--muted); font-size: 13px; }
     
-    /* API Status Badge */
-    .api-status { display: flex; align-items: center; gap: 6px; font-size: 11px; color: rgba(255,255,255,0.7); background: rgba(255,255,255,0.1); padding: 5px 10px; border-radius: 12px; margin-right: 10px; }
-    .api-dot { width: 7px; height: 7px; border-radius: 50%; }
-    .api-dot.connected { background: #4a9d6e; }
-    .api-dot.error { background: #c0392b; }
-    .api-dot.loading { background: #d4a017; animation: pulse 1s infinite; }
-    
     /* Thinking indicator */
     .thinking-indicator { display: flex; align-items: center; gap: 8px; padding: 12px 14px; background: var(--soft); border-radius: 12px; font-size: 13px; color: var(--muted); }
     .thinking-dots { display: flex; gap: 4px; }
@@ -474,16 +521,34 @@
       <span class="brand-name">MarketLens</span>
     </div>
     <nav class="header-nav">
-      <div class="api-status">
-        <div class="api-dot loading" id="apiDot"></div>
-        <span id="apiStatusText">Connecting...</span>
-      </div>
-      <button class="nav-tab active">Workspaces</button>
-      <button class="nav-tab">Library</button>
+      <button class="nav-tab" id="navHome" onclick="showView('home')">Home</button>
+      <button class="nav-tab active" id="navWorkspaces" onclick="showView('workspaces')">Workspaces</button>
+      <span class="nav-divider"></span>
+      <button class="nav-tab" onclick="openModal('profileModal')">Profile</button>
+      <button class="nav-tab" onclick="openModal('supportModal')">Support</button>
+      <button class="nav-tab" onclick="openModal('logoffModal')">Log out</button>
     </nav>
   </header>
 
-  <div class="app-container">
+  <!-- Home View (placeholder) -->
+  <div class="home-view" id="homeView" style="display: none;">
+    <div class="home-placeholder">
+      <div class="home-icon">
+        <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+          <polyline points="14 2 14 8 20 8"/>
+          <line x1="16" y1="13" x2="8" y2="13"/>
+          <line x1="16" y1="17" x2="8" y2="17"/>
+          <polyline points="10 9 9 9 8 9"/>
+        </svg>
+      </div>
+      <h2>Library Experience</h2>
+      <p>The full library-first research experience is coming soon.</p>
+      <p class="home-hint">For now, use <strong>Workspaces</strong> to organize and generate research.</p>
+    </div>
+  </div>
+
+  <div class="app-container" id="appContainer">
     <aside class="sidebar">
       <div class="sidebar-header">
         <button class="new-workspace-btn" onclick="openModal('newWorkspace')">
@@ -773,6 +838,151 @@
     <div class="modal fullish">
       <div class="modal-header"><h2 class="modal-title">Library</h2><button class="modal-close" onclick="closeModal('libraryPopup')">×</button></div>
       <div class="modal-body" style="padding:0;max-height:500px;overflow-y:auto"><div class="library-list" id="libraryList"></div></div>
+    </div>
+  </div>
+
+  <!-- Profile Modal -->
+  <div class="modal-overlay" id="profileModal" onclick="if(event.target===this)closeModal('profileModal')">
+    <div class="modal">
+      <div class="modal-header">
+        <h2 class="modal-title">Profile Settings</h2>
+        <button class="modal-close" onclick="closeModal('profileModal')">×</button>
+      </div>
+      <div class="modal-body">
+        <div class="profile-avatar">
+          <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+            <circle cx="12" cy="7" r="4"/>
+          </svg>
+        </div>
+        <div class="profile-form">
+          <div class="form-field">
+            <label>Display Name</label>
+            <input type="text" value="Demo User" placeholder="Your name">
+          </div>
+          <div class="form-field">
+            <label>Email</label>
+            <input type="email" value="demo@marketlens.io" placeholder="Your email">
+          </div>
+          <div class="form-field">
+            <label>Organization</label>
+            <input type="text" value="MarketLens Demo" placeholder="Company name">
+          </div>
+        </div>
+        <div class="profile-section">
+          <h4>Preferences</h4>
+          <div class="profile-toggle">
+            <span>Email notifications</span>
+            <label class="toggle-switch">
+              <input type="checkbox" checked>
+              <span class="toggle-slider"></span>
+            </label>
+          </div>
+          <div class="profile-toggle">
+            <span>Research auto-save</span>
+            <label class="toggle-switch">
+              <input type="checkbox" checked>
+              <span class="toggle-slider"></span>
+            </label>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn secondary" onclick="closeModal('profileModal')">Cancel</button>
+        <button class="btn primary" onclick="closeModal('profileModal')">Save Changes</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Support Modal -->
+  <div class="modal-overlay" id="supportModal" onclick="if(event.target===this)closeModal('supportModal')">
+    <div class="modal">
+      <div class="modal-header">
+        <h2 class="modal-title">How can we help?</h2>
+        <button class="modal-close" onclick="closeModal('supportModal')">×</button>
+      </div>
+      <div class="modal-body support-body">
+        <div class="help-options">
+          <a href="#" class="help-option" onclick="event.preventDefault()">
+            <div class="help-option-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+                <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+              </svg>
+            </div>
+            <div class="help-option-content">
+              <h4>Reset password</h4>
+              <p>Forgot your password? We'll help you reset it</p>
+            </div>
+            <div class="help-option-arrow">→</div>
+          </a>
+          <a href="#" class="help-option" onclick="event.preventDefault()">
+            <div class="help-option-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="10"/>
+                <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/>
+                <line x1="12" y1="17" x2="12.01" y2="17"/>
+              </svg>
+            </div>
+            <div class="help-option-content">
+              <h4>Getting started</h4>
+              <p>New to MarketLens? Learn the basics</p>
+            </div>
+            <div class="help-option-arrow">→</div>
+          </a>
+          <a href="#" class="help-option" onclick="event.preventDefault()">
+            <div class="help-option-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/>
+              </svg>
+            </div>
+            <div class="help-option-content">
+              <h4>Technical issues</h4>
+              <p>Something not working? Let us know</p>
+            </div>
+            <div class="help-option-arrow">→</div>
+          </a>
+          <a href="#" class="help-option" onclick="event.preventDefault()">
+            <div class="help-option-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                <circle cx="12" cy="7" r="4"/>
+              </svg>
+            </div>
+            <div class="help-option-content">
+              <h4>Account & billing</h4>
+              <p>Manage your subscription and settings</p>
+            </div>
+            <div class="help-option-arrow">→</div>
+          </a>
+        </div>
+        <div class="help-divider"><span>or</span></div>
+        <div class="contact-info">
+          <p>Need more help? Contact our support team</p>
+          <a href="mailto:support@marketlens.io">support@marketlens.io</a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Log Off Modal -->
+  <div class="modal-overlay" id="logoffModal" onclick="if(event.target===this)closeModal('logoffModal')">
+    <div class="modal modal-sm">
+      <div class="modal-body logoff-body">
+        <div class="logoff-icon">
+          <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+            <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+            <polyline points="16 17 21 12 16 7"/>
+            <line x1="21" y1="12" x2="9" y2="12"/>
+          </svg>
+        </div>
+        <h3>Sign Out</h3>
+        <p>Are you sure you want to sign out of MarketLens?</p>
+        <div class="logoff-actions">
+          <button class="btn secondary" onclick="closeModal('logoffModal')">Cancel</button>
+          <button class="btn danger" onclick="doLogout()">Sign Out</button>
+        </div>
+      </div>
     </div>
   </div>
 
@@ -1253,7 +1463,6 @@ document.addEventListener('DOMContentLoaded', async () => {
   try {
     setLoadingText('Loading documents...');
     await loadFromAPI();
-    setApiStatus('connected');
     liveMode = true;
     console.log('Live mode enabled');
     
@@ -1261,7 +1470,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     resumeJobPolling();
   } catch (error) {
     console.error('API connection failed, using demo mode:', error);
-    setApiStatus('error');
     liveMode = false;
   }
   
@@ -1319,9 +1527,12 @@ async function loadFromAPI() {
     workspaces = collections.map((c, i) => ({
       id: c.id,
       name: c.name,
-      pinned: i === 0,
+      pinned: false,
       status: 'active'
     }));
+    
+    // Apply persisted pinned state
+    applyPinnedState();
 
     // 3. Load members for each collection
     setLoadingText('Loading workspace contents...');
@@ -1366,14 +1577,6 @@ function setLoadingText(text) {
 
 function hideLoading() {
   document.getElementById('loadingOverlay')?.classList.add('hidden');
-}
-
-function setApiStatus(status) {
-  const dot = document.getElementById('apiDot');
-  const text = document.getElementById('apiStatusText');
-  if (!dot) return;
-  dot.className = 'api-dot ' + status;
-  if (text) text.textContent = status === 'connected' ? 'Live' : status === 'error' ? 'Demo' : 'Connecting...';
 }
 
 // CUSTOM DIALOG
@@ -1460,6 +1663,40 @@ function openModal(id) {
 function closeModal(id) { 
   document.getElementById(id).classList.remove('open'); 
   if (id === 'research') resetResearchModal();
+}
+
+// VIEW SWITCHING
+let currentView = 'workspaces';
+function showView(view) {
+  currentView = view;
+  const homeView = document.getElementById('homeView');
+  const appContainer = document.getElementById('appContainer');
+  const navHome = document.getElementById('navHome');
+  const navWorkspaces = document.getElementById('navWorkspaces');
+  
+  if (view === 'home') {
+    homeView.style.display = 'flex';
+    appContainer.style.display = 'none';
+    navHome.classList.add('active');
+    navWorkspaces.classList.remove('active');
+  } else {
+    homeView.style.display = 'none';
+    appContainer.style.display = 'flex';
+    navHome.classList.remove('active');
+    navWorkspaces.classList.add('active');
+  }
+}
+
+// LOGOUT
+function doLogout() {
+  // Clear JWT and any sensitive data
+  localStorage.removeItem('marketlens_jwt');
+  localStorage.removeItem('marketlens_active_jobs');
+  localStorage.removeItem('marketlens_pinned_workspaces');
+  localStorage.removeItem('marketlens_starred_docs');
+  closeModal('logoffModal');
+  // Redirect to login (adjust URL as needed)
+  window.location.href = 'index.html';
 }
 
 // SIDEBAR
@@ -1614,13 +1851,24 @@ async function renameWs(id) {
 function togglePin(id) {
   const w = workspaces.find(x => x.id === id);
   w.pinned = !w.pinned;
+  // Persist to localStorage
+  if (w.pinned) {
+    pinnedWorkspaces.add(id);
+  } else {
+    pinnedWorkspaces.delete(id);
+  }
+  savePinnedWorkspaces();
   renderSidebar();
   if (currentWs.id === id) updateHeader();
 }
 function toggleComplete(id) {
   const w = workspaces.find(x => x.id === id);
   w.status = w.status === 'completed' ? 'active' : 'completed';
-  if (w.status === 'completed') w.pinned = false;
+  if (w.status === 'completed') {
+    w.pinned = false;
+    pinnedWorkspaces.delete(id);
+    savePinnedWorkspaces();
+  }
   renderSidebar();
 }
 
@@ -1646,6 +1894,12 @@ async function deleteWs(id) {
   workspaces = workspaces.filter(x => x.id !== id);
   delete workspaceDocs[id];
   delete collectionMembers[id];
+  
+  // Remove from pinned if it was pinned
+  if (pinnedWorkspaces.has(id)) {
+    pinnedWorkspaces.delete(id);
+    savePinnedWorkspaces();
+  }
   
   if (currentWs.id === id && workspaces.length) {
     currentWs = workspaces[0];
@@ -1863,6 +2117,21 @@ let starredDocs = new Set(JSON.parse(localStorage.getItem(STARRED_STORAGE_KEY) |
 
 function saveStarredDocs() {
   localStorage.setItem(STARRED_STORAGE_KEY, JSON.stringify([...starredDocs]));
+}
+
+// Track pinned workspaces (persisted to localStorage)
+const PINNED_STORAGE_KEY = 'marketlens_pinned_workspaces';
+let pinnedWorkspaces = new Set(JSON.parse(localStorage.getItem(PINNED_STORAGE_KEY) || '[]'));
+
+function savePinnedWorkspaces() {
+  localStorage.setItem(PINNED_STORAGE_KEY, JSON.stringify([...pinnedWorkspaces]));
+}
+
+function applyPinnedState() {
+  // Apply pinned state from localStorage to loaded workspaces
+  workspaces.forEach(w => {
+    w.pinned = pinnedWorkspaces.has(w.id);
+  });
 }
 
 function toggleStar(docId) {
