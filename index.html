@@ -2056,6 +2056,19 @@ document.addEventListener('click', (e) => {
   }
 });
 
+// Convert vertical scroll to horizontal for workspace cards
+document.addEventListener('DOMContentLoaded', () => {
+  const wsScroll = document.getElementById('homeWorkspacesScroll');
+  if (wsScroll) {
+    wsScroll.addEventListener('wheel', (e) => {
+      if (e.deltaY !== 0) {
+        e.preventDefault();
+        wsScroll.scrollLeft += e.deltaY;
+      }
+    }, { passive: false });
+  }
+});
+
 function renderHomeResearchProgress() {
   const jobs = activeJobs;
   const count = jobs.length;
