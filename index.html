@@ -1720,6 +1720,9 @@ async function loadFromAPI() {
     
     // Apply persisted pinned state
     applyPinnedState();
+    
+    // Apply persisted completed state
+    applyCompletedState();
 
     // 3. Load members for each collection
     setLoadingText('Loading workspace contents...');
@@ -2657,12 +2660,18 @@ function togglePin(id) {
 }
 function toggleComplete(id) {
   const w = workspaces.find(x => x.id === id);
-  w.status = w.status === 'completed' ? 'active' : 'completed';
   if (w.status === 'completed') {
+    w.status = 'active';
+    completedWorkspaces.delete(id);
+  } else {
+    w.status = 'completed';
+    completedWorkspaces.add(id);
+    // Unpin when completing
     w.pinned = false;
     pinnedWorkspaces.delete(id);
     savePinnedWorkspaces();
   }
+  saveCompletedWorkspaces();
   renderSidebar();
 }
 
@@ -2693,6 +2702,12 @@ async function deleteWs(id) {
   if (pinnedWorkspaces.has(id)) {
     pinnedWorkspaces.delete(id);
     savePinnedWorkspaces();
+  }
+  
+  // Remove from completed if it was completed
+  if (completedWorkspaces.has(id)) {
+    completedWorkspaces.delete(id);
+    saveCompletedWorkspaces();
   }
   
   if (currentWs.id === id && workspaces.length) {
@@ -2921,10 +2936,27 @@ function savePinnedWorkspaces() {
   localStorage.setItem(PINNED_STORAGE_KEY, JSON.stringify([...pinnedWorkspaces]));
 }
 
+// Track completed workspaces (persisted to localStorage)
+const COMPLETED_STORAGE_KEY = 'marketlens_completed_workspaces';
+let completedWorkspaces = new Set(JSON.parse(localStorage.getItem(COMPLETED_STORAGE_KEY) || '[]'));
+
+function saveCompletedWorkspaces() {
+  localStorage.setItem(COMPLETED_STORAGE_KEY, JSON.stringify([...completedWorkspaces]));
+}
+
 function applyPinnedState() {
   // Apply pinned state from localStorage to loaded workspaces
   workspaces.forEach(w => {
     w.pinned = pinnedWorkspaces.has(w.id);
+  });
+}
+
+function applyCompletedState() {
+  // Apply completed state from localStorage to loaded workspaces
+  workspaces.forEach(w => {
+    if (completedWorkspaces.has(w.id)) {
+      w.status = 'completed';
+    }
   });
 }
 
