@@ -175,6 +175,31 @@
     .activity-time { font-size: 11px; color: var(--muted); }
     .activity-workspace { color: var(--accent); font-weight: 500; }
 
+    /* Home Mini Library */
+    .home-library-search { margin-left: auto; }
+    .home-library-search input { padding: 4px 10px; border: 1px solid var(--border); border-radius: 5px; font-size: 11px; width: 120px; background: var(--soft); }
+    .home-library-search input:focus { outline: none; border-color: var(--accent); background: white; }
+    .home-lib-item { padding: 10px 14px; display: flex; align-items: center; gap: 10px; border-bottom: 1px solid var(--hair); transition: background 0.15s; }
+    .home-lib-item:last-child { border-bottom: none; }
+    .home-lib-item:hover { background: var(--soft); }
+    .home-lib-icon { width: 28px; height: 28px; background: var(--accent-soft); border-radius: 6px; display: flex; align-items: center; justify-content: center; color: var(--accent); flex-shrink: 0; }
+    .home-lib-info { flex: 1; min-width: 0; }
+    .home-lib-title { font-size: 12px; font-weight: 600; color: var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-bottom: 2px; }
+    .home-lib-meta { font-size: 10px; color: var(--muted); }
+    .home-lib-actions { display: flex; gap: 2px; opacity: 0; transition: opacity 0.15s; }
+    .home-lib-item:hover .home-lib-actions { opacity: 1; }
+    .home-lib-btn { width: 24px; height: 24px; border: none; background: none; color: var(--muted); cursor: pointer; border-radius: 4px; display: flex; align-items: center; justify-content: center; }
+    .home-lib-btn:hover { background: var(--border); color: var(--ink); }
+    .home-lib-btn.danger:hover { background: var(--danger-soft); color: var(--danger); }
+    .home-lib-menu { position: relative; }
+    .home-lib-dropdown { position: absolute; right: 0; top: 100%; background: white; border: 1px solid var(--border); border-radius: 6px; box-shadow: var(--shadow-lg); min-width: 160px; z-index: 100; display: none; }
+    .home-lib-dropdown.open { display: block; }
+    .home-lib-dropdown-item { padding: 8px 12px; font-size: 12px; cursor: pointer; display: flex; align-items: center; gap: 8px; color: var(--ink); }
+    .home-lib-dropdown-item:hover { background: var(--soft); }
+    .home-lib-dropdown-item.danger { color: var(--danger); }
+    .home-lib-dropdown-item.danger:hover { background: var(--danger-soft); }
+    .home-lib-dropdown-divider { height: 1px; background: var(--hair); margin: 4px 0; }
+
     .app-container { display: flex; height: calc(100vh - 56px); margin-top: 56px; }
 
     /* SIDEBAR */
@@ -680,16 +705,19 @@
             Quick Research
           </button>
           
-          <!-- Recent Activity -->
+          <!-- Mini Library -->
           <div class="home-card" style="flex:1;">
             <div class="home-card-header">
               <h2 class="home-card-title">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
-                Recent Activity
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                Library
               </h2>
+              <div class="home-library-search">
+                <input type="text" placeholder="Search..." id="homeLibrarySearch" oninput="filterHomeLibrary(this.value)">
+              </div>
             </div>
-            <div class="home-card-body" id="homeRecentActivity">
-              <div class="home-card-empty">No recent activity</div>
+            <div class="home-card-body" id="homeLibraryList">
+              <div class="home-card-empty">No documents yet</div>
             </div>
           </div>
         </div>
@@ -819,6 +847,7 @@
       <div class="dialog-title" id="dialogTitle">Confirm</div>
       <div class="dialog-message" id="dialogMessage">Are you sure?</div>
       <input type="text" class="dialog-input" id="dialogInput" style="display:none;">
+      <select class="dialog-input" id="dialogSelect" style="display:none;"></select>
       <div class="dialog-buttons" id="dialogButtons">
         <button class="dialog-btn cancel" id="dialogCancel">Cancel</button>
         <button class="dialog-btn confirm" id="dialogConfirm">OK</button>
@@ -1735,20 +1764,34 @@ function hideLoading() {
 let dialogResolve = null;
 let dialogHasInput = false;
 
-function showDialog({ title = 'Confirm', message = 'Are you sure?', confirmText = 'OK', cancelText = 'Cancel', showCancel = true, danger = false, input = false, inputValue = '' }) {
+function showDialog({ title = 'Confirm', message = 'Are you sure?', confirmText = 'OK', cancelText = 'Cancel', showCancel = true, danger = false, input = false, inputValue = '', inputType = 'text', selectOptions = '' }) {
   return new Promise(resolve => {
     dialogResolve = resolve;
     dialogHasInput = input;
     
     document.getElementById('dialogTitle').textContent = title;
-    document.getElementById('dialogMessage').textContent = message;
+    document.getElementById('dialogMessage').innerHTML = message;
     
     const inputEl = document.getElementById('dialogInput');
-    inputEl.style.display = input ? 'block' : 'none';
+    const selectEl = document.getElementById('dialogSelect');
+    
+    inputEl.style.display = 'none';
+    selectEl.style.display = 'none';
+    
     if (input) {
-      inputEl.value = inputValue;
-      setTimeout(() => { inputEl.focus(); inputEl.select(); }, 100);
+      if (inputType === 'select') {
+        selectEl.innerHTML = selectOptions;
+        selectEl.style.display = 'block';
+        setTimeout(() => selectEl.focus(), 100);
+      } else {
+        inputEl.value = inputValue;
+        inputEl.style.display = 'block';
+        setTimeout(() => { inputEl.focus(); inputEl.select(); }, 100);
+      }
     }
+    
+    // Store input type for closeDialog
+    dialogHasInput = input ? inputType : false;
     
     const confirmBtn = document.getElementById('dialogConfirm');
     const cancelBtn = document.getElementById('dialogCancel');
@@ -1767,8 +1810,13 @@ function closeDialog(confirmed) {
   document.getElementById('customDialog').classList.remove('open');
   if (dialogResolve) {
     if (dialogHasInput) {
-      const value = confirmed ? document.getElementById('dialogInput').value : null;
-      dialogResolve(value);
+      if (dialogHasInput === 'select') {
+        const value = confirmed ? document.getElementById('dialogSelect').value : null;
+        dialogResolve(value);
+      } else {
+        const value = confirmed ? document.getElementById('dialogInput').value : null;
+        dialogResolve(value);
+      }
     } else {
       dialogResolve(confirmed);
     }
@@ -1843,63 +1891,20 @@ function showView(view) {
 // ===== HOME VIEW RENDERING =====
 
 // Time-based greetings
-const homeGreetings = {
-  earlyMorning: [
-    { main: "Early Bird Gets the Alpha", sub: "The markets aren't even awake yet." },
-    { main: "Dawn Patrol", sub: "Coffee's brewing. Research is waiting." },
-    { main: "Pre-Market Prep", sub: "Get ahead while others sleep." }
-  ],
-  morning: [
-    { main: "Morning Coffee & Research", sub: "Let's see what needs your attention." },
-    { main: "Rise & Analyze", sub: "Fresh day, fresh insights." },
-    { main: "Good Morning, Analyst", sub: "Your research workspace is ready." },
-    { main: "Markets Open, Mind Sharp", sub: "What are we diving into today?" }
-  ],
-  afternoon: [
-    { main: "Afternoon Deep Dive", sub: "Peak productivity hours. Let's go." },
-    { main: "Mid-Day Momentum", sub: "Keep the research rolling." },
-    { main: "Post-Lunch Analysis", sub: "Time to turn caffeine into insights." }
-  ],
-  evening: [
-    { main: "Evening Research Session", sub: "Wrapping up or just getting started?" },
-    { main: "Golden Hour Analysis", sub: "Some of the best thinking happens now." },
-    { main: "After Hours", sub: "The quiet time for deep work." }
-  ],
-  night: [
-    { main: "Night Owl Mode", sub: "When the world sleeps, analysts think." },
-    { main: "Burning the Midnight Oil", sub: "Great research doesn't clock out." },
-    { main: "Late Night Insights", sub: "The best ideas come at odd hours." },
-    { main: "After Midnight", sub: "Dedication looks good on you." }
-  ]
-};
-
-function getTimeCategory() {
-  const hour = new Date().getHours();
-  if (hour >= 5 && hour < 8) return 'earlyMorning';
-  if (hour >= 8 && hour < 12) return 'morning';
-  if (hour >= 12 && hour < 17) return 'afternoon';
-  if (hour >= 17 && hour < 21) return 'evening';
-  return 'night';
-}
-
 function renderHome() {
   renderHomeGreeting();
   renderHomeWorkspaces();
   renderHomeResearchProgress();
-  renderHomeActivity();
+  renderHomeLibrary();
 }
 
 function renderHomeGreeting() {
-  const category = getTimeCategory();
-  const options = homeGreetings[category];
-  const choice = options[Math.floor(Math.random() * options.length)];
+  document.getElementById('homeGreeting').textContent = 'Welcome Back, User';
   
-  document.getElementById('homeGreeting').textContent = choice.main;
-  
-  // Dynamic subgreeting with actual stats
+  // Dynamic subgreeting with job stats
   const running = activeJobs.filter(j => j.status === 'running').length;
   const completed = activeJobs.filter(j => j.status === 'completed').length;
-  let sub = choice.sub;
+  let sub = 'Your research workspace is ready.';
   if (running > 0 || completed > 0) {
     const parts = [];
     if (running > 0) parts.push(`${running} research job${running !== 1 ? 's' : ''} running`);
@@ -2253,50 +2258,177 @@ function dismissJobFromHome(name) {
   // dismissJob now handles renderHome() if on home view
 }
 
-function renderHomeActivity() {
-  // Show completed jobs as activity
-  const completed = activeJobs.filter(j => j.status === 'completed');
+let homeLibraryFilter = '';
+
+function renderHomeLibrary() {
+  const docs = libraryDocs.filter(d => {
+    if (!homeLibraryFilter) return true;
+    const search = homeLibraryFilter.toLowerCase();
+    return d.title.toLowerCase().includes(search) || d.type.toLowerCase().includes(search);
+  });
   
-  if (completed.length === 0) {
-    document.getElementById('homeRecentActivity').innerHTML = '<div class="home-card-empty">No recent activity</div>';
+  if (docs.length === 0) {
+    document.getElementById('homeLibraryList').innerHTML = homeLibraryFilter 
+      ? '<div class="home-card-empty">No matching documents</div>'
+      : '<div class="home-card-empty">No documents yet</div>';
     return;
   }
   
   let html = '';
-  completed.forEach(job => {
-    const isQuick = job.isQuickResearch || !job.wsId;
-    const wsIdAttr = typeof job.wsId === 'string' ? `'${job.wsId}'` : job.wsId;
+  docs.forEach((doc, idx) => {
+    const safeTitle = doc.title.replace(/'/g, "\\'");
+    const safeId = doc.id ? (typeof doc.id === 'string' ? `'${doc.id}'` : doc.id) : 'null';
     
-    if (isQuick) {
-      html += `
-        <div class="activity-item clickable" onclick="viewResearchDoc('${job.name}')">
-          <div class="activity-icon complete">
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
-          </div>
-          <div class="activity-content">
-            <div class="activity-text"><strong>${job.name}</strong> completed</div>
-            <div class="activity-time"><span class="activity-workspace">Quick Research</span> · Saved to Library</div>
-          </div>
-          <svg class="activity-arrow" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
+    html += `
+      <div class="home-lib-item">
+        <div class="home-lib-icon">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
         </div>
-      `;
-    } else {
-      html += `
-        <div class="activity-item clickable" onclick="openInWorkspace('${job.name}', ${wsIdAttr})">
-          <div class="activity-icon complete">
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
-          </div>
-          <div class="activity-content">
-            <div class="activity-text"><strong>${job.name}</strong> completed</div>
-            <div class="activity-time"><span class="activity-workspace">${job.wsName}</span></div>
-          </div>
-          <svg class="activity-arrow" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
+        <div class="home-lib-info">
+          <div class="home-lib-title" title="${doc.title}">${doc.title}</div>
+          <div class="home-lib-meta">${doc.date} · ${doc.type}</div>
         </div>
-      `;
-    }
+        <div class="home-lib-actions">
+          <button class="home-lib-btn" onclick="event.stopPropagation();viewDocFromHome('${safeTitle}')" title="View">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+          </button>
+          <button class="home-lib-btn" onclick="event.stopPropagation();homeLibFollowUp('${safeTitle}', ${safeId})" title="Follow-up Research">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
+          </button>
+          <div class="home-lib-menu">
+            <button class="home-lib-btn" onclick="event.stopPropagation();toggleHomeLibMenu(${idx})" title="More">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="1"/><circle cx="12" cy="5" r="1"/><circle cx="12" cy="19" r="1"/></svg>
+            </button>
+            <div class="home-lib-dropdown" id="homeLibMenu-${idx}">
+              <div class="home-lib-dropdown-item" onclick="event.stopPropagation();homeLibAddToWs('${safeTitle}', '${doc.type}')">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+                Add to Workspace
+              </div>
+              <div class="home-lib-dropdown-divider"></div>
+              <div class="home-lib-dropdown-item danger" onclick="event.stopPropagation();homeLibDelete('${safeTitle}', ${safeId})">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+                Delete
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    `;
   });
   
-  document.getElementById('homeRecentActivity').innerHTML = html;
+  document.getElementById('homeLibraryList').innerHTML = html;
+}
+
+function filterHomeLibrary(value) {
+  homeLibraryFilter = value;
+  renderHomeLibrary();
+}
+
+function toggleHomeLibMenu(idx) {
+  document.querySelectorAll('.home-lib-dropdown').forEach(d => d.classList.remove('open'));
+  const menu = document.getElementById('homeLibMenu-' + idx);
+  if (menu) menu.classList.toggle('open');
+}
+
+// Close home library menus when clicking outside
+document.addEventListener('click', (e) => {
+  if (!e.target.closest('.home-lib-menu')) {
+    document.querySelectorAll('.home-lib-dropdown').forEach(d => d.classList.remove('open'));
+  }
+});
+
+function viewDocFromHome(title) {
+  // Find the doc in library
+  const doc = libraryDocs.find(d => d.title === title);
+  if (doc && liveMode && doc.source) {
+    viewDocFromAPI(doc);
+  } else {
+    const content = sampleDocuments[title] || generatePlaceholderDoc(title);
+    openDocViewer(content, title);
+  }
+}
+
+function homeLibFollowUp(title, docId) {
+  // Set up follow-up research mode
+  const doc = libraryDocs.find(d => d.title === title);
+  if (doc) {
+    followUpParentDoc = { id: docId, title: title };
+    
+    // Update modal
+    document.getElementById('researchModalTitle').textContent = 'Follow-up Research';
+    document.getElementById('researchModalDesc').innerHTML = `Generate follow-up research based on <strong>${title}</strong>`;
+    document.getElementById('researchSubmitBtn').textContent = 'Generate Follow-up';
+    
+    openModal('research');
+  }
+}
+
+async function homeLibAddToWs(title, type) {
+  document.querySelectorAll('.home-lib-dropdown').forEach(d => d.classList.remove('open'));
+  
+  if (workspaces.length === 0) {
+    showAlert('Create a workspace first', 'No Workspaces');
+    return;
+  }
+  
+  // Show workspace picker
+  const wsOptions = workspaces.map(w => `<option value="${w.id}">${w.name}</option>`).join('');
+  
+  const result = await showDialog({
+    title: 'Add to Workspace',
+    message: `Select a workspace for "${title}":`,
+    confirmText: 'Add',
+    cancelText: 'Cancel',
+    input: true,
+    inputType: 'select',
+    selectOptions: wsOptions
+  });
+  
+  if (result) {
+    const wsId = result;
+    const ws = workspaces.find(w => String(w.id) === String(wsId));
+    if (ws) {
+      if (!workspaceDocs[wsId]) workspaceDocs[wsId] = [];
+      const doc = libraryDocs.find(d => d.title === title);
+      if (doc && !workspaceDocs[wsId].find(d => d.title === title)) {
+        workspaceDocs[wsId].push({ ...doc });
+        renderHomeWorkspaces();
+        showAlert(`Added "${title}" to ${ws.name}`, 'Success');
+      } else {
+        showAlert('Document already in workspace', 'Note');
+      }
+    }
+  }
+}
+
+async function homeLibDelete(title, docId) {
+  document.querySelectorAll('.home-lib-dropdown').forEach(d => d.classList.remove('open'));
+  
+  const confirmed = await showDialog({
+    title: 'Delete Document',
+    message: `Delete "${title}" from your library? This cannot be undone.`,
+    confirmText: 'Delete',
+    cancelText: 'Cancel',
+    danger: true
+  });
+  
+  if (confirmed) {
+    // Remove from library
+    libraryDocs = libraryDocs.filter(d => d.title !== title);
+    allVertesiaDocs = allVertesiaDocs.filter(d => d.title !== title);
+    
+    // Remove from any workspaces
+    Object.keys(workspaceDocs).forEach(wsId => {
+      workspaceDocs[wsId] = workspaceDocs[wsId].filter(d => d.title !== title);
+    });
+    
+    renderHomeLibrary();
+    renderHomeWorkspaces();
+    if (currentWs) renderDocuments();
+    renderLibrary();
+    
+    showAlert(`Deleted "${title}"`, 'Success');
+  }
 }
 
 function openQuickResearch() {
@@ -3448,6 +3580,7 @@ async function reloadAfterResearch() {
     renderDocuments();
     renderSidebar();
     renderLibrary();
+    if (currentView === 'home') renderHomeLibrary();
     
     console.log('Research reload complete');
   } catch (e) {
