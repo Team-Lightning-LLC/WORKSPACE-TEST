@@ -85,15 +85,21 @@
     /* Workspace Card */
     .ws-card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 16px 20px; min-width: 220px; max-width: 220px; cursor: pointer; transition: all 0.15s ease; flex-shrink: 0; position: relative; }
     .ws-card:hover { border-color: var(--accent); box-shadow: 0 2px 8px rgba(74, 157, 168, 0.12); }
+    .ws-card.complete { border-color: var(--success); box-shadow: 0 0 0 3px rgba(74, 157, 110, 0.15); }
+    .ws-card.complete:hover { border-color: var(--success); box-shadow: 0 0 0 3px rgba(74, 157, 110, 0.25); }
     .ws-card.new { border-style: dashed; border-color: var(--border); background: transparent; display: flex; flex-direction: column; align-items: center; justify-content: center; color: var(--muted); min-height: 110px; }
     .ws-card.new:hover { border-color: var(--accent); color: var(--accent); background: var(--accent-soft); }
     .ws-card.new svg { margin-bottom: 8px; }
     .ws-card.new span { font-size: 13px; font-weight: 500; }
     .ws-card-header { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
     .ws-card-icon { width: 36px; height: 36px; background: var(--accent-soft); border-radius: 8px; display: flex; align-items: center; justify-content: center; color: var(--accent); flex-shrink: 0; }
+    .ws-card.complete .ws-card-icon { background: #e8f5e9; color: var(--success); }
     .ws-card-name { font-size: 14px; font-weight: 600; color: var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: flex; align-items: center; gap: 5px; flex: 1; min-width: 0; }
     .ws-card-name .pin { color: var(--warning); flex-shrink: 0; }
-    .ws-card-meta { font-size: 12px; color: var(--muted); margin-bottom: 10px; }
+    .ws-card-meta { font-size: 12px; color: var(--muted); margin-bottom: 10px; display: flex; align-items: center; gap: 6px; }
+    .ws-card-status { font-weight: 500; }
+    .ws-card-status.active { color: var(--accent); }
+    .ws-card-status.complete { color: var(--success); }
     .ws-card-badge { font-size: 11px; padding: 4px 10px; border-radius: 10px; font-weight: 500; display: inline-block; }
     .ws-card-badge.generating { background: var(--accent-soft); color: var(--accent); }
     .ws-card-badge.docs { background: var(--soft); color: var(--muted); }
@@ -1934,23 +1940,23 @@ function renderHomeWorkspaces() {
     const wsCompleted = activeJobs.filter(j => j.wsId === w.id && j.status === 'completed');
     const docCount = (workspaceDocs[w.id] || []).length;
     const idAttr = typeof w.id === 'string' ? `'${w.id}'` : w.id;
+    const isComplete = w.status === 'completed';
     
     let badge = '';
     if (wsRunning.length > 0) {
       badge = `<span class="ws-card-badge generating">${wsRunning.length} generating</span>`;
     } else if (wsCompleted.length > 0) {
       badge = `<span class="ws-card-badge completed">${wsCompleted.length} ready</span>`;
-    } else if (w.status === 'completed') {
-      badge = `<span class="ws-card-badge docs">Completed</span>`;
-    } else {
-      badge = `<span class="ws-card-badge docs">${docCount} doc${docCount !== 1 ? 's' : ''}</span>`;
     }
     
     const pinClass = w.pinned ? 'active' : '';
     const pinFill = w.pinned ? 'currentColor' : 'none';
+    const cardClass = isComplete ? 'ws-card complete' : 'ws-card';
+    const statusClass = isComplete ? 'complete' : 'active';
+    const statusText = isComplete ? 'Complete' : 'Active';
     
     html += `
-      <div class="ws-card" onclick="goToWorkspaceFromHome(${idAttr})">
+      <div class="${cardClass}" onclick="goToWorkspaceFromHome(${idAttr})">
         <button class="ws-card-pin ${pinClass}" onclick="event.stopPropagation();homeWsAction('pin',${idAttr})" title="${w.pinned ? 'Unpin' : 'Pin'}">
           <svg viewBox="0 0 24 24" fill="${pinFill}" stroke="currentColor" stroke-width="2"><path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z"/></svg>
         </button>
@@ -1965,7 +1971,7 @@ function renderHomeWorkspaces() {
             </div>
             <div class="ws-card-dropdown-item" onclick="event.stopPropagation();homeWsAction('complete',${idAttr})">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
-              ${w.status === 'completed' ? 'Reopen' : 'Mark Complete'}
+              ${isComplete ? 'Reopen' : 'Mark Complete'}
             </div>
             <div class="ws-card-dropdown-item danger" onclick="event.stopPropagation();homeWsAction('delete',${idAttr})">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
@@ -1979,7 +1985,11 @@ function renderHomeWorkspaces() {
           </div>
           <div class="ws-card-name">${w.name}</div>
         </div>
-        <div class="ws-card-meta">${docCount} doc${docCount !== 1 ? 's' : ''}</div>
+        <div class="ws-card-meta">
+          <span>${docCount} doc${docCount !== 1 ? 's' : ''}</span>
+          <span>·</span>
+          <span class="ws-card-status ${statusClass}">${statusText}</span>
+        </div>
         ${badge}
       </div>
     `;
