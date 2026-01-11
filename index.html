@@ -642,6 +642,195 @@
     .thinking-dots span:nth-child(2) { animation-delay: 0.2s; }
     .thinking-dots span:nth-child(3) { animation-delay: 0.4s; }
     @keyframes bounce { 0%, 80%, 100% { opacity: 0.3; } 40% { opacity: 1; } }
+
+    /* ========== TUTORIAL SYSTEM ========== */
+    .tutorial-overlay {
+      position: fixed;
+      inset: 0;
+      z-index: 9998;
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity 0.3s ease;
+    }
+    .tutorial-overlay.active {
+      opacity: 1;
+      pointer-events: auto;
+    }
+    .tutorial-spotlight {
+      position: absolute;
+      border-radius: 12px;
+      box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.75);
+      pointer-events: none;
+      transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .tutorial-spotlight::before {
+      content: '';
+      position: absolute;
+      inset: -4px;
+      border: 3px solid var(--warning);
+      border-radius: 14px;
+      animation: spotlight-pulse 2s ease-in-out infinite;
+    }
+    .tutorial-spotlight::after {
+      content: '';
+      position: absolute;
+      inset: -8px;
+      border: 2px solid var(--warning);
+      border-radius: 16px;
+      opacity: 0.5;
+      animation: spotlight-pulse 2s ease-in-out infinite 0.3s;
+    }
+    @keyframes spotlight-pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.5; transform: scale(1.01); }
+    }
+    .tutorial-tooltip {
+      position: absolute;
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.2);
+      width: 340px;
+      padding: 20px 24px;
+      pointer-events: auto;
+      transform: translateY(10px);
+      opacity: 0;
+      transition: all 0.3s ease 0.15s;
+    }
+    .tutorial-overlay.active .tutorial-tooltip {
+      transform: translateY(0);
+      opacity: 1;
+    }
+    .tutorial-tooltip-arrow {
+      position: absolute;
+      width: 16px;
+      height: 16px;
+      background: white;
+      transform: rotate(45deg);
+    }
+    .tutorial-tooltip[data-position="bottom"] .tutorial-tooltip-arrow { top: -8px; left: 28px; }
+    .tutorial-tooltip[data-position="top"] .tutorial-tooltip-arrow { bottom: -8px; left: 28px; }
+    .tutorial-tooltip[data-position="right"] .tutorial-tooltip-arrow { left: -8px; top: 28px; }
+    .tutorial-tooltip[data-position="left"] .tutorial-tooltip-arrow { right: -8px; top: 28px; }
+    .tutorial-step-indicator {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      margin-bottom: 14px;
+    }
+    .tutorial-step-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--border);
+      transition: all 0.2s;
+    }
+    .tutorial-step-dot.active {
+      background: var(--warning);
+      width: 20px;
+      border-radius: 4px;
+    }
+    .tutorial-step-dot.completed { background: var(--accent); }
+    .tutorial-title {
+      font-size: 17px;
+      font-weight: 600;
+      margin-bottom: 8px;
+      color: var(--ink);
+    }
+    .tutorial-desc {
+      font-size: 14px;
+      color: var(--muted);
+      line-height: 1.6;
+      margin-bottom: 20px;
+    }
+    .tutorial-actions {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .tutorial-skip {
+      background: none;
+      border: none;
+      color: var(--muted);
+      font-size: 13px;
+      cursor: pointer;
+      padding: 8px 12px;
+      border-radius: 6px;
+    }
+    .tutorial-skip:hover { background: var(--soft); color: var(--ink); }
+    .tutorial-nav { display: flex; gap: 8px; }
+    .tutorial-btn {
+      padding: 10px 18px;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .tutorial-btn.secondary { background: var(--soft); border: none; color: var(--ink); }
+    .tutorial-btn.secondary:hover { background: var(--border); }
+    .tutorial-btn.primary { background: var(--warning); border: none; color: white; }
+    .tutorial-btn.primary:hover { background: #c49316; }
+    .tutorial-modal {
+      position: fixed;
+      inset: 0;
+      z-index: 9999;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: rgba(0, 0, 0, 0.75);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.3s ease;
+    }
+    .tutorial-modal.active { opacity: 1; pointer-events: auto; }
+    .tutorial-modal-content {
+      background: white;
+      border-radius: 16px;
+      padding: 40px 48px;
+      max-width: 480px;
+      text-align: center;
+      transform: scale(0.95);
+      transition: transform 0.3s ease;
+    }
+    .tutorial-modal.active .tutorial-modal-content { transform: scale(1); }
+    .tutorial-modal-icon {
+      width: 72px;
+      height: 72px;
+      background: var(--warning-soft);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 24px;
+      color: var(--warning);
+    }
+    .tutorial-modal h2 { font-size: 24px; margin-bottom: 12px; color: var(--ink); }
+    .tutorial-modal p { color: var(--muted); margin-bottom: 28px; line-height: 1.6; font-size: 15px; }
+    .tutorial-modal-actions { display: flex; gap: 12px; justify-content: center; }
+    .start-tutorial-btn {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      background: var(--warning);
+      color: white;
+      border: none;
+      padding: 12px 20px;
+      border-radius: 24px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      box-shadow: 0 4px 16px rgba(212, 160, 23, 0.3);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      transition: all 0.15s;
+      z-index: 100;
+    }
+    .start-tutorial-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(212, 160, 23, 0.4);
+    }
+    [data-tutorial-highlight] { position: relative; z-index: 9999 !important; }
   </style>
 </head>
 <body>
@@ -670,7 +859,7 @@
   <div class="home-view" id="homeView">
     <main class="home-main">
       <!-- Welcome Row -->
-      <div class="welcome-row">
+      <div class="welcome-row" id="welcomeSection">
         <div class="welcome">
           <h1 class="greeting" id="homeGreeting">Welcome Back</h1>
           <p class="subgreeting" id="homeSubgreeting">Loading your research...</p>
@@ -678,7 +867,7 @@
       </div>
 
       <!-- Workspaces Horizontal Scroll -->
-      <section class="workspaces-section">
+      <section class="workspaces-section" id="workspacesSection">
         <div class="home-section-header">
           <span class="home-section-title">Workspaces</span>
         </div>
@@ -690,7 +879,7 @@
       <!-- Main Grid -->
       <div class="home-grid">
         <!-- Research Progress Card -->
-        <div class="home-card">
+        <div class="home-card" id="homeResearchCard">
           <div class="home-card-header">
             <h2 class="home-card-title">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
@@ -1646,6 +1835,8 @@ document.addEventListener('DOMContentLoaded', async () => {
   // Fallback: hide loading after 10 seconds no matter what
   setTimeout(() => hideLoading(), 10000);
   
+  const isFirstTime = checkFirstTimeUser();
+  
   try {
     setLoadingText('Loading documents...');
     await loadFromAPI();
@@ -1657,6 +1848,11 @@ document.addEventListener('DOMContentLoaded', async () => {
   } catch (error) {
     console.error('API connection failed, using demo mode:', error);
     liveMode = false;
+  }
+  
+  // Load dummy data for first-time or empty users
+  if (workspaces.length === 0 || isFirstTime) {
+    loadDummyData();
   }
   
   hideLoading();
@@ -1675,6 +1871,11 @@ document.addEventListener('DOMContentLoaded', async () => {
     resetChat();
   } else {
     document.getElementById('workspaceTitle').textContent = 'Select a Workspace';
+  }
+  
+  // Show tutorial for first-time users
+  if (isFirstTime) {
+    setTimeout(() => startTutorial(), 500);
   }
 });
 
@@ -2485,6 +2686,9 @@ function doLogout() {
   localStorage.removeItem('marketlens_active_jobs');
   localStorage.removeItem('marketlens_pinned_workspaces');
   localStorage.removeItem('marketlens_starred_docs');
+  localStorage.removeItem('marketlens_completed_workspaces');
+  localStorage.removeItem('marketlens_workspace_chats');
+  // Note: marketlens_tutorial_completed intentionally kept so users don't redo tutorial
   closeModal('logoffModal');
   // Redirect to login (adjust URL as needed)
   window.location.href = 'index.html';
@@ -5031,6 +5235,350 @@ FINAL STEP - CRITICAL: After uploading the document to the content library, you 
     addJob(jobName, false);
   }
 }
+
+// ========== TUTORIAL SYSTEM ==========
+const TUTORIAL_STORAGE_KEY = 'marketlens_tutorial_completed';
+let tutorialActive = false;
+let tutorialStep = 0;
+
+const tutorialSteps = [
+  // HOME VIEW
+  {
+    element: '#welcomeSection',
+    title: 'Your Home Dashboard',
+    desc: 'This is your home base. See your workspaces, track research progress, and access everything from here.',
+    position: 'bottom',
+    view: 'home'
+  },
+  {
+    element: '#workspacesSection',
+    title: 'Your Workspaces',
+    desc: 'Workspaces organize research by project or topic. Each workspace contains related documents that build on each other.',
+    position: 'bottom',
+    view: 'home'
+  },
+  {
+    element: '.ws-card.new',
+    title: 'Create a Workspace',
+    desc: 'Click here to create your first workspace. Name it something like "Tech Sector Analysis" or "Q1 Investment Research".',
+    position: 'right',
+    view: 'home'
+  },
+  {
+    element: '.quick-research-btn',
+    title: 'Quick Research',
+    desc: 'Need fast insights without creating a workspace? Quick Research generates standalone documents saved directly to your Library.',
+    position: 'left',
+    view: 'home'
+  },
+  {
+    element: '#homeResearchCard',
+    title: 'Research Progress',
+    desc: 'Track your AI research jobs here. When complete, click View to read immediately or Open in Workspace to see it in context.',
+    position: 'right',
+    view: 'home'
+  },
+  {
+    element: '.header-nav',
+    title: 'Navigation',
+    desc: 'Switch between Home and Workspaces here. You can also access Profile, Support, and Log out options.',
+    position: 'bottom',
+    view: 'home'
+  },
+  // WORKSPACE VIEW
+  {
+    element: '.sidebar',
+    title: 'Workspace Sidebar',
+    desc: 'All your workspaces are listed here. Pinned workspaces appear at the top. Click any workspace to select it.',
+    position: 'right',
+    view: 'workspaces'
+  },
+  {
+    element: '.new-workspace-btn',
+    title: 'Create New Workspace',
+    desc: 'Create workspaces from here too. The modal lets you name it and optionally add starting documents from your library.',
+    position: 'right',
+    view: 'workspaces'
+  },
+  {
+    element: '.library-link',
+    title: 'Your Library',
+    desc: 'Access your complete document library. Search, filter, and add any document to any workspace from here.',
+    position: 'right',
+    view: 'workspaces'
+  },
+  {
+    element: '.actions',
+    title: 'Research Actions',
+    desc: 'Generate new research, run batch analyses on multiple topics, or synthesize everything into a comprehensive report.',
+    position: 'bottom',
+    view: 'workspaces'
+  },
+  {
+    element: '.doc-panel',
+    title: 'Workspace Documents',
+    desc: 'All documents in this workspace appear here. Click any document to open the full viewer with table of contents and chat.',
+    position: 'right',
+    view: 'workspaces'
+  },
+  {
+    element: '.chat-panel',
+    title: 'Workspace Chat',
+    desc: 'Ask questions about all documents in this workspace. The AI has full context and can cite specific sources in its answers.',
+    position: 'left',
+    view: 'workspaces'
+  },
+  {
+    element: '.chat-input-container',
+    title: 'Start Chatting',
+    desc: 'Type your question here. Try asking for summaries, comparisons, or specific insights from your research documents.',
+    position: 'top',
+    view: 'workspaces'
+  }
+];
+
+// Dummy data for first-time users
+const dummyWorkspaces = [
+  { id: 'demo-1', name: 'NVIDIA Analysis', pinned: true, status: 'active' },
+  { id: 'demo-2', name: 'Q1 Tech Sector', pinned: false, status: 'completed' }
+];
+
+const dummyDocs = {
+  'demo-1': [
+    { id: 'doc-1', title: 'NVIDIA Investment Opportunities 2026', type: 'Research', date: 'Jan 8' },
+    { id: 'doc-2', title: 'AI Chip Market Analysis', type: 'Analysis', date: 'Jan 6' },
+    { id: 'doc-3', title: 'NVIDIA vs AMD Comparison', type: 'Comparison', date: 'Jan 5' }
+  ],
+  'demo-2': [
+    { id: 'doc-4', title: 'Tech Sector Q1 Outlook', type: 'Report', date: 'Jan 3' },
+    { id: 'doc-5', title: 'Cloud Computing Trends', type: 'Research', date: 'Jan 2' }
+  ]
+};
+
+const dummyLibrary = [
+  { id: 'doc-1', title: 'NVIDIA Investment Opportunities 2026', type: 'Research', date: 'Jan 8' },
+  { id: 'doc-2', title: 'AI Chip Market Analysis', type: 'Analysis', date: 'Jan 6' },
+  { id: 'doc-3', title: 'NVIDIA vs AMD Comparison', type: 'Comparison', date: 'Jan 5' },
+  { id: 'doc-4', title: 'Tech Sector Q1 Outlook', type: 'Report', date: 'Jan 3' },
+  { id: 'doc-5', title: 'Cloud Computing Trends', type: 'Research', date: 'Jan 2' }
+];
+
+function checkFirstTimeUser() {
+  const completed = localStorage.getItem(TUTORIAL_STORAGE_KEY);
+  return !completed;
+}
+
+function loadDummyData() {
+  // Only load dummy if no real data exists
+  if (workspaces.length === 0) {
+    workspaces = [...dummyWorkspaces];
+    workspaceDocs = JSON.parse(JSON.stringify(dummyDocs));
+    libraryDocs = [...dummyLibrary];
+    allVertesiaDocs = [...dummyLibrary];
+    currentWs = workspaces[0];
+    documents = workspaceDocs[currentWs.id] || [];
+  }
+}
+
+function startTutorial() {
+  document.getElementById('tutorialWelcome').classList.add('active');
+}
+
+function startTutorialSteps() {
+  document.getElementById('tutorialWelcome').classList.remove('active');
+  tutorialActive = true;
+  tutorialStep = 0;
+  showTutorialStep(tutorialStep);
+  document.getElementById('tutorialOverlay').classList.add('active');
+}
+
+function skipTutorial() {
+  document.getElementById('tutorialWelcome').classList.remove('active');
+  document.getElementById('tutorialOverlay').classList.remove('active');
+  document.getElementById('tutorialComplete').classList.remove('active');
+  tutorialActive = false;
+  clearTutorialHighlight();
+  localStorage.setItem(TUTORIAL_STORAGE_KEY, 'true');
+}
+
+function endTutorial() {
+  document.getElementById('tutorialComplete').classList.remove('active');
+  tutorialActive = false;
+  clearTutorialHighlight();
+  localStorage.setItem(TUTORIAL_STORAGE_KEY, 'true');
+  showView('home');
+}
+
+function showTutorialStep(index) {
+  const step = tutorialSteps[index];
+  
+  if (step.view !== currentView) {
+    showView(step.view);
+    setTimeout(() => positionTutorialSpotlight(step), 150);
+  } else {
+    positionTutorialSpotlight(step);
+  }
+}
+
+function positionTutorialSpotlight(step) {
+  const element = document.querySelector(step.element);
+  
+  if (!element) {
+    console.warn('Tutorial element not found:', step.element);
+    nextTutorialStep();
+    return;
+  }
+  
+  clearTutorialHighlight();
+  element.setAttribute('data-tutorial-highlight', 'true');
+  
+  const rect = element.getBoundingClientRect();
+  const spotlight = document.getElementById('tutorialSpotlight');
+  const padding = 8;
+  
+  spotlight.style.top = (rect.top - padding) + 'px';
+  spotlight.style.left = (rect.left - padding) + 'px';
+  spotlight.style.width = (rect.width + padding * 2) + 'px';
+  spotlight.style.height = (rect.height + padding * 2) + 'px';
+  
+  const tooltip = document.getElementById('tutorialTooltip');
+  tooltip.setAttribute('data-position', step.position);
+  
+  const tooltipWidth = 340;
+  const gap = 20;
+  
+  let tooltipTop, tooltipLeft;
+  
+  switch (step.position) {
+    case 'bottom':
+      tooltipTop = rect.bottom + gap;
+      tooltipLeft = rect.left;
+      break;
+    case 'top':
+      tooltipTop = rect.top - 220;
+      tooltipLeft = rect.left;
+      break;
+    case 'right':
+      tooltipTop = rect.top;
+      tooltipLeft = rect.right + gap;
+      break;
+    case 'left':
+      tooltipTop = rect.top;
+      tooltipLeft = rect.left - tooltipWidth - gap;
+      break;
+  }
+  
+  tooltipLeft = Math.max(20, Math.min(tooltipLeft, window.innerWidth - tooltipWidth - 20));
+  tooltipTop = Math.max(70, Math.min(tooltipTop, window.innerHeight - 250));
+  
+  tooltip.style.top = tooltipTop + 'px';
+  tooltip.style.left = tooltipLeft + 'px';
+  
+  document.getElementById('tutorialTitle').textContent = step.title;
+  document.getElementById('tutorialDesc').textContent = step.desc;
+  
+  const indicator = document.getElementById('tutorialIndicator');
+  indicator.innerHTML = tutorialSteps.map((_, i) => {
+    let cls = 'tutorial-step-dot';
+    if (i < tutorialStep) cls += ' completed';
+    if (i === tutorialStep) cls += ' active';
+    return `<div class="${cls}"></div>`;
+  }).join('');
+  
+  document.getElementById('tutorialPrevBtn').style.display = tutorialStep === 0 ? 'none' : 'block';
+  document.getElementById('tutorialNextBtn').textContent = tutorialStep === tutorialSteps.length - 1 ? 'Finish' : 'Next';
+}
+
+function clearTutorialHighlight() {
+  document.querySelectorAll('[data-tutorial-highlight]').forEach(el => {
+    el.removeAttribute('data-tutorial-highlight');
+  });
+}
+
+function nextTutorialStep() {
+  if (tutorialStep < tutorialSteps.length - 1) {
+    tutorialStep++;
+    showTutorialStep(tutorialStep);
+  } else {
+    document.getElementById('tutorialOverlay').classList.remove('active');
+    document.getElementById('tutorialComplete').classList.add('active');
+    clearTutorialHighlight();
+  }
+}
+
+function prevTutorialStep() {
+  if (tutorialStep > 0) {
+    tutorialStep--;
+    showTutorialStep(tutorialStep);
+  }
+}
+
+// Tutorial keyboard navigation
+document.addEventListener('keydown', (e) => {
+  if (!tutorialActive) return;
+  if (e.key === 'Escape') skipTutorial();
+  if (e.key === 'ArrowRight') nextTutorialStep();
+  if (e.key === 'ArrowLeft') prevTutorialStep();
+});
+
+// Reposition on resize
+window.addEventListener('resize', () => {
+  if (tutorialActive) showTutorialStep(tutorialStep);
+});
 </script>
+
+<!-- Tutorial: Welcome Modal -->
+<div class="tutorial-modal" id="tutorialWelcome">
+  <div class="tutorial-modal-content">
+    <div class="tutorial-modal-icon">
+      <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+    </div>
+    <h2>Welcome to MarketLens!</h2>
+    <p>Let's take a quick tour to help you get started. We'll show you how to create workspaces, generate research, and navigate the platform.</p>
+    <div class="tutorial-modal-actions">
+      <button class="tutorial-btn secondary" onclick="skipTutorial()">Skip for now</button>
+      <button class="tutorial-btn primary" onclick="startTutorialSteps()">Let's go!</button>
+    </div>
+  </div>
+</div>
+
+<!-- Tutorial: Completion Modal -->
+<div class="tutorial-modal" id="tutorialComplete">
+  <div class="tutorial-modal-content">
+    <div class="tutorial-modal-icon" style="background: var(--accent-soft); color: var(--accent);">
+      <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+    </div>
+    <h2>You're all set!</h2>
+    <p>You now know the basics of MarketLens. Create your first workspace and start generating research. We're here whenever you need help!</p>
+    <div class="tutorial-modal-actions">
+      <button class="tutorial-btn primary" onclick="endTutorial()">Start Exploring</button>
+    </div>
+  </div>
+</div>
+
+<!-- Tutorial: Overlay with Spotlight -->
+<div class="tutorial-overlay" id="tutorialOverlay">
+  <div class="tutorial-spotlight" id="tutorialSpotlight"></div>
+  <div class="tutorial-tooltip" id="tutorialTooltip" data-position="bottom">
+    <div class="tutorial-tooltip-arrow"></div>
+    <div class="tutorial-step-indicator" id="tutorialIndicator"></div>
+    <h3 class="tutorial-title" id="tutorialTitle">Title</h3>
+    <p class="tutorial-desc" id="tutorialDesc">Description</p>
+    <div class="tutorial-actions">
+      <button class="tutorial-skip" onclick="skipTutorial()">Skip tutorial</button>
+      <div class="tutorial-nav">
+        <button class="tutorial-btn secondary" id="tutorialPrevBtn" onclick="prevTutorialStep()">Back</button>
+        <button class="tutorial-btn primary" id="tutorialNextBtn" onclick="nextTutorialStep()">Next</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Tutorial: Restart Button -->
+<button class="start-tutorial-btn" id="startTutorialBtn" onclick="startTutorial()">
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+  Tutorial
+</button>
+
 </body>
 </html>
