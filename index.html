@@ -295,8 +295,12 @@
     .job-item.completed:hover { background: #cce8df; }
     .job-done-icon { width: 20px; height: 20px; background: var(--accent); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; flex-shrink: 0; }
     .job-done-icon svg { width: 12px; height: 12px; }
-    .job-dismiss { background: none; border: none; padding: 4px; cursor: pointer; color: var(--muted); opacity: 0.6; transition: opacity 0.15s; margin-left: auto; }
+    .job-dismiss { background: none; border: none; padding: 4px; cursor: pointer; color: var(--muted); opacity: 0.6; transition: opacity 0.15s; }
     .job-dismiss:hover { opacity: 1; color: var(--ink); }
+    .job-actions { display: flex; align-items: center; gap: 8px; margin-left: auto; }
+    .job-view-btn { background: var(--accent); color: white; border: none; padding: 4px 10px; border-radius: 4px; font-size: 11px; font-weight: 500; cursor: pointer; transition: background 0.15s; }
+    .job-view-btn:hover { background: var(--accent-dark, #1a9a6c); }
+    .job-status { color: var(--accent); font-weight: 500; }
     .jobs-empty { padding: 20px; text-align: center; color: var(--muted); font-size: 12px; }
 
     /* DOCUMENTS */
@@ -1656,7 +1660,7 @@ class VertesiaAPI {
 
   // Stream response (requires JWT) - with timeout
   async streamResponse(workflowId, runId, onMessage, onComplete, onError) {
-    const TIMEOUT_MS = 120000; // 2 minute timeout
+    const TIMEOUT_MS = 240000; // 4 minute timeout for document chat
     let timeoutId;
     let completed = false;
     
@@ -1724,6 +1728,94 @@ class VertesiaAPI {
 
 const api = new VertesiaAPI();
 
+// ===== STATUS MESSAGE PARSER =====
+// Converts raw stream updates into clean user-facing status messages
+// Returns null to skip showing the message
+const parseStatusMessage = (() => {
+  let lastUpdate = 0;
+  let lastMessage = '';
+  const MIN_UPDATE_INTERVAL = 1500; // Don't update more than once per 1.5 seconds
+  
+  // Patterns to SKIP (technical noise)
+  const skipPatterns = [
+    /tools enabled/i,
+    /starting work/i,
+    /interaction/i,
+    /think.*plan/i,
+    /available tools/i,
+    /^using/i,
+    /^calling/i,
+    /^executing/i,
+    /workflow/i,
+    /agent/i
+  ];
+  
+  // Patterns to EXTRACT clean status from
+  const extractPatterns = [
+    // "Searching for X documentation" -> "Searching X..."
+    { match: /searching (?:for )?(?:available )?(.+?)(?:\s+documentation)?\.{0,3}$/i, format: (m) => `Searching ${cleanName(m[1])}...` },
+    // "Reading document: X" or "Reading X"
+    { match: /reading (?:document[:\s]+)?(.+?)\.{0,3}$/i, format: (m) => `Reading ${cleanName(m[1])}` },
+    // "Analyzing X"
+    { match: /analyzing (.+?)\.{0,3}$/i, format: (m) => `Analyzing ${cleanName(m[1])}` },
+    // "Looking at X" or "Looking through X"
+    { match: /looking (?:at|through|into) (.+?)\.{0,3}$/i, format: (m) => `Reviewing ${cleanName(m[1])}` },
+    // "Searching X" (source name)
+    { match: /^searching (\w[\w\s]{2,30})$/i, format: (m) => `Searching ${cleanName(m[1])}...` },
+    // "Found X" or "Found information in X"
+    { match: /found (?:information in |relevant )?(.+?)\.{0,3}$/i, format: (m) => `Found in ${cleanName(m[1])}` }
+  ];
+  
+  // Clean up extracted names
+  function cleanName(name) {
+    if (!name) return 'documents';
+    // Trim, remove quotes, limit length
+    let clean = name.trim().replace(/^["']|["']$/g, '');
+    // Capitalize first letter
+    clean = clean.charAt(0).toUpperCase() + clean.slice(1);
+    // Truncate if too long
+    if (clean.length > 35) clean = clean.substring(0, 32) + '...';
+    return clean;
+  }
+  
+  return function(rawMessage) {
+    if (!rawMessage || typeof rawMessage !== 'string') return null;
+    
+    const now = Date.now();
+    const msg = rawMessage.trim();
+    
+    // Skip if same message or too soon
+    if (msg === lastMessage || (now - lastUpdate) < MIN_UPDATE_INTERVAL) {
+      return null;
+    }
+    
+    // Skip technical noise
+    for (const pattern of skipPatterns) {
+      if (pattern.test(msg)) return null;
+    }
+    
+    // Try to extract clean status
+    for (const { match, format } of extractPatterns) {
+      const result = msg.match(match);
+      if (result) {
+        const cleanStatus = format(result);
+        lastUpdate = now;
+        lastMessage = msg;
+        return cleanStatus;
+      }
+    }
+    
+    // If message is short and seems meaningful, show it cleaned up
+    if (msg.length < 50 && !msg.includes(':') && /^[A-Z]/.test(msg)) {
+      lastUpdate = now;
+      lastMessage = msg;
+      return msg.length > 40 ? msg.substring(0, 37) + '...' : msg;
+    }
+    
+    return null;
+  };
+})();
+
 // ===== LIVE MODE STATE =====
 let liveMode = false;
 let allVertesiaDocs = [];      // All documents from API
@@ -1749,7 +1841,16 @@ let researchTypes = [
 const JOBS_STORAGE_KEY = 'marketlens_active_jobs';
 let activeJobs = JSON.parse(localStorage.getItem(JOBS_STORAGE_KEY) || '[]');
 let jobId = activeJobs.length > 0 ? Math.max(...activeJobs.map(j => j.id)) : 0;
-const jobPollingIntervals = new Map(); // Track polling intervals by job name
+const jobPollingIntervals = new Map(); // Track polling intervals by job ID
+
+// Update elapsed time display every 10 seconds for running jobs
+setInterval(() => {
+  const hasRunningJobs = activeJobs.some(j => j.status === 'running');
+  if (hasRunningJobs) {
+    updateJobs();
+    if (currentView === 'home') renderHomeResearchProgress();
+  }
+}, 10000);
 
 function saveJobs() {
   localStorage.setItem(JOBS_STORAGE_KEY, JSON.stringify(activeJobs));
@@ -2272,11 +2373,11 @@ function renderHomeResearchProgress() {
             </div>
             <div class="research-info">
               <div class="research-name">${job.name}</div>
-              <div class="research-meta"><span class="quick-label">Quick Research</span> Â· Saved to Library</div>
+              <div class="research-meta"><span class="quick-label">Quick Research</span> · Saved to Library</div>
             </div>
             <div class="research-actions">
               <button class="research-action-btn primary" onclick="event.stopPropagation();viewResearchDoc('${job.name}')">View</button>
-              <button class="research-action-btn" onclick="event.stopPropagation();dismissJobFromHome('${job.name}')" title="Dismiss">
+              <button class="research-action-btn" onclick="event.stopPropagation();dismissJob(${job.id})" title="Dismiss">
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
               </button>
             </div>
@@ -2296,7 +2397,7 @@ function renderHomeResearchProgress() {
             <div class="research-actions">
               <button class="research-action-btn" onclick="event.stopPropagation();viewResearchDoc('${job.name}', ${wsIdAttr})">View</button>
               <button class="research-action-btn primary" onclick="event.stopPropagation();openInWorkspace('${job.name}', ${wsIdAttr})">Open in Workspace</button>
-              <button class="research-action-btn" onclick="event.stopPropagation();dismissJobFromHome('${job.name}')" title="Dismiss">
+              <button class="research-action-btn" onclick="event.stopPropagation();dismissJob(${job.id})" title="Dismiss">
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
               </button>
             </div>
@@ -2305,18 +2406,20 @@ function renderHomeResearchProgress() {
       }
     } else {
       // Running job
+      const elapsed = formatElapsedTime(job.startedAt);
+      const statusText = job.statusText || 'Processing...';
       const locationText = isQuick 
         ? '<span class="quick-label">Quick Research</span>' 
-        : `Generating in <span class="workspace">${job.wsName}</span>`;
+        : `<span class="workspace">${job.wsName}</span>`;
       html += `
         <div class="research-item">
           <div class="research-spinner"></div>
           <div class="research-info">
             <div class="research-name">${job.name}</div>
-            <div class="research-meta">${locationText} Â· Est. ~${job.time} min</div>
+            <div class="research-meta">${locationText} · <span class="job-status">${statusText}</span> · ${elapsed}</div>
           </div>
           <div class="research-actions">
-            <button class="research-action-btn" onclick="event.stopPropagation();cancelResearchJob('${job.name}')" title="Cancel">
+            <button class="research-action-btn" onclick="event.stopPropagation();cancelResearchJob(${job.id})" title="Cancel">
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
               Cancel
             </button>
@@ -2420,40 +2523,53 @@ async function openInWorkspace(jobName, wsId) {
   showView('workspaces');
   selectWs(wsId);
   
-  // Wait a moment for the workspace to load, then open the document
-  setTimeout(async () => {
-    // Find the document by name in workspace docs or library
-    let doc = null;
-    const wsDocs = workspaceDocs[wsId] || [];
+  // Wait for workspace to load, then open the document
+  // Use longer timeout and retry logic for reliability
+  let attempts = 0;
+  const maxAttempts = 5;
+  
+  const tryOpenDoc = () => {
+    attempts++;
     
-    doc = wsDocs.find(d => d.title === jobName);
-    if (!doc) doc = wsDocs.find(d => d.title.includes(jobName) || jobName.includes(d.title));
+    // Search in the current documents array (set by doSelectWs)
+    let doc = documents.find(d => d.title === jobName);
+    if (!doc) doc = documents.find(d => d.title.includes(jobName) || jobName.includes(d.title));
     if (!doc && jobName.startsWith('Follow-up: ')) {
       const baseName = jobName.replace('Follow-up: ', '');
-      doc = wsDocs.find(d => d.title.includes(baseName));
+      doc = documents.find(d => d.title.includes(baseName));
     }
     
-    // Try library docs if not in workspace
+    // Try workspace docs directly
+    if (!doc) {
+      const wsDocs = workspaceDocs[wsId] || [];
+      doc = wsDocs.find(d => d.title === jobName);
+      if (!doc) doc = wsDocs.find(d => d.title.includes(jobName) || jobName.includes(d.title));
+    }
+    
+    // Try library docs as fallback
     if (!doc) {
       doc = libraryDocs.find(d => d.title === jobName);
       if (!doc) doc = libraryDocs.find(d => d.title.includes(jobName) || jobName.includes(d.title));
     }
     
-    // Open the document
     if (doc) {
+      // Found the document - open it
       if (liveMode && doc.source) {
         viewDocFromAPI(doc);
       } else {
         const content = sampleDocuments[doc.title] || generatePlaceholderDoc(doc.title);
         openDocViewer(content, doc.title);
       }
+    } else if (attempts < maxAttempts) {
+      // Retry after a short delay
+      setTimeout(tryOpenDoc, 300);
+    } else {
+      console.warn('Could not find document after', maxAttempts, 'attempts:', jobName);
     }
-  }, 300);
-}
-
-function dismissJobFromHome(name) {
-  dismissJob(name);
-  // dismissJob now handles renderHome() if on home view
+  };
+  
+  // Start first attempt after initial delay
+  setTimeout(tryOpenDoc, 300);
 }
 
 let homeLibraryFilter = '';
@@ -2901,11 +3017,14 @@ async function createWorkspace() {
   
   let wsId;
   let ws;
+  let docsAddedSuccessfully = true;
   
   // If live mode, create via API
   if (liveMode) {
+    const btn = document.querySelector('#newWorkspace .action-btn.primary');
+    
+    // STEP 1: Create the workspace/collection
     try {
-      const btn = document.querySelector('#newWorkspace .action-btn.primary');
       if (btn) { btn.disabled = true; btn.textContent = 'Creating...'; }
       
       const collection = await api.createCollection(name, `Created from MarketLens on ${new Date().toLocaleDateString()}`);
@@ -2927,35 +3046,40 @@ async function createWorkspace() {
       }
       
       ws = { id: wsId, name, pinned: false, status: 'active' };
-      
-      // Add selected docs to collection (with slight delay to ensure collection is fully created)
-      const picker = document.getElementById('newWsPicker');
-      const selected = picker.querySelectorAll('.doc-picker-item.selected');
-      const docIds = Array.from(selected).map(el => el.dataset.docId).filter(id => id);
-      
-      if (docIds.length > 0) {
-        if (btn) { btn.textContent = 'Adding documents...'; }
-        // Brief delay to ensure collection is fully registered in backend
-        await new Promise(resolve => setTimeout(resolve, 500));
-        await api.addToCollection(wsId, docIds);
-        console.log('Documents added to collection');
-        collectionMembers[wsId] = docIds;
-        workspaceDocs[wsId] = docIds.map(id => allVertesiaDocs.find(d => d.id === id)).filter(Boolean);
-      } else {
-        workspaceDocs[wsId] = [];
-        collectionMembers[wsId] = [];
-      }
-      
-      if (btn) { btn.disabled = false; btn.textContent = 'Create Workspace'; }
+      workspaceDocs[wsId] = [];
+      collectionMembers[wsId] = [];
       console.log('Created workspace via API:', wsId);
       
     } catch (error) {
       console.error('Failed to create workspace via API:', error);
       await showAlert('Failed to create workspace. Please try again.', 'Error');
-      const btn = document.querySelector('#newWorkspace .action-btn.primary');
       if (btn) { btn.disabled = false; btn.textContent = 'Create Workspace'; }
       return;
     }
+    
+    // STEP 2: Add documents (separate try-catch - don't fail workspace creation if this fails)
+    const picker = document.getElementById('newWsPicker');
+    const selected = picker.querySelectorAll('.doc-picker-item.selected');
+    const docIds = Array.from(selected).map(el => el.dataset.docId).filter(id => id);
+    
+    if (docIds.length > 0) {
+      try {
+        if (btn) { btn.textContent = 'Adding documents...'; }
+        // Brief delay to ensure collection is fully registered in backend
+        await new Promise(resolve => setTimeout(resolve, 800));
+        await api.addToCollection(wsId, docIds);
+        console.log('Documents added to collection');
+        collectionMembers[wsId] = docIds;
+        workspaceDocs[wsId] = docIds.map(id => allVertesiaDocs.find(d => d.id === id)).filter(Boolean);
+      } catch (docError) {
+        console.warn('Failed to add documents to workspace:', docError);
+        docsAddedSuccessfully = false;
+        // Don't return - workspace was created successfully, just docs failed
+      }
+    }
+    
+    if (btn) { btn.disabled = false; btn.textContent = 'Create Workspace'; }
+    
   } else {
     // Demo mode
     wsId = Date.now();
@@ -2967,7 +3091,7 @@ async function createWorkspace() {
     selected.forEach(el => {
       const title = el.querySelector('.doc-picker-title').textContent;
       const meta = el.querySelector('.doc-picker-meta').textContent;
-      const type = meta.split(' Â· ')[1] || 'Research';
+      const type = meta.split(' · ')[1] || 'Research';
       workspaceDocs[wsId].push({
         id: Date.now() + Math.random(),
         title,
@@ -2989,6 +3113,11 @@ async function createWorkspace() {
   
   document.getElementById('newWsName').value = '';
   closeModal('newWorkspace');
+  
+  // Show warning if documents couldn't be added (but workspace was created)
+  if (!docsAddedSuccessfully) {
+    await showAlert('Workspace created, but documents may take a moment to appear. Use Refresh to check.', 'Note');
+  }
 }
 
 // DOCUMENTS
@@ -3245,51 +3374,90 @@ async function refreshWorkspaceDocs() {
 function toggleJobs() {
   document.getElementById('jobsToast').classList.toggle('collapsed');
 }
+
+// Format elapsed time as "Xm Ys" or "X:YZ"
+function formatElapsedTime(startedAt) {
+  const elapsed = Math.floor((Date.now() - startedAt) / 1000);
+  const mins = Math.floor(elapsed / 60);
+  const secs = elapsed % 60;
+  if (mins > 0) {
+    return `${mins}m ${secs}s`;
+  }
+  return `${secs}s`;
+}
+
+// Update job status text
+function updateJobStatus(jobId, statusText) {
+  const job = activeJobs.find(j => j.id === jobId);
+  if (job && job.status === 'running') {
+    job.statusText = statusText;
+    saveJobs();
+    updateJobs();
+    if (currentView === 'home') renderHomeResearchProgress();
+  }
+}
+
 function updateJobs() {
-  const runningJobs = activeJobs.filter(j => j.status !== 'completed');
-  const completedJobs = activeJobs.filter(j => j.status === 'completed');
+  // Filter jobs: show only current workspace jobs + quick research jobs when in workspace view
+  const relevantJobs = activeJobs.filter(j => {
+    // Quick research always shows
+    if (j.isQuickResearch || !j.wsId) return true;
+    // Workspace jobs only show in their workspace
+    return currentWs && j.wsId === currentWs.id;
+  });
+  
+  const runningJobs = relevantJobs.filter(j => j.status !== 'completed');
+  const completedJobs = relevantJobs.filter(j => j.status === 'completed');
   
   document.getElementById('jobsBadge').textContent = runningJobs.length || '';
   
-  if (activeJobs.length === 0) {
+  if (relevantJobs.length === 0) {
     document.getElementById('jobsBody').innerHTML = '<div class="jobs-empty">No research running</div>';
   } else {
-    document.getElementById('jobsBody').innerHTML = activeJobs.map(j => {
+    document.getElementById('jobsBody').innerHTML = relevantJobs.map(j => {
       const isQuick = j.isQuickResearch || !j.wsId;
       const wsIdAttr = typeof j.wsId === 'string' ? `'${j.wsId}'` : j.wsId;
       
       if (j.status === 'completed') {
         if (isQuick) {
-          return `<div class="job-item completed" onclick="viewResearchDoc('${j.name}')">
+          return `<div class="job-item completed">
             <div class="job-done-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg></div>
             <div class="job-info">
               <div class="job-name">${j.name}</div>
-              <div class="job-progress"><span class="job-workspace">Quick Research</span> Â· Click to view</div>
+              <div class="job-progress"><span class="job-workspace">Quick Research</span> · Saved to Library</div>
             </div>
-            <button class="job-dismiss" onclick="event.stopPropagation();dismissJob('${j.name}')" title="Dismiss">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-            </button>
+            <div class="job-actions">
+              <button class="job-view-btn" onclick="event.stopPropagation();viewResearchDoc('${j.name}')">View</button>
+              <button class="job-dismiss" onclick="event.stopPropagation();dismissJob(${j.id})" title="Dismiss">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+              </button>
+            </div>
           </div>`;
         } else {
-          return `<div class="job-item completed" onclick="openJobDoc('${j.name}', ${wsIdAttr})">
+          return `<div class="job-item completed">
             <div class="job-done-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg></div>
             <div class="job-info">
               <div class="job-name">${j.name}</div>
-              <div class="job-progress">Ready in <span class="job-workspace">${j.wsName}</span> Â· Click to view</div>
+              <div class="job-progress">Ready · Click to view</div>
             </div>
-            <button class="job-dismiss" onclick="event.stopPropagation();dismissJob('${j.name}')" title="Dismiss">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-            </button>
+            <div class="job-actions">
+              <button class="job-view-btn" onclick="event.stopPropagation();viewResearchDoc('${j.name}', ${wsIdAttr})">View</button>
+              <button class="job-dismiss" onclick="event.stopPropagation();dismissJob(${j.id})" title="Dismiss">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+              </button>
+            </div>
           </div>`;
         }
       } else {
+        const elapsed = formatElapsedTime(j.startedAt);
+        const statusText = j.statusText || 'Processing...';
         return `<div class="job-item">
           <div class="job-spinner"></div>
           <div class="job-info">
             <div class="job-name">${j.name}</div>
-            <div class="job-progress">Generating in <span class="job-workspace">${j.wsName || 'workspace'}</span> Â· Est. ~${j.time} min</div>
+            <div class="job-progress"><span class="job-status">${statusText}</span> · ${elapsed}</div>
           </div>
-          <button class="job-dismiss" onclick="event.stopPropagation();cancelResearchJob('${j.name}')" title="Cancel">
+          <button class="job-dismiss" onclick="event.stopPropagation();cancelResearchJob(${j.id})" title="Cancel">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
           </button>
         </div>`;
@@ -3300,13 +3468,14 @@ function updateJobs() {
 }
 
 function addJob(name, skipFakeTimer = false, workflowId = null, runId = null, isQuickResearch = false) {
+  const newJobId = ++jobId;
   const job = { 
-    id: ++jobId, 
+    id: newJobId, 
     name, 
-    time: Math.floor(Math.random() * 3) + 2, 
     wsId: isQuickResearch ? null : currentWs?.id,
     wsName: isQuickResearch ? null : currentWs?.name,
     status: 'running',
+    statusText: 'Starting...',
     workflowId,
     runId,
     startedAt: Date.now(),
@@ -3326,7 +3495,7 @@ function addJob(name, skipFakeTimer = false, workflowId = null, runId = null, is
   // Only use fake timer if not in live mode or if not skipFakeTimer
   if (!liveMode && !skipFakeTimer) {
     setTimeout(() => {
-      completeJob(name);
+      completeJob(newJobId);
       
       // Add demo document to workspace (if not quick research)
       if (!isQuickResearch && job.wsId) {
@@ -3342,10 +3511,15 @@ function addJob(name, skipFakeTimer = false, workflowId = null, runId = null, is
       renderSidebar();
     }, 5000 + Math.random() * 5000);
   }
+  
+  return newJobId;
 }
 
-function completeJob(name) {
-  const job = activeJobs.find(j => j.name === name);
+function completeJob(jobIdentifier) {
+  // Support both ID (number) and name (string, legacy) for backward compatibility
+  const job = typeof jobIdentifier === 'number' 
+    ? activeJobs.find(j => j.id === jobIdentifier)
+    : activeJobs.find(j => j.name === jobIdentifier);
   if (job) {
     job.status = 'completed';
     saveJobs();
@@ -3355,16 +3529,16 @@ function completeJob(name) {
   }
 }
 
-function removeJob(name) {
-  activeJobs = activeJobs.filter(j => j.name !== name);
+function removeJob(jobId) {
+  activeJobs = activeJobs.filter(j => j.id !== jobId);
   saveJobs();
   updateJobs();
   renderSidebar();
   if (currentView === 'home') renderHome();
 }
 
-function dismissJob(name) {
-  activeJobs = activeJobs.filter(j => j.name !== name);
+function dismissJob(jobId) {
+  activeJobs = activeJobs.filter(j => j.id !== jobId);
   saveJobs();
   updateJobs();
   renderSidebar();
@@ -3432,11 +3606,11 @@ function resumeJobPolling() {
     // Check if job is too old (> 30 minutes)
     if (Date.now() - job.startedAt > 30 * 60 * 1000) {
       console.log(`Job ${job.name} is too old, marking as completed`);
-      completeJob(job.name);
+      completeJob(job.id);
       return;
     }
     
-    pollResearchCompletion(job.workflowId, job.runId, job.name);
+    pollResearchCompletion(job.workflowId, job.runId, job.id);
   });
 }
 
@@ -3540,13 +3714,22 @@ function updateFocus() {
 }
 
 async function startResearch() {
+  const btn = document.getElementById('researchSubmitBtn');
+  
+  // Immediately disable to prevent double-click
+  if (btn) { btn.disabled = true; btn.textContent = 'Starting...'; }
+  
   const type = document.getElementById('researchType').value;
   const focus = document.getElementById('researchFocus').value;
   const context = document.getElementById('researchContext')?.value?.trim() || '';
   const scope = document.getElementById('researchScope')?.value || 'Asset';
   const rigor = document.getElementById('researchRigor')?.value || 'In Depth';
   
-  if (!focus) { await showAlert('Please select type and focus.', 'Required'); return; }
+  if (!focus) { 
+    if (btn) { btn.disabled = false; btn.textContent = 'Generate Research'; }
+    await showAlert('Please select type and focus.', 'Required'); 
+    return; 
+  }
   
   // Create job with parent info if follow-up
   const jobName = followUpParentDoc ? `Follow-up: ${focus}` : focus;
@@ -3624,14 +3807,15 @@ FINAL STEP - CRITICAL: After uploading the document to the content library, you 
       console.log('Research started:', response);
       
       // Add to active jobs with workflow IDs for persistence
-      addJob(jobName, true, response.workflowId, response.runId, isQuickResearchMode);
+      const newJobId = addJob(jobName, true, response.workflowId, response.runId, isQuickResearchMode);
       
-      // Poll for completion
+      // Poll for completion using job ID
       if (response.runId && response.workflowId) {
-        pollResearchCompletion(response.workflowId, response.runId, jobName);
+        pollResearchCompletion(response.workflowId, response.runId, newJobId);
       }
     } catch (error) {
       console.error('Failed to start research:', error);
+      if (btn) { btn.disabled = false; btn.textContent = 'Generate Research'; }
       await showAlert('Failed to start research. Please try again.', 'Error');
       return;
     }
@@ -3644,16 +3828,68 @@ FINAL STEP - CRITICAL: After uploading the document to the content library, you 
   resetResearchModal();
 }
 
-async function pollResearchCompletion(workflowId, runId, jobName) {
+async function pollResearchCompletion(workflowId, runId, jobId) {
   let attempts = 0;
   const maxAttempts = 120; // 10 minutes at 5s intervals
+  let streamActive = true;
   
+  // Start a stream listener for status updates (runs in parallel with polling)
+  const streamStatus = async () => {
+    try {
+      const token = await api.getAuthToken();
+      const url = `${VERTESIA_CONFIG.VERTESIA_API_BASE}/workflows/runs/${workflowId}/${runId}/stream?since=${Date.now()}&access_token=${token}`;
+      
+      const response = await fetch(url);
+      if (!response.ok) return;
+      
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = '';
+      
+      while (streamActive) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split('\n');
+        buffer = lines.pop();
+        
+        for (const line of lines) {
+          if (!line.startsWith('data:')) continue;
+          try {
+            const data = JSON.parse(line.slice(5).trim());
+            
+            // Parse status updates
+            if (data.type === 'update' && data.message) {
+              const cleanStatus = parseStatusMessage(data.message);
+              if (cleanStatus) {
+                updateJobStatus(jobId, cleanStatus);
+              }
+            }
+            
+            // Stop on finish
+            if (data.type === 'finish' || data.finish_reason === 'stop') {
+              return;
+            }
+          } catch (e) {}
+        }
+      }
+    } catch (e) {
+      console.log('Research stream ended or errored:', e.message);
+    }
+  };
+  
+  // Start stream in background (don't await)
+  streamStatus();
+  
+  // Polling for completion status
   const poll = setInterval(async () => {
     attempts++;
     if (attempts > maxAttempts) {
       clearInterval(poll);
-      jobPollingIntervals.delete(jobName);
-      completeJob(jobName);
+      streamActive = false;
+      jobPollingIntervals.delete(jobId);
+      completeJob(jobId);
       console.log('Research timed out - reloading anyway');
       await reloadAfterResearch();
       return;
@@ -3662,21 +3898,22 @@ async function pollResearchCompletion(workflowId, runId, jobName) {
     try {
       const status = await api.getRunStatus(workflowId, runId);
       const runStatus = (status?.status || '').toLowerCase();
-      console.log('Research poll - raw status:', status?.status, '| normalized:', runStatus, '| attempt:', attempts);
+      console.log('Research poll - status:', runStatus, '| attempt:', attempts);
       
       if (['completed', 'success', 'finished', 'done', 'succeeded'].includes(runStatus)) {
         clearInterval(poll);
-        jobPollingIntervals.delete(jobName);
-        completeJob(jobName);
+        streamActive = false;
+        jobPollingIntervals.delete(jobId);
+        completeJob(jobId);
         console.log('Research completed successfully');
         await reloadAfterResearch();
         
       } else if (['failed', 'error', 'cancelled', 'canceled'].includes(runStatus)) {
         clearInterval(poll);
-        jobPollingIntervals.delete(jobName);
-        completeJob(jobName);
-        // Still reload - the agent may have completed the work even if status shows failed
-        console.log('Research reported as failed, but reloading anyway in case work was done...');
+        streamActive = false;
+        jobPollingIntervals.delete(jobId);
+        completeJob(jobId);
+        console.log('Research reported as failed, but reloading anyway...');
         await reloadAfterResearch();
       }
     } catch (e) {
@@ -3685,13 +3922,16 @@ async function pollResearchCompletion(workflowId, runId, jobName) {
   }, 5000); // Check every 5 seconds
   
   // Track the interval so we can cancel it
-  jobPollingIntervals.set(jobName, poll);
+  jobPollingIntervals.set(jobId, poll);
 }
 
-async function cancelResearchJob(name) {
+async function cancelResearchJob(jobId) {
+  const job = activeJobs.find(j => j.id === jobId);
+  if (!job) return;
+  
   const confirmed = await showDialog({
     title: 'Cancel Research',
-    message: `Cancel "${name}"? The backend process may continue, but it will be removed from your view.`,
+    message: `Cancel "${job.name}"? The backend process may continue, but it will be removed from your view.`,
     confirmText: 'Cancel Research',
     cancelText: 'Keep Running',
     danger: true
@@ -3700,21 +3940,21 @@ async function cancelResearchJob(name) {
   if (!confirmed) return;
   
   // Stop polling if active
-  const interval = jobPollingIntervals.get(name);
+  const interval = jobPollingIntervals.get(jobId);
   if (interval) {
     clearInterval(interval);
-    jobPollingIntervals.delete(name);
-    console.log('Stopped polling for:', name);
+    jobPollingIntervals.delete(jobId);
+    console.log('Stopped polling for job:', jobId);
   }
   
   // Remove from active jobs
-  activeJobs = activeJobs.filter(j => j.name !== name);
+  activeJobs = activeJobs.filter(j => j.id !== jobId);
   saveJobs();
   updateJobs();
   renderSidebar();
   if (currentView === 'home') renderHome();
   
-  console.log('Cancelled job:', name);
+  console.log('Cancelled job:', jobId, job.name);
 }
 
 async function reloadAfterResearch() {
@@ -3769,7 +4009,9 @@ function resetResearchModal() {
   isQuickResearchMode = false;
   document.getElementById('researchModalTitle').textContent = 'Research';
   document.getElementById('researchModalDesc').textContent = 'Generate a single research document. Output will be added to this workspace.';
-  document.getElementById('researchSubmitBtn').textContent = 'Generate Research';
+  const btn = document.getElementById('researchSubmitBtn');
+  btn.textContent = 'Generate Research';
+  btn.disabled = false;
   document.getElementById('researchType').value = '';
   document.getElementById('researchFocus').innerHTML = '<option value="">Choose type first...</option>';
   document.getElementById('researchContext').value = '';
@@ -3853,6 +4095,10 @@ function showBatchConfig() {
   document.getElementById('batchStep1').classList.add('active');
 }
 function startBatchResearch() {
+  // Disable button immediately to prevent double-click
+  const confirmBtn = document.querySelector('#batchStep2 .action-btn.primary');
+  if (confirmBtn) { confirmBtn.disabled = true; confirmBtn.textContent = 'Queueing...'; }
+  
   const topic = document.getElementById('batchTopic')?.value?.trim() || '';
   const scope = document.getElementById('researchScope')?.value || 'Asset';
   const rigor = document.getElementById('researchRigor')?.value || 'In Depth';
@@ -3864,7 +4110,7 @@ function startBatchResearch() {
   
   selected.forEach(async (el) => {
     const name = el.querySelector('.research-type-name').textContent;
-    const qty = parseInt(el.querySelector('.stepper-value').textContent.replace('Ã—', ''));
+    const qty = parseInt(el.querySelector('.stepper-value').textContent.replace('×', ''));
     
     for (let i = 0; i < qty; i++) {
       const jobName = qty > 1 ? `${name} (${i + 1})` : name;
@@ -3885,9 +4131,9 @@ FINAL STEP - CRITICAL: After uploading the document to the content library, you 
 - Confirm completion by confirming the document was added to the collection
 ` : ''}`;
           const response = await api.executeResearch(prompt);
-          addJob(jobName, true, response.workflowId, response.runId);
+          const newJobId = addJob(jobName, true, response.workflowId, response.runId);
           if (response.runId && response.workflowId) {
-            pollResearchCompletion(response.workflowId, response.runId, jobName);
+            pollResearchCompletion(response.workflowId, response.runId, newJobId);
           }
         } catch (error) {
           console.error('Batch research failed:', error);
@@ -3898,10 +4144,13 @@ FINAL STEP - CRITICAL: After uploading the document to the content library, you 
     }
     
     el.classList.remove('selected');
-    el.querySelector('.stepper-value').textContent = 'Ã—1';
+    el.querySelector('.stepper-value').textContent = '×1';
   });
   
   updateBatchTotal();
+  
+  // Reset button state before closing
+  if (confirmBtn) { confirmBtn.disabled = false; confirmBtn.textContent = 'Confirm & Queue'; }
   closeModal('batchResearch');
 }
 
@@ -4087,21 +4336,27 @@ async function sendChatToAPI(msg, chatEl) {
   const sendBtn = document.getElementById('chatSend');
   if (sendBtn) sendBtn.disabled = true;
   
-  // BACKUP: Force reset after 30 seconds no matter what
+  // BACKUP: Force reset after 4 minutes no matter what
   const backupTimeout = setTimeout(() => {
     console.log('Backup timeout - forcing chat reset');
     isChatStreaming = false;
     if (sendBtn) sendBtn.disabled = false;
     document.getElementById('wsThinking')?.remove();
-  }, 30000);
+  }, 240000);
 
   // Show thinking indicator
   chatEl.innerHTML += `
     <div class="thinking-indicator" id="wsThinking">
       <div class="thinking-dots"><span></span><span></span><span></span></div>
-      <span>Analyzing workspace documents...</span>
+      <span class="thinking-status">Analyzing workspace documents...</span>
     </div>`;
   chatEl.scrollTop = chatEl.scrollHeight;
+  
+  // Helper to update thinking status
+  const updateThinkingStatus = (text) => {
+    const statusEl = document.querySelector('#wsThinking .thinking-status');
+    if (statusEl) statusEl.textContent = text;
+  };
 
   try {
     // Build task with document IDs
@@ -4139,6 +4394,15 @@ async function sendChatToAPI(msg, chatEl) {
       
       await api.streamResponse(response.workflowId, response.runId,
         (data) => {
+          // Show clean status updates
+          if (data.type === 'update' && data.message) {
+            const cleanStatus = parseStatusMessage(data.message);
+            if (cleanStatus) {
+              updateThinkingStatus(cleanStatus);
+            }
+          }
+          
+          // Handle the actual answer
           if (data.type === 'answer' && data.message && !gotAnswer) {
             const answer = api.extractAnswer(data.message);
             if (answer && answer.length > 10) {
@@ -4918,21 +5182,27 @@ async function sendDocChatToAPI(msg, messagesEl) {
   const sendBtn = document.getElementById('docChatSend');
   if (sendBtn) sendBtn.disabled = true;
   
-  // BACKUP: Force reset after 30 seconds no matter what
+  // BACKUP: Force reset after 4 minutes no matter what
   const backupTimeout = setTimeout(() => {
     console.log('Backup timeout - forcing doc chat reset');
     isDocChatStreaming = false;
     if (sendBtn) sendBtn.disabled = false;
     document.getElementById('docThinking')?.remove();
-  }, 30000);
+  }, 240000);
   
   // Show thinking indicator
   messagesEl.innerHTML += `
     <div class="thinking-indicator" id="docThinking">
       <div class="thinking-dots"><span></span><span></span><span></span></div>
-      <span>Analyzing document...</span>
+      <span class="thinking-status">Analyzing document...</span>
     </div>`;
   messagesEl.scrollTop = messagesEl.scrollHeight;
+  
+  // Helper to update thinking status
+  const updateThinkingStatus = (text) => {
+    const statusEl = document.querySelector('#docThinking .thinking-status');
+    if (statusEl) statusEl.textContent = text;
+  };
 
   try {
     let task = `DOCUMENT CONTEXT: Analyze document ID ${currentViewDocId} (${currentViewDoc})\n\n`;
@@ -4956,6 +5226,15 @@ async function sendDocChatToAPI(msg, messagesEl) {
       
       await api.streamResponse(response.workflowId, response.runId,
         (data) => {
+          // Show clean status updates
+          if (data.type === 'update' && data.message) {
+            const cleanStatus = parseStatusMessage(data.message);
+            if (cleanStatus) {
+              updateThinkingStatus(cleanStatus);
+            }
+          }
+          
+          // Handle the actual answer
           if (data.type === 'answer' && data.message && !gotAnswer) {
             const answer = api.extractAnswer(data.message);
             if (answer && answer.length > 10) {
