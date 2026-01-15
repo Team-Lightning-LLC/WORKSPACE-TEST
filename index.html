@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>MarketLens · Workspaces v7</title>
+  <title>MarketLens Â· Workspaces v7</title>
   <link rel="icon" type="image/png" href="assets/logo.png">
   <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
   <style>
@@ -976,13 +976,9 @@
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
                 Add Docs
               </button>
-              <button class="panel-action-btn solid" onclick="openModal('findRelated')">
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
-                Find Related
-              </button>
-              <button class="panel-action-btn" onclick="syncDocuments()" id="syncDocsBtn" title="Sync child documents to parent collections">
+              <button class="panel-action-btn" onclick="refreshWorkspaceDocs()" id="refreshDocsBtn" title="Refresh to check for new documents">
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0 1 18.8-4.3M22 12.5a10 10 0 0 1-18.8 4.2"/></svg>
-                <span id="syncDocsBtnText">Sync</span>
+                <span id="refreshDocsBtnText">Refresh</span>
               </button>
             </div>
           </div>
@@ -1013,7 +1009,7 @@
             <div class="chat-history-popup" id="chatHistoryPopup">
               <div class="chat-history-header">
                 <span class="chat-history-title">Saved Chats</span>
-                <button class="chat-history-close" onclick="closeChatHistory()">×</button>
+                <button class="chat-history-close" onclick="closeChatHistory()">Ã—</button>
               </div>
               <div class="chat-history-list" id="chatHistoryList">
                 <!-- Populated by JS -->
@@ -1053,7 +1049,7 @@
   <!-- MODALS -->
   <div class="modal-overlay" id="newWorkspace" onclick="if(event.target===this)closeModal('newWorkspace')">
     <div class="modal large">
-      <div class="modal-header"><h2 class="modal-title">New Workspace</h2><button class="modal-close" onclick="closeModal('newWorkspace')">×</button></div>
+      <div class="modal-header"><h2 class="modal-title">New Workspace</h2><button class="modal-close" onclick="closeModal('newWorkspace')">Ã—</button></div>
       <div class="modal-body">
         <p class="modal-desc">Workspaces organize related research, enable scoped chat, and generate synthesized reports.</p>
         <div class="form-group">
@@ -1074,7 +1070,7 @@
 
   <div class="modal-overlay" id="addDocuments" onclick="if(event.target===this)closeModal('addDocuments')">
     <div class="modal large">
-      <div class="modal-header"><h2 class="modal-title">Add Documents</h2><button class="modal-close" onclick="closeModal('addDocuments')">×</button></div>
+      <div class="modal-header"><h2 class="modal-title">Add Documents</h2><button class="modal-close" onclick="closeModal('addDocuments')">Ã—</button></div>
       <div class="modal-body">
         <p class="modal-desc">Select documents from your library to add to this workspace.</p>
         <div class="doc-picker" id="addDocsPicker"></div>
@@ -1086,23 +1082,9 @@
     </div>
   </div>
 
-  <div class="modal-overlay" id="findRelated" onclick="if(event.target===this)closeModal('findRelated')">
-    <div class="modal large">
-      <div class="modal-header"><h2 class="modal-title">Find Related Documents</h2><button class="modal-close" onclick="closeModal('findRelated')">×</button></div>
-      <div class="modal-body">
-        <p class="modal-desc">Documents ranked by similarity to your workspace content. Select any to add.</p>
-        <div class="doc-picker" id="findRelatedPicker"></div>
-      </div>
-      <div class="modal-footer">
-        <button class="action-btn" onclick="closeModal('findRelated')">Cancel</button>
-        <button class="action-btn primary" onclick="addDocsToWorkspace('findRelatedPicker')">Add Selected</button>
-      </div>
-    </div>
-  </div>
-
   <div class="modal-overlay" id="research" onclick="if(event.target===this)closeModal('research')">
     <div class="modal">
-      <div class="modal-header"><h2 class="modal-title" id="researchModalTitle">Research</h2><button class="modal-close" onclick="closeModal('research')">×</button></div>
+      <div class="modal-header"><h2 class="modal-title" id="researchModalTitle">Research</h2><button class="modal-close" onclick="closeModal('research')">Ã—</button></div>
       <div class="modal-body">
         <p class="modal-desc" id="researchModalDesc">Generate a single research document. Output will be added to this workspace.</p>
         <div class="form-group">
@@ -1154,7 +1136,7 @@
 
   <div class="modal-overlay" id="batchResearch" onclick="if(event.target===this)closeModal('batchResearch')">
     <div class="modal wide">
-      <div class="modal-header"><h2 class="modal-title">Batch Research</h2><button class="modal-close" onclick="closeModal('batchResearch')">×</button></div>
+      <div class="modal-header"><h2 class="modal-title">Batch Research</h2><button class="modal-close" onclick="closeModal('batchResearch')">Ã—</button></div>
       <div class="modal-view active" id="batchStep1">
         <div class="modal-body">
           <p class="modal-desc">Simultaneously run multiple research queries to build more robust insight.</p>
@@ -1188,7 +1170,7 @@
 
   <div class="modal-overlay" id="generateReport" onclick="if(event.target===this)closeModal('generateReport')">
     <div class="modal">
-      <div class="modal-header"><h2 class="modal-title">Generate Report</h2><button class="modal-close" onclick="closeModal('generateReport')">×</button></div>
+      <div class="modal-header"><h2 class="modal-title">Generate Report</h2><button class="modal-close" onclick="closeModal('generateReport')">Ã—</button></div>
       <div class="modal-body">
         <p class="modal-desc">Synthesize your workspace documents into a cohesive report.</p>
         <div class="form-group">
@@ -1209,7 +1191,7 @@
 
   <div class="modal-overlay" id="libraryPopup" onclick="if(event.target===this)closeModal('libraryPopup')">
     <div class="modal fullish">
-      <div class="modal-header"><h2 class="modal-title">Library</h2><button class="modal-close" onclick="closeModal('libraryPopup')">×</button></div>
+      <div class="modal-header"><h2 class="modal-title">Library</h2><button class="modal-close" onclick="closeModal('libraryPopup')">Ã—</button></div>
       <div class="modal-body" style="padding:0;max-height:500px;overflow-y:auto"><div class="library-list" id="libraryList"></div></div>
     </div>
   </div>
@@ -1219,7 +1201,7 @@
     <div class="modal">
       <div class="modal-header">
         <h2 class="modal-title">Profile Settings</h2>
-        <button class="modal-close" onclick="closeModal('profileModal')">×</button>
+        <button class="modal-close" onclick="closeModal('profileModal')">Ã—</button>
       </div>
       <div class="modal-body">
         <div class="profile-avatar">
@@ -1272,7 +1254,7 @@
     <div class="modal">
       <div class="modal-header">
         <h2 class="modal-title">How can we help?</h2>
-        <button class="modal-close" onclick="closeModal('supportModal')">×</button>
+        <button class="modal-close" onclick="closeModal('supportModal')">Ã—</button>
       </div>
       <div class="modal-body support-body">
         <div class="help-options">
@@ -1287,7 +1269,7 @@
               <h4>Reset password</h4>
               <p>Forgot your password? We'll help you reset it</p>
             </div>
-            <div class="help-option-arrow">→</div>
+            <div class="help-option-arrow">â†’</div>
           </a>
           <a href="#" class="help-option" onclick="event.preventDefault()">
             <div class="help-option-icon">
@@ -1301,7 +1283,7 @@
               <h4>Getting started</h4>
               <p>New to MarketLens? Learn the basics</p>
             </div>
-            <div class="help-option-arrow">→</div>
+            <div class="help-option-arrow">â†’</div>
           </a>
           <a href="#" class="help-option" onclick="event.preventDefault()">
             <div class="help-option-icon">
@@ -1313,7 +1295,7 @@
               <h4>Technical issues</h4>
               <p>Something not working? Let us know</p>
             </div>
-            <div class="help-option-arrow">→</div>
+            <div class="help-option-arrow">â†’</div>
           </a>
           <a href="#" class="help-option" onclick="event.preventDefault()">
             <div class="help-option-icon">
@@ -1326,7 +1308,7 @@
               <h4>Account & billing</h4>
               <p>Manage your subscription and settings</p>
             </div>
-            <div class="help-option-arrow">→</div>
+            <div class="help-option-arrow">â†’</div>
           </a>
         </div>
         <div class="help-divider"><span>or</span></div>
@@ -1667,19 +1649,6 @@ class VertesiaAPI {
     });
   }
 
-  // Execute SyncRelationships - syncs child documents to parent collections (requires JWT)
-  async executeSyncRelationships(task) {
-    return await this.callWithAuth('/execute/async', {
-      method: 'POST',
-      body: JSON.stringify({
-        type: 'conversation',
-        interaction: 'SyncRelationships',
-        data: { task: task },
-        config: { environment: VERTESIA_CONFIG.ENVIRONMENT_ID, model: VERTESIA_CONFIG.MODEL }
-      })
-    });
-  }
-
   // Get run status
   async getRunStatus(workflowId, runId) {
     return await this.call(`/workflows/runs/${workflowId}/${runId}`);
@@ -1768,7 +1737,6 @@ let currentWs = null;
 let documents = [];
 
 let libraryDocs = [];
-let relatedDocs = [];
 let researchTypes = [
   { id: 'supply', name: 'Supply Chain Contagion', desc: 'Disruption effects' },
   { id: 'risk', name: 'Risk Modeling', desc: 'Portfolio impact' },
@@ -2066,7 +2034,6 @@ function openModal(id) {
     const existingIds = documents.map(d => d.id);
     renderDocPicker('addDocsPicker', libraryDocs, false, existingIds);
   }
-  if (id === 'findRelated') renderDocPicker('findRelatedPicker', relatedDocs, true);
   if (id === 'generateReport') renderReportPicker();
   if (id === 'batchResearch') { document.getElementById('batchStep1').classList.add('active'); document.getElementById('batchStep2').classList.remove('active'); }
 }
@@ -2119,7 +2086,7 @@ function renderHomeGreeting() {
     const parts = [];
     if (running > 0) parts.push(`${running} research job${running !== 1 ? 's' : ''} running`);
     if (completed > 0) parts.push(`${completed} completed`);
-    sub = parts.join(' · ');
+    sub = parts.join(' Â· ');
   }
   document.getElementById('homeSubgreeting').textContent = sub;
 }
@@ -2191,7 +2158,7 @@ function renderHomeWorkspaces() {
         </div>
         <div class="ws-card-meta">
           <span>${docCount} doc${docCount !== 1 ? 's' : ''}</span>
-          <span>·</span>
+          <span>Â·</span>
           <span class="ws-card-status ${statusClass}">${statusText}</span>
         </div>
         ${badge}
@@ -2305,7 +2272,7 @@ function renderHomeResearchProgress() {
             </div>
             <div class="research-info">
               <div class="research-name">${job.name}</div>
-              <div class="research-meta"><span class="quick-label">Quick Research</span> · Saved to Library</div>
+              <div class="research-meta"><span class="quick-label">Quick Research</span> Â· Saved to Library</div>
             </div>
             <div class="research-actions">
               <button class="research-action-btn primary" onclick="event.stopPropagation();viewResearchDoc('${job.name}')">View</button>
@@ -2346,7 +2313,7 @@ function renderHomeResearchProgress() {
           <div class="research-spinner"></div>
           <div class="research-info">
             <div class="research-name">${job.name}</div>
-            <div class="research-meta">${locationText} · Est. ~${job.time} min</div>
+            <div class="research-meta">${locationText} Â· Est. ~${job.time} min</div>
           </div>
           <div class="research-actions">
             <button class="research-action-btn" onclick="event.stopPropagation();cancelResearchJob('${job.name}')" title="Cancel">
@@ -2517,7 +2484,7 @@ function renderHomeLibrary() {
         </div>
         <div class="home-lib-info">
           <div class="home-lib-title" title="${doc.title}">${doc.title}</div>
-          <div class="home-lib-meta">${doc.date} · ${doc.type}</div>
+          <div class="home-lib-meta">${doc.date} Â· ${doc.type}</div>
         </div>
         <div class="home-lib-actions">
           <button class="home-lib-btn" onclick="event.stopPropagation();viewDocFromHome('${safeTitle}')" title="View">
@@ -2789,7 +2756,7 @@ function resetChat() {
       <div class="chat-message ai">
         <div class="message-bubble">I've loaded the contents of this workspace. What would you like to explore?</div>
         <div class="message-footer">
-          <span class="message-time">Scout · Just now</span>
+          <span class="message-time">Scout Â· Just now</span>
           <div class="message-actions">
             <button class="msg-action-btn" onclick="copyMessage(this)" title="Copy"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></button>
           </div>
@@ -3000,7 +2967,7 @@ async function createWorkspace() {
     selected.forEach(el => {
       const title = el.querySelector('.doc-picker-title').textContent;
       const meta = el.querySelector('.doc-picker-meta').textContent;
-      const type = meta.split(' · ')[1] || 'Research';
+      const type = meta.split(' Â· ')[1] || 'Research';
       workspaceDocs[wsId].push({
         id: Date.now() + Math.random(),
         title,
@@ -3090,7 +3057,7 @@ function renderDocuments() {
     const isStarred = starredDocs.has(d.id);
     
     let html = `<div class="document-card ${isChild ? 'is-child' : ''} ${hasChildren ? 'has-children' : ''} ${isStarred ? 'is-starred' : ''}" style="${indentStyle}" data-doc-id="${d.id}" data-parent-id="${d.parentId || ''}">
-      ${isChild ? `<div class="child-indicator">↳ Follow-up${d.parentTitle ? ` from ${d.parentTitle.substring(0, 25)}${d.parentTitle.length > 25 ? '...' : ''}` : ''}</div>` : ''}
+      ${isChild ? `<div class="child-indicator">â†³ Follow-up${d.parentTitle ? ` from ${d.parentTitle.substring(0, 25)}${d.parentTitle.length > 25 ? '...' : ''}` : ''}</div>` : ''}
       <div class="document-card-header">
         <span class="document-type">${d.type}</span>
         <div class="document-actions">
@@ -3102,7 +3069,7 @@ function renderDocuments() {
         </div>
       </div>
       <div class="document-title">${d.title}</div>
-      <div class="document-meta">${d.date}${hasChildren ? ` · ${children.length} follow-up${children.length > 1 ? 's' : ''}${isCollapsed ? ' (collapsed)' : ''}` : ''}</div>
+      <div class="document-meta">${d.date}${hasChildren ? ` Â· ${children.length} follow-up${children.length > 1 ? 's' : ''}${isCollapsed ? ' (collapsed)' : ''}` : ''}</div>
     </div>`;
     
     // Render children recursively (wrapped in container for collapse)
@@ -3118,7 +3085,7 @@ function renderDocuments() {
   }
   
   listEl.innerHTML = rootDocs.map(d => renderDocWithChildren(d, 0)).join('');
-  document.getElementById('docCount').textContent = ` · ${documents.length} total`;
+  document.getElementById('docCount').textContent = ` Â· ${documents.length} total`;
 }
 
 // Track collapsed state for parent documents
@@ -3185,7 +3152,7 @@ function toggleCollapse(docId) {
 
 async function removeDoc(id) {
   const confirmed = await showConfirm(
-    'Remove this document from the workspace?\n\nThis only removes it from this workspace—the document will still be available in your Library.',
+    'Remove this document from the workspace?\n\nThis only removes it from this workspaceâ€”the document will still be available in your Library.',
     'Remove Document'
   );
   if (!confirmed) return;
@@ -3211,87 +3178,24 @@ async function removeDoc(id) {
 }
 
 // Sync Documents - reconnects orphaned children to parent collections
-async function syncDocuments() {
+async function refreshWorkspaceDocs() {
   if (!liveMode) {
-    await showAlert('Sync is only available in live mode.');
+    await showAlert('Refresh is only available in live mode.');
     return;
   }
   
-  const btn = document.getElementById('syncDocsBtn');
-  const btnText = document.getElementById('syncDocsBtnText');
+  const btn = document.getElementById('refreshDocsBtn');
+  const btnText = document.getElementById('refreshDocsBtnText');
   
   // Set loading state
   btn.disabled = true;
-  btnText.textContent = 'Syncing...';
+  btnText.textContent = 'Refreshing...';
   btn.classList.add('syncing');
   
-  const collectionName = currentWs?.name || 'Unknown';
-  const docIds = documents.map(d => d.id).join(', ');
-  const task = `The specific Collection Name for this collection is: "${collectionName}" and the Documents in this collection you will be organizing are: ${docIds}`;
+  console.log('Refreshing workspace data...');
   
   try {
-    console.log('Starting document sync for collection:', collectionName);
-    const response = await api.executeSyncRelationships(task);
-    console.log('Sync initiated:', response);
-    
-    if (response && response.runId && response.workflowId) {
-      // Poll for completion
-      pollSyncCompletion(response.workflowId, response.runId);
-    } else {
-      throw new Error('No runId/workflowId in response');
-    }
-  } catch (error) {
-    console.error('Failed to start sync:', error);
-    await showAlert('Failed to start document sync. Please try again.', 'Error');
-    btn.disabled = false;
-    btnText.textContent = 'Sync';
-    btn.classList.remove('syncing');
-  }
-}
-
-function pollSyncCompletion(workflowId, runId) {
-  const btn = document.getElementById('syncDocsBtn');
-  const btnText = document.getElementById('syncDocsBtnText');
-  
-  const poll = setInterval(async () => {
-    try {
-      const status = await api.getRunStatus(workflowId, runId);
-      const runStatus = status?.status?.toLowerCase();
-      console.log('Sync poll - raw status:', status?.status, '| normalized:', runStatus);
-      
-      // Check for any completion-like status
-      if (['completed', 'success', 'finished', 'done', 'succeeded'].includes(runStatus)) {
-        clearInterval(poll);
-        await reloadAfterSync();
-        
-      } else if (['failed', 'error', 'cancelled', 'canceled'].includes(runStatus)) {
-        clearInterval(poll);
-        // Still reload - the agent may have completed the work even if status shows failed
-        console.log('Sync reported as failed, but reloading anyway in case work was done...');
-        await reloadAfterSync();
-      }
-      // Otherwise keep polling (status is probably 'running', 'pending', 'in_progress', etc.)
-    } catch (e) {
-      console.error('Sync poll error:', e);
-    }
-  }, 5000); // Check every 5 seconds (was 10)
-  
-  // Safety timeout after 5 minutes - still reload in case sync completed but status wasn't caught
-  setTimeout(async () => {
-    clearInterval(poll);
-    console.log('Sync timeout reached - reloading anyway');
-    await reloadAfterSync();
-  }, 300000);
-}
-
-async function reloadAfterSync() {
-  const btn = document.getElementById('syncDocsBtn');
-  const btnText = document.getElementById('syncDocsBtnText');
-  
-  console.log('Sync completed - reloading workspace data...');
-  
-  try {
-    // Reload documents to get updated collection memberships
+    // Reload documents to get any new ones
     const objects = await api.loadAllObjects();
     allVertesiaDocs = objects.filter(o => o.content?.source).map(o => ({
       id: o.id,
@@ -3305,37 +3209,35 @@ async function reloadAfterSync() {
     libraryDocs = allVertesiaDocs;
     console.log(`Reloaded ${allVertesiaDocs.length} documents`);
     
-    // Reload collection members
-    const collections = await api.loadCollections() || [];
-    for (const col of collections) {
+    // Reload collection members for current workspace
+    if (currentWs) {
       try {
-        const members = await api.getCollectionMembers(col.id);
-        collectionMembers[col.id] = members.map(m => m.id || m);
+        const members = await api.getCollectionMembers(currentWs.id);
+        collectionMembers[currentWs.id] = members.map(m => m.id || m);
+        
+        // Refresh current workspace docs
+        documents = collectionMembers[currentWs.id]
+          .map(id => allVertesiaDocs.find(d => d.id === id))
+          .filter(Boolean);
+        workspaceDocs[currentWs.id] = documents;
+        console.log(`Workspace now has ${documents.length} documents`);
       } catch (e) {
-        console.warn('Failed to reload collection members:', col.id);
+        console.warn('Failed to reload collection members:', currentWs.id);
       }
-    }
-    
-    // Refresh current workspace docs
-    if (currentWs && collectionMembers[currentWs.id]) {
-      documents = collectionMembers[currentWs.id]
-        .map(id => allVertesiaDocs.find(d => d.id === id))
-        .filter(Boolean);
-      workspaceDocs[currentWs.id] = documents;
-      console.log(`Workspace now has ${documents.length} documents`);
     }
     
     renderDocuments();
     renderSidebar();
     renderLibrary();
     
-    console.log('Sync completed and UI refreshed');
+    console.log('Refresh completed');
   } catch (e) {
-    console.error('Error reloading after sync:', e);
+    console.error('Error refreshing workspace:', e);
+    await showAlert('Failed to refresh. Please try again.', 'Error');
   }
   
   btn.disabled = false;
-  btnText.textContent = 'Sync';
+  btnText.textContent = 'Refresh';
   btn.classList.remove('syncing');
 }
 
@@ -3362,7 +3264,7 @@ function updateJobs() {
             <div class="job-done-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg></div>
             <div class="job-info">
               <div class="job-name">${j.name}</div>
-              <div class="job-progress"><span class="job-workspace">Quick Research</span> · Click to view</div>
+              <div class="job-progress"><span class="job-workspace">Quick Research</span> Â· Click to view</div>
             </div>
             <button class="job-dismiss" onclick="event.stopPropagation();dismissJob('${j.name}')" title="Dismiss">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
@@ -3373,7 +3275,7 @@ function updateJobs() {
             <div class="job-done-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg></div>
             <div class="job-info">
               <div class="job-name">${j.name}</div>
-              <div class="job-progress">Ready in <span class="job-workspace">${j.wsName}</span> · Click to view</div>
+              <div class="job-progress">Ready in <span class="job-workspace">${j.wsName}</span> Â· Click to view</div>
             </div>
             <button class="job-dismiss" onclick="event.stopPropagation();dismissJob('${j.name}')" title="Dismiss">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
@@ -3385,7 +3287,7 @@ function updateJobs() {
           <div class="job-spinner"></div>
           <div class="job-info">
             <div class="job-name">${j.name}</div>
-            <div class="job-progress">Generating in <span class="job-workspace">${j.wsName || 'workspace'}</span> · Est. ~${j.time} min</div>
+            <div class="job-progress">Generating in <span class="job-workspace">${j.wsName || 'workspace'}</span> Â· Est. ~${j.time} min</div>
           </div>
           <button class="job-dismiss" onclick="event.stopPropagation();cancelResearchJob('${j.name}')" title="Cancel">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
@@ -3554,11 +3456,11 @@ function renderDocPicker(containerId, docs, isRelated = false, excludeIds = []) 
         <div class="doc-picker-checkbox"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg></div>
         <div class="doc-picker-info">
           <div class="doc-picker-title">${d.title}</div>
-          <div class="doc-picker-meta">${isRelated ? 'Matched: ' + d.match : d.date + ' · ' + d.type}</div>
+          <div class="doc-picker-meta">${isRelated ? 'Matched: ' + d.match : d.date + ' Â· ' + d.type}</div>
         </div>
       </div>
     `).join('')}</div>
-    <div class="doc-picker-footer">${filteredDocs.length} documents available · 0 selected</div>
+    <div class="doc-picker-footer">${filteredDocs.length} documents available Â· 0 selected</div>
   `;
 }
 function togglePickerItem(el) {
@@ -3566,7 +3468,7 @@ function togglePickerItem(el) {
   const picker = el.closest('.doc-picker');
   const count = picker.querySelectorAll('.doc-picker-item.selected').length;
   const total = picker.querySelectorAll('.doc-picker-item').length;
-  picker.querySelector('.doc-picker-footer').textContent = `${total} documents available · ${count} selected`;
+  picker.querySelector('.doc-picker-footer').textContent = `${total} documents available Â· ${count} selected`;
 }
 function filterPicker(input) {
   const q = input.value.toLowerCase();
@@ -3625,7 +3527,7 @@ async function addDocsToWorkspace(pickerId) {
   workspaceDocs[currentWs.id] = documents;
   renderDocuments();
   renderSidebar();
-  closeModal(pickerId === 'addDocsPicker' ? 'addDocuments' : 'findRelated');
+  closeModal('addDocuments');
 }
 
 // RESEARCH
@@ -3909,8 +3811,8 @@ function renderBatchTypes() {
         <div class="research-type-desc">${rt.desc}</div>
       </div>
       <div class="quantity-stepper">
-        <button class="stepper-btn" onclick="event.stopPropagation();adjustQty(this,-1)">−</button>
-        <span class="stepper-value">×1</span>
+        <button class="stepper-btn" onclick="event.stopPropagation();adjustQty(this,-1)">âˆ’</button>
+        <span class="stepper-value">Ã—1</span>
         <button class="stepper-btn" onclick="event.stopPropagation();adjustQty(this,1)">+</button>
       </div>
     </div>
@@ -3922,15 +3824,15 @@ function toggleBatchType(el) {
 }
 function adjustQty(btn, d) {
   const v = btn.parentElement.querySelector('.stepper-value');
-  let n = parseInt(v.textContent.replace('×', ''));
+  let n = parseInt(v.textContent.replace('Ã—', ''));
   n = Math.max(1, Math.min(3, n + d));
-  v.textContent = '×' + n;
+  v.textContent = 'Ã—' + n;
   updateBatchTotal();
 }
 function updateBatchTotal() {
   let t = 0;
   document.querySelectorAll('#batchTypes .research-type.selected').forEach(el => {
-    t += parseInt(el.querySelector('.stepper-value').textContent.replace('×', ''));
+    t += parseInt(el.querySelector('.stepper-value').textContent.replace('Ã—', ''));
   });
   document.getElementById('batchTotal').textContent = t;
 }
@@ -3962,7 +3864,7 @@ function startBatchResearch() {
   
   selected.forEach(async (el) => {
     const name = el.querySelector('.research-type-name').textContent;
-    const qty = parseInt(el.querySelector('.stepper-value').textContent.replace('×', ''));
+    const qty = parseInt(el.querySelector('.stepper-value').textContent.replace('Ã—', ''));
     
     for (let i = 0; i < qty; i++) {
       const jobName = qty > 1 ? `${name} (${i + 1})` : name;
@@ -3996,7 +3898,7 @@ FINAL STEP - CRITICAL: After uploading the document to the content library, you 
     }
     
     el.classList.remove('selected');
-    el.querySelector('.stepper-value').textContent = '×1';
+    el.querySelector('.stepper-value').textContent = 'Ã—1';
   });
   
   updateBatchTotal();
@@ -4097,7 +3999,7 @@ function renderLibrary() {
     return `<div class="library-item">
       <div class="library-item-info">
         <div class="library-item-title">${d.title}</div>
-        <div class="library-item-meta">${d.date} · ${d.type}</div>
+        <div class="library-item-meta">${d.date} Â· ${d.type}</div>
       </div>
       <div class="library-item-actions">
         <button class="doc-action-btn" onclick="viewDoc('${safeTitle}')" title="View"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></button>
@@ -4157,7 +4059,7 @@ async function sendChat() {
     <div class="chat-message user">
       <div class="message-bubble">${escapeHtml(msg)}</div>
       <div class="message-footer">
-        <span class="message-time">You · ${time}</span>
+        <span class="message-time">You Â· ${time}</span>
         <div class="message-actions">
           <button class="msg-action-btn" onclick="copyMessage(this)" title="Copy"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></button>
         </div>
@@ -4287,7 +4189,7 @@ function addAIResponse(chatEl, text, sources = []) {
       <div class="message-bubble">${formatAIResponse(text)}</div>
       ${sourcesHtml}
       <div class="message-footer">
-        <span class="message-time">Scout · ${aiTime}</span>
+        <span class="message-time">Scout Â· ${aiTime}</span>
         <div class="message-actions">
           <button class="msg-action-btn" onclick="copyMessage(this)" title="Copy"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></button>
           <button class="msg-action-btn" onclick="quoteMessage(this)" title="Save Quote"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 21c3 0 7-1 7-8V5c0-1.25-.756-2.017-2-2H4c-1.25 0-2 .75-2 1.972V11c0 1.25.75 2 2 2 1 0 1 0 1 1v1c0 1-1 2-2 2s-1 .008-1 1.031V21"/><path d="M15 21c3 0 7-1 7-8V5c0-1.25-.757-2.017-2-2h-4c-1.25 0-2 .75-2 1.972V11c0 1.25.75 2 2 2h.75c0 2.25.25 4-2.75 4v3"/></svg></button>
@@ -4329,8 +4231,8 @@ function formatAIResponse(text) {
   // Convert **bold** to <strong> (do this first, before italic)
   html = html.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
   
-  // Convert bullet points (- or •) at start of lines
-  html = html.replace(/^[\-•]\s+(.+)$/gm, '<li>$1</li>');
+  // Convert bullet points (- or â€¢) at start of lines
+  html = html.replace(/^[\-â€¢]\s+(.+)$/gm, '<li>$1</li>');
   
   // Wrap consecutive <li> in <ul>
   html = html.replace(/(<li>[^<]*<\/li>\s*)+/g, (match) => `<ul>${match}</ul>`);
@@ -4459,7 +4361,7 @@ function renderChatHistory() {
       </div>
       <div class="chat-history-info" onclick="loadSavedChat('${chat.id}')">
         <div class="chat-history-name">${escapeHtml(chat.title)}</div>
-        <div class="chat-history-meta">${chat.date} · ${chat.messages.length} messages</div>
+        <div class="chat-history-meta">${chat.date} Â· ${chat.messages.length} messages</div>
       </div>
       <div class="chat-history-actions">
         <button class="chat-history-action" onclick="event.stopPropagation();renameSavedChat('${chat.id}')" title="Rename">
@@ -4502,7 +4404,7 @@ async function loadSavedChat(chatId) {
         <div class="chat-message user">
           <div class="message-bubble">${escapeHtml(msg.content)}</div>
           <div class="message-footer">
-            <span class="message-time">You · ${msg.time}</span>
+            <span class="message-time">You Â· ${msg.time}</span>
             <div class="message-actions">
               <button class="msg-action-btn" onclick="copyMessage(this)" title="Copy"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></button>
             </div>
@@ -4518,7 +4420,7 @@ async function loadSavedChat(chatId) {
           <div class="message-bubble">${msg.content}</div>
           ${sourcesHtml}
           <div class="message-footer">
-            <span class="message-time">Scout · ${msg.time}</span>
+            <span class="message-time">Scout Â· ${msg.time}</span>
             <div class="message-actions">
               <button class="msg-action-btn" onclick="copyMessage(this)" title="Copy"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></button>
               <button class="msg-action-btn" onclick="quoteMessage(this)" title="Save Quote"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 21c3 0 7-1 7-8V5c0-1.25-.756-2.017-2-2H4c-1.25 0-2 .75-2 1.972V11c0 1.25.75 2 2 2 1 0 1 0 1 1v1c0 1-1 2-2 2s-1 .008-1 1.031V21"/><path d="M15 21c3 0 7-1 7-8V5c0-1.25-.757-2.017-2-2h-4c-1.25 0-2 .75-2 1.972V11c0 1.25.75 2 2 2h.75c0 2.25.25 4-2.75 4v3"/></svg></button>
@@ -4994,7 +4896,7 @@ async function sendDocChat() {
   messagesEl.innerHTML += `
     <div class="doc-chat-message user">
       <div class="doc-chat-bubble">${escapeHtml(msg)}</div>
-      <div class="doc-chat-time">You · ${time}</div>
+      <div class="doc-chat-time">You Â· ${time}</div>
     </div>`;
   
   docChatMessages.push({ role: 'user', content: msg, time });
@@ -5098,7 +5000,7 @@ function addDocAIResponse(messagesEl, text) {
   messagesEl.innerHTML += `
     <div class="doc-chat-message assistant">
       <div class="doc-chat-bubble">${formatAIResponse(text)}</div>
-      <div class="doc-chat-time">Scout · ${aiTime}</div>
+      <div class="doc-chat-time">Scout Â· ${aiTime}</div>
     </div>`;
   docChatMessages.push({ role: 'assistant', content: text, time: aiTime });
   messagesEl.scrollTop = messagesEl.scrollHeight;
