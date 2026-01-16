@@ -1660,7 +1660,7 @@ class VertesiaAPI {
 
   // Stream response (requires JWT) - with timeout
   async streamResponse(workflowId, runId, onMessage, onComplete, onError) {
-    const TIMEOUT_MS = 240000; // 4 minute timeout for document chat
+    const TIMEOUT_MS = 300000; // 5 minute timeout
     let timeoutId;
     let completed = false;
     
@@ -1728,88 +1728,60 @@ class VertesiaAPI {
 
 const api = new VertesiaAPI();
 
-// ===== STATUS MESSAGE PARSER =====
-// Converts raw stream updates into clean user-facing status messages
-// Returns null to skip showing the message
+// ===== RESEARCH STATUS BUCKETS =====
+// Maps raw stream messages to simple user-friendly status buckets
 const parseStatusMessage = (() => {
+  let lastBucket = '';
   let lastUpdate = 0;
-  let lastMessage = '';
-  const MIN_UPDATE_INTERVAL = 1500; // Don't update more than once per 1.5 seconds
+  const MIN_UPDATE_INTERVAL = 3000; // Only change bucket every 3 seconds max
   
-  // Patterns to SKIP (technical noise)
+  // Keywords -> Bucket mapping
+  const buckets = [
+    { keywords: ['search', 'finding', 'looking', 'query', 'fetch'], bucket: 'Researching sources' },
+    { keywords: ['read', 'review', 'page', 'document', 'content', 'section'], bucket: 'Reviewing documents' },
+    { keywords: ['analyz', 'evaluat', 'assess', 'compar'], bucket: 'Analyzing' },
+    { keywords: ['synthe', 'combin', 'merg', 'connect', 'integrat'], bucket: 'Synthesizing' },
+    { keywords: ['writ', 'compos', 'generat', 'creat', 'draft', 'format'], bucket: 'Composing' },
+    { keywords: ['plan', 'next', 'step', 'task', 'moving'], bucket: 'Processing' },
+    { keywords: ['upload', 'save', 'store', 'finish'], bucket: 'Finalizing' }
+  ];
+  
+  // Skip these entirely
   const skipPatterns = [
     /tools enabled/i,
     /starting work/i,
     /interaction/i,
-    /think.*plan/i,
     /available tools/i,
     /^using/i,
     /^calling/i,
     /^executing/i,
     /workflow/i,
-    /agent/i
+    /agent/i,
+    /think/i
   ];
-  
-  // Patterns to EXTRACT clean status from
-  const extractPatterns = [
-    // "Searching for X documentation" -> "Searching X..."
-    { match: /searching (?:for )?(?:available )?(.+?)(?:\s+documentation)?\.{0,3}$/i, format: (m) => `Searching ${cleanName(m[1])}...` },
-    // "Reading document: X" or "Reading X"
-    { match: /reading (?:document[:\s]+)?(.+?)\.{0,3}$/i, format: (m) => `Reading ${cleanName(m[1])}` },
-    // "Analyzing X"
-    { match: /analyzing (.+?)\.{0,3}$/i, format: (m) => `Analyzing ${cleanName(m[1])}` },
-    // "Looking at X" or "Looking through X"
-    { match: /looking (?:at|through|into) (.+?)\.{0,3}$/i, format: (m) => `Reviewing ${cleanName(m[1])}` },
-    // "Searching X" (source name)
-    { match: /^searching (\w[\w\s]{2,30})$/i, format: (m) => `Searching ${cleanName(m[1])}...` },
-    // "Found X" or "Found information in X"
-    { match: /found (?:information in |relevant )?(.+?)\.{0,3}$/i, format: (m) => `Found in ${cleanName(m[1])}` }
-  ];
-  
-  // Clean up extracted names
-  function cleanName(name) {
-    if (!name) return 'documents';
-    // Trim, remove quotes, limit length
-    let clean = name.trim().replace(/^["']|["']$/g, '');
-    // Capitalize first letter
-    clean = clean.charAt(0).toUpperCase() + clean.slice(1);
-    // Truncate if too long
-    if (clean.length > 35) clean = clean.substring(0, 32) + '...';
-    return clean;
-  }
   
   return function(rawMessage) {
     if (!rawMessage || typeof rawMessage !== 'string') return null;
     
     const now = Date.now();
-    const msg = rawMessage.trim();
-    
-    // Skip if same message or too soon
-    if (msg === lastMessage || (now - lastUpdate) < MIN_UPDATE_INTERVAL) {
-      return null;
-    }
+    const msg = rawMessage.toLowerCase();
     
     // Skip technical noise
     for (const pattern of skipPatterns) {
       if (pattern.test(msg)) return null;
     }
     
-    // Try to extract clean status
-    for (const { match, format } of extractPatterns) {
-      const result = msg.match(match);
-      if (result) {
-        const cleanStatus = format(result);
-        lastUpdate = now;
-        lastMessage = msg;
-        return cleanStatus;
+    // Find matching bucket
+    for (const { keywords, bucket } of buckets) {
+      if (keywords.some(kw => msg.includes(kw))) {
+        // Only update if bucket changed AND enough time passed
+        if (bucket !== lastBucket && (now - lastUpdate) > MIN_UPDATE_INTERVAL) {
+          lastBucket = bucket;
+          lastUpdate = now;
+          return bucket;
+        }
+        return null; // Same bucket or too soon
       }
-    }
-    
-    // If message is short and seems meaningful, show it cleaned up
-    if (msg.length < 50 && !msg.includes(':') && /^[A-Z]/.test(msg)) {
-      lastUpdate = now;
-      lastMessage = msg;
-      return msg.length > 40 ? msg.substring(0, 37) + '...' : msg;
     }
     
     return null;
@@ -4335,28 +4307,14 @@ async function sendChatToAPI(msg, chatEl) {
   isChatStreaming = true;
   const sendBtn = document.getElementById('chatSend');
   if (sendBtn) sendBtn.disabled = true;
-  
-  // BACKUP: Force reset after 4 minutes no matter what
-  const backupTimeout = setTimeout(() => {
-    console.log('Backup timeout - forcing chat reset');
-    isChatStreaming = false;
-    if (sendBtn) sendBtn.disabled = false;
-    document.getElementById('wsThinking')?.remove();
-  }, 240000);
 
   // Show thinking indicator
   chatEl.innerHTML += `
     <div class="thinking-indicator" id="wsThinking">
       <div class="thinking-dots"><span></span><span></span><span></span></div>
-      <span class="thinking-status">Analyzing workspace documents...</span>
+      <span>Searching documents...</span>
     </div>`;
   chatEl.scrollTop = chatEl.scrollHeight;
-  
-  // Helper to update thinking status
-  const updateThinkingStatus = (text) => {
-    const statusEl = document.querySelector('#wsThinking .thinking-status');
-    if (statusEl) statusEl.textContent = text;
-  };
 
   try {
     // Build task with document IDs
@@ -4394,15 +4352,7 @@ async function sendChatToAPI(msg, chatEl) {
       
       await api.streamResponse(response.workflowId, response.runId,
         (data) => {
-          // Show clean status updates
-          if (data.type === 'update' && data.message) {
-            const cleanStatus = parseStatusMessage(data.message);
-            if (cleanStatus) {
-              updateThinkingStatus(cleanStatus);
-            }
-          }
-          
-          // Handle the actual answer
+          // Only handle answers
           if (data.type === 'answer' && data.message && !gotAnswer) {
             const answer = api.extractAnswer(data.message);
             if (answer && answer.length > 10) {
@@ -4435,7 +4385,6 @@ async function sendChatToAPI(msg, chatEl) {
     addAIResponse(chatEl, 'Error connecting to AI. Please try again.');
   } finally {
     // CRITICAL: Always reset state
-    clearTimeout(backupTimeout);
     console.log('Resetting chat state...');
     isChatStreaming = false;
     if (sendBtn) sendBtn.disabled = false;
@@ -5182,27 +5131,13 @@ async function sendDocChatToAPI(msg, messagesEl) {
   const sendBtn = document.getElementById('docChatSend');
   if (sendBtn) sendBtn.disabled = true;
   
-  // BACKUP: Force reset after 4 minutes no matter what
-  const backupTimeout = setTimeout(() => {
-    console.log('Backup timeout - forcing doc chat reset');
-    isDocChatStreaming = false;
-    if (sendBtn) sendBtn.disabled = false;
-    document.getElementById('docThinking')?.remove();
-  }, 240000);
-  
   // Show thinking indicator
   messagesEl.innerHTML += `
     <div class="thinking-indicator" id="docThinking">
       <div class="thinking-dots"><span></span><span></span><span></span></div>
-      <span class="thinking-status">Analyzing document...</span>
+      <span>Analyzing document...</span>
     </div>`;
   messagesEl.scrollTop = messagesEl.scrollHeight;
-  
-  // Helper to update thinking status
-  const updateThinkingStatus = (text) => {
-    const statusEl = document.querySelector('#docThinking .thinking-status');
-    if (statusEl) statusEl.textContent = text;
-  };
 
   try {
     let task = `DOCUMENT CONTEXT: Analyze document ID ${currentViewDocId} (${currentViewDoc})\n\n`;
@@ -5226,15 +5161,7 @@ async function sendDocChatToAPI(msg, messagesEl) {
       
       await api.streamResponse(response.workflowId, response.runId,
         (data) => {
-          // Show clean status updates
-          if (data.type === 'update' && data.message) {
-            const cleanStatus = parseStatusMessage(data.message);
-            if (cleanStatus) {
-              updateThinkingStatus(cleanStatus);
-            }
-          }
-          
-          // Handle the actual answer
+          // Only handle answers
           if (data.type === 'answer' && data.message && !gotAnswer) {
             const answer = api.extractAnswer(data.message);
             if (answer && answer.length > 10) {
@@ -5267,7 +5194,6 @@ async function sendDocChatToAPI(msg, messagesEl) {
     addDocAIResponse(messagesEl, 'Error connecting to AI. Please try again.');
   } finally {
     // CRITICAL: Always reset state
-    clearTimeout(backupTimeout);
     console.log('Resetting doc chat state...');
     isDocChatStreaming = false;
     if (sendBtn) sendBtn.disabled = false;
