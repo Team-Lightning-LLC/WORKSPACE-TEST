@@ -1866,6 +1866,11 @@ document.addEventListener('DOMContentLoaded', async () => {
   renderChatHistory();
   renderHome(); // Render home dashboard
   
+  // Match any completed jobs to documents (for jobs restored from localStorage)
+  if (liveMode && allVertesiaDocs.length > 0) {
+    updateCompletedJobsWithDocuments();
+  }
+  
   // Update header and chat with current workspace
   if (currentWs) {
     updateHeader();
@@ -1890,6 +1895,7 @@ async function loadFromAPI() {
     title: o.name || 'Untitled',
     type: o.properties?.framework || o.properties?.document_type || 'Research',
     date: formatApiDate(o.created_at),
+    createdAt: o.created_at, // Raw timestamp for matching
     source: o.content?.source,
     parentId: o.parent?.id || o.parent || o.properties?.parent_document_id || null,
     parentTitle: o.parent?.name || o.properties?.parent_document_title || null
@@ -2403,10 +2409,10 @@ async function viewResearchDoc(jobName, wsId = null) {
         title: o.name || 'Untitled',
         type: o.properties?.framework || o.properties?.document_type || 'Research',
         date: formatApiDate(o.created_at),
+        createdAt: o.created_at,
         source: o.content?.source,
         parentId: o.parent?.id || o.parent || o.properties?.parent_document_id || null,
-        parentTitle: o.parent?.name || o.properties?.parent_document_title || null,
-        created_at: o.created_at
+        parentTitle: o.parent?.name || o.properties?.parent_document_title || null
       }));
       libraryDocs = allVertesiaDocs;
       
@@ -3388,6 +3394,7 @@ async function refreshWorkspaceDocs() {
       title: o.name || 'Untitled',
       type: o.properties?.framework || o.properties?.document_type || 'Research',
       date: formatApiDate(o.created_at),
+      createdAt: o.created_at,
       source: o.content?.source,
       parentId: o.parent?.id || o.parent || o.properties?.parent_document_id || null,
       parentTitle: o.parent?.name || o.properties?.parent_document_title || null
@@ -4079,52 +4086,66 @@ async function reloadAfterResearch() {
 // Match completed jobs to their actual document names
 function updateCompletedJobsWithDocuments() {
   const completedJobs = activeJobs.filter(j => j.status === 'completed' && !j.docId);
-  if (completedJobs.length === 0) return;
+  if (completedJobs.length === 0) {
+    console.log('No completed jobs without docId to match');
+    return;
+  }
   
   console.log('Matching', completedJobs.length, 'completed jobs to documents...');
+  console.log('Total docs available:', allVertesiaDocs.length);
   
-  // Recent docs (created in last 20 minutes)
-  const recentCutoff = Date.now() - (20 * 60 * 1000);
+  // Recent docs (created in last 60 minutes - expanded window)
+  const recentCutoff = Date.now() - (60 * 60 * 1000);
   
   completedJobs.forEach(job => {
+    console.log('Matching job:', job.researchType, 'wsId:', job.wsId);
+    
     // Get candidate documents
     let candidates = allVertesiaDocs.filter(d => {
       // Must be recent
       const docTime = new Date(d.createdAt).getTime();
-      if (docTime < recentCutoff) return false;
-      return true;
+      return docTime >= recentCutoff;
     });
+    
+    console.log('Recent candidates:', candidates.length);
     
     // If job has workspace, prioritize docs in that workspace
     if (job.wsId && workspaceDocs[job.wsId]) {
       const wsDocIds = workspaceDocs[job.wsId].map(d => d.id);
       const wsCandidates = candidates.filter(d => wsDocIds.includes(d.id));
+      console.log('Workspace candidates:', wsCandidates.length);
       if (wsCandidates.length > 0) candidates = wsCandidates;
     }
     
-    // Try to match by type/framework containing research type
+    // Try to match by type containing research type
     let match = candidates.find(d => 
       d.type && d.type.toLowerCase().includes(job.researchType.toLowerCase())
     );
+    console.log('Match by type:', match?.title || 'none');
     
     // Or title containing research type
     if (!match) {
       match = candidates.find(d => 
         d.title && d.title.toLowerCase().includes(job.researchType.toLowerCase())
       );
+      console.log('Match by title:', match?.title || 'none');
     }
     
     // Or just take most recent if we have workspace match
     if (!match && candidates.length > 0 && job.wsId) {
       candidates.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
       match = candidates[0];
+      console.log('Match by recency:', match?.title || 'none');
     }
     
     if (match) {
-      console.log(`Matched job "${job.researchType}" to doc "${match.title}"`);
+      console.log(`✓ Matched job "${job.researchType}" to doc "${match.title}"`);
       job.docId = match.id;
       job.docTitle = match.title;
-      job.name = match.title; // Update display name
+      // Use clean title for display
+      job.name = cleanDocTitle(match.title);
+    } else {
+      console.log(`✗ No match found for job "${job.researchType}"`);
     }
   });
   
@@ -4930,9 +4951,11 @@ async function viewDocFromAPI(doc) {
   docChatMessages = [];
 
   const dialog = document.getElementById('docViewer');
-  document.getElementById('docViewerTitle').textContent = doc.title;
-  document.getElementById('docChatTitle').textContent = doc.title;
-  document.getElementById('viewerParentDocName').textContent = doc.title;
+  // Show loading state with placeholder title
+  const cleanTitle = cleanDocTitle(doc.title);
+  document.getElementById('docViewerTitle').textContent = cleanTitle;
+  document.getElementById('docChatTitle').textContent = cleanTitle;
+  document.getElementById('viewerParentDocName').textContent = cleanTitle;
   document.getElementById('docBody').innerHTML = `
     <div style="text-align:center;padding:60px;color:var(--muted)">
       <div class="loading-spinner" style="margin:0 auto 16px;width:32px;height:32px;border-width:2px"></div>
@@ -4958,6 +4981,16 @@ async function viewDocFromAPI(doc) {
     const content = await api.getFileContent(doc.source);
     currentViewContent = content;
     
+    // Extract title from H1 in content if available
+    const h1Match = content.match(/^#\s+(.+)$/m);
+    if (h1Match) {
+      const extractedTitle = h1Match[1].trim();
+      document.getElementById('docViewerTitle').textContent = extractedTitle;
+      document.getElementById('docChatTitle').textContent = extractedTitle;
+      document.getElementById('viewerParentDocName').textContent = extractedTitle;
+      currentViewDoc = extractedTitle;
+    }
+    
     // Use marked.js for proper rendering
     if (typeof marked !== 'undefined') {
       document.getElementById('docBody').innerHTML = marked.parse(content);
@@ -4973,6 +5006,20 @@ async function viewDocFromAPI(doc) {
         <p style="font-size:13px">${error.message}</p>
       </div>`;
   }
+}
+
+// Clean up document title - strip metadata prefixes/suffixes
+function cleanDocTitle(title) {
+  if (!title) return 'Untitled';
+  
+  // Strip "Deep Research: " prefix
+  let clean = title.replace(/^Deep Research:\s*/i, '');
+  
+  // Strip metadata suffixes like " - High-Level - Key Figures - Investment"
+  // Pattern: title followed by " - Word - Word - Word" at end
+  clean = clean.replace(/\s+-\s+[\w\s]+-\s+[\w\s]+-\s+[\w\s]+$/, '');
+  
+  return clean || title;
 }
 
 function generatePlaceholderDoc(title) {
