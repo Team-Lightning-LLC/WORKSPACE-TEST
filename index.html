@@ -1275,7 +1275,7 @@
               <h4>Reset password</h4>
               <p>Forgot your password? We'll help you reset it</p>
             </div>
-            <div class="help-option-arrow">â†’</div>
+            <div class="help-option-arrow">†’</div>
           </a>
           <a href="#" class="help-option" onclick="event.preventDefault()">
             <div class="help-option-icon">
@@ -1289,7 +1289,7 @@
               <h4>Getting started</h4>
               <p>New to MarketLens? Learn the basics</p>
             </div>
-            <div class="help-option-arrow">â†’</div>
+            <div class="help-option-arrow">†’</div>
           </a>
           <a href="#" class="help-option" onclick="event.preventDefault()">
             <div class="help-option-icon">
@@ -1301,7 +1301,7 @@
               <h4>Technical issues</h4>
               <p>Something not working? Let us know</p>
             </div>
-            <div class="help-option-arrow">â†’</div>
+            <div class="help-option-arrow">†’</div>
           </a>
           <a href="#" class="help-option" onclick="event.preventDefault()">
             <div class="help-option-icon">
@@ -1314,7 +1314,7 @@
               <h4>Account & billing</h4>
               <p>Manage your subscription and settings</p>
             </div>
-            <div class="help-option-arrow">â†’</div>
+            <div class="help-option-arrow">†’</div>
           </a>
         </div>
         <div class="help-divider"><span>or</span></div>
@@ -3233,7 +3233,7 @@ function renderDocuments() {
     const isStarred = starredDocs.has(d.id);
     
     let html = `<div class="document-card ${isChild ? 'is-child' : ''} ${hasChildren ? 'has-children' : ''} ${isStarred ? 'is-starred' : ''}" style="${indentStyle}" data-doc-id="${d.id}" data-parent-id="${d.parentId || ''}">
-      ${isChild ? `<div class="child-indicator">â†³ Follow-up${d.parentTitle ? ` from ${d.parentTitle.substring(0, 25)}${d.parentTitle.length > 25 ? '...' : ''}` : ''}</div>` : ''}
+      ${isChild ? `<div class="child-indicator">†³ Follow-up${d.parentTitle ? ` from ${d.parentTitle.substring(0, 25)}${d.parentTitle.length > 25 ? '...' : ''}` : ''}</div>` : ''}
       <div class="document-card-header">
         <span class="document-type">${d.type}</span>
         <div class="document-actions">
@@ -3328,7 +3328,7 @@ function toggleCollapse(docId) {
 
 async function removeDoc(id) {
   const confirmed = await showConfirm(
-    'Remove this document from the workspace?\n\nThis only removes it from this workspaceâ€”the document will still be available in your Library.',
+    'Remove this document from the workspace?\n\nThis only removes it from this workspace€”the document will still be available in your Library.',
     'Remove Document'
   );
   if (!confirmed) return;
@@ -4172,7 +4172,7 @@ function renderBatchTypes() {
         <div class="research-type-desc">${rt.desc}</div>
       </div>
       <div class="quantity-stepper">
-        <button class="stepper-btn" onclick="event.stopPropagation();adjustQty(this,-1)">âˆ’</button>
+        <button class="stepper-btn" onclick="event.stopPropagation();adjustQty(this,-1)">ˆ’</button>
         <span class="stepper-value">Ã—1</span>
         <button class="stepper-btn" onclick="event.stopPropagation();adjustQty(this,1)">+</button>
       </div>
@@ -4591,8 +4591,8 @@ function formatAIResponse(text) {
   // Convert **bold** to <strong> (do this first, before italic)
   html = html.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
   
-  // Convert bullet points (- or â€¢) at start of lines
-  html = html.replace(/^[\-â€¢]\s+(.+)$/gm, '<li>$1</li>');
+  // Convert bullet points (- or €¢) at start of lines
+  html = html.replace(/^[\-€¢]\s+(.+)$/gm, '<li>$1</li>');
   
   // Wrap consecutive <li> in <ul>
   html = html.replace(/(<li>[^<]*<\/li>\s*)+/g, (match) => `<ul>${match}</ul>`);
