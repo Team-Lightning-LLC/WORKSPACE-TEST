@@ -2361,6 +2361,10 @@ function renderHomeResearchProgress() {
         `;
       } else {
         // Workspace research
+        const researchType = job.researchType || job.name;
+        const metaText = job.docTitle 
+          ? `${researchType} · Ready in <span class="workspace">${job.wsName}</span>`
+          : `Ready in <span class="workspace">${job.wsName}</span>`;
         html += `
           <div class="research-item completed">
             <div class="research-done">
@@ -2368,7 +2372,7 @@ function renderHomeResearchProgress() {
             </div>
             <div class="research-info">
               <div class="research-name">${job.name}</div>
-              <div class="research-meta">Ready in <span class="workspace">${job.wsName}</span></div>
+              <div class="research-meta">${metaText}</div>
             </div>
             <div class="research-actions">
               <button class="research-action-btn" onclick="event.stopPropagation();viewJobDocument(${docIdAttr}, '${displayName}', ${wsIdAttr})">View</button>
@@ -3479,11 +3483,15 @@ function updateJobs() {
             </div>
           </div>`;
         } else {
+          const researchType = j.researchType || j.name;
+          const metaText = j.docTitle 
+            ? `${researchType} · Ready in <span class="job-workspace">${j.wsName}</span>`
+            : `Ready in <span class="job-workspace">${j.wsName}</span>`;
           return `<div class="job-item completed">
             <div class="job-done-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg></div>
             <div class="job-info">
               <div class="job-name">${j.name}</div>
-              <div class="job-progress">Ready in <span class="job-workspace">${j.wsName}</span></div>
+              <div class="job-progress">${metaText}</div>
             </div>
             <div class="job-actions">
               <button class="job-view-btn" onclick="event.stopPropagation();viewJobDocument(${docIdAttr}, '${displayName}', ${wsIdAttr})">View</button>
