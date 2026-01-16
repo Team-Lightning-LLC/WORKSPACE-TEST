@@ -2335,6 +2335,8 @@ function renderHomeResearchProgress() {
   let html = '';
   sorted.forEach(job => {
     const wsIdAttr = typeof job.wsId === 'string' ? `'${job.wsId}'` : job.wsId;
+    const docIdAttr = job.docId ? `'${job.docId}'` : 'null';
+    const displayName = job.name.replace(/'/g, "\\'");
     const isQuick = job.isQuickResearch || !job.wsId;
     
     if (job.status === 'completed') {
@@ -2350,7 +2352,7 @@ function renderHomeResearchProgress() {
               <div class="research-meta"><span class="quick-label">Quick Research</span> · Saved to Library</div>
             </div>
             <div class="research-actions">
-              <button class="research-action-btn primary" onclick="event.stopPropagation();viewResearchDoc('${job.name}')">View</button>
+              <button class="research-action-btn primary" onclick="event.stopPropagation();viewJobDocument(${docIdAttr}, '${displayName}')">View</button>
               <button class="research-action-btn" onclick="event.stopPropagation();dismissJob(${job.id})" title="Dismiss">
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
               </button>
@@ -2369,8 +2371,8 @@ function renderHomeResearchProgress() {
               <div class="research-meta">Ready in <span class="workspace">${job.wsName}</span></div>
             </div>
             <div class="research-actions">
-              <button class="research-action-btn" onclick="event.stopPropagation();viewResearchDoc('${job.name}', ${wsIdAttr})">View</button>
-              <button class="research-action-btn primary" onclick="event.stopPropagation();openInWorkspace('${job.name}', ${wsIdAttr})">Open in Workspace</button>
+              <button class="research-action-btn" onclick="event.stopPropagation();viewJobDocument(${docIdAttr}, '${displayName}', ${wsIdAttr})">View</button>
+              <button class="research-action-btn primary" onclick="event.stopPropagation();openJobInWorkspace(${docIdAttr}, '${displayName}', ${wsIdAttr})">Open in Workspace</button>
               <button class="research-action-btn" onclick="event.stopPropagation();dismissJob(${job.id})" title="Dismiss">
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
               </button>
@@ -2541,6 +2543,75 @@ async function openInWorkspace(jobName, wsId) {
   };
   
   // Start first attempt after initial delay
+  setTimeout(tryOpenDoc, 300);
+}
+
+// View a job's document - uses docId when available for reliable lookup
+async function viewJobDocument(docId, jobName, wsId = null) {
+  let doc = null;
+  
+  // If we have docId, use it directly
+  if (docId) {
+    doc = libraryDocs.find(d => d.id === docId);
+    if (!doc) doc = allVertesiaDocs.find(d => d.id === docId);
+  }
+  
+  // Fallback to name search
+  if (!doc) {
+    doc = libraryDocs.find(d => d.title === jobName);
+    if (!doc) doc = libraryDocs.find(d => d.title.includes(jobName) || jobName.includes(d.title));
+  }
+  
+  if (doc) {
+    if (liveMode && doc.source) {
+      viewDocFromAPI(doc);
+    } else {
+      const content = sampleDocuments[doc.title] || generatePlaceholderDoc(doc.title);
+      openDocViewer(content, doc.title);
+    }
+  } else {
+    showAlert('Could not find the document. It may still be processing.', 'Document Not Found');
+  }
+}
+
+// Open job's document in its workspace - uses docId when available
+async function openJobInWorkspace(docId, jobName, wsId) {
+  showView('workspaces');
+  selectWs(wsId);
+  
+  let attempts = 0;
+  const maxAttempts = 5;
+  
+  const tryOpenDoc = () => {
+    attempts++;
+    let doc = null;
+    
+    // If we have docId, use it directly
+    if (docId) {
+      doc = documents.find(d => d.id === docId);
+      if (!doc) doc = libraryDocs.find(d => d.id === docId);
+    }
+    
+    // Fallback to name search
+    if (!doc) {
+      doc = documents.find(d => d.title === jobName);
+      if (!doc) doc = documents.find(d => d.title.includes(jobName) || jobName.includes(d.title));
+    }
+    
+    if (doc) {
+      if (liveMode && doc.source) {
+        viewDocFromAPI(doc);
+      } else {
+        const content = sampleDocuments[doc.title] || generatePlaceholderDoc(doc.title);
+        openDocViewer(content, doc.title);
+      }
+    } else if (attempts < maxAttempts) {
+      setTimeout(tryOpenDoc, 300);
+    } else {
+      console.warn('Could not find document:', jobName);
+    }
+  };
+  
   setTimeout(tryOpenDoc, 300);
 }
 
@@ -3389,6 +3460,8 @@ function updateJobs() {
     document.getElementById('jobsBody').innerHTML = relevantJobs.map(j => {
       const isQuick = j.isQuickResearch || !j.wsId;
       const wsIdAttr = typeof j.wsId === 'string' ? `'${j.wsId}'` : j.wsId;
+      const docIdAttr = j.docId ? `'${j.docId}'` : 'null';
+      const displayName = j.name.replace(/'/g, "\\'");
       
       if (j.status === 'completed') {
         if (isQuick) {
@@ -3399,7 +3472,7 @@ function updateJobs() {
               <div class="job-progress"><span class="job-workspace">Quick Research</span> · Saved to Library</div>
             </div>
             <div class="job-actions">
-              <button class="job-view-btn" onclick="event.stopPropagation();viewResearchDoc('${j.name}')">View</button>
+              <button class="job-view-btn" onclick="event.stopPropagation();viewJobDocument(${docIdAttr}, '${displayName}')">View</button>
               <button class="job-dismiss" onclick="event.stopPropagation();dismissJob(${j.id})" title="Dismiss">
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
               </button>
@@ -3413,8 +3486,8 @@ function updateJobs() {
               <div class="job-progress">Ready in <span class="job-workspace">${j.wsName}</span></div>
             </div>
             <div class="job-actions">
-              <button class="job-view-btn" onclick="event.stopPropagation();viewResearchDoc('${j.name}', ${wsIdAttr})">View</button>
-              <button class="job-view-btn primary" onclick="event.stopPropagation();openInWorkspace('${j.name}', ${wsIdAttr})">Open in Workspace</button>
+              <button class="job-view-btn" onclick="event.stopPropagation();viewJobDocument(${docIdAttr}, '${displayName}', ${wsIdAttr})">View</button>
+              <button class="job-view-btn primary" onclick="event.stopPropagation();openJobInWorkspace(${docIdAttr}, '${displayName}', ${wsIdAttr})">Open in Workspace</button>
               <button class="job-dismiss" onclick="event.stopPropagation();dismissJob(${j.id})" title="Dismiss">
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
               </button>
@@ -3445,7 +3518,10 @@ function addJob(name, skipFakeTimer = false, workflowId = null, runId = null, is
   const newJobId = ++jobId;
   const job = { 
     id: newJobId, 
-    name, 
+    name,
+    researchType: name, // Original research type for matching
+    docId: null,        // Will be set when document is found
+    docTitle: null,     // Will be set to actual document title
     wsId: isQuickResearch ? null : currentWs?.id,
     wsName: isQuickResearch ? null : currentWs?.name,
     status: 'running',
@@ -3942,6 +4018,7 @@ async function reloadAfterResearch() {
       title: o.name || 'Untitled',
       type: o.properties?.framework || o.properties?.document_type || 'Research',
       date: formatApiDate(o.created_at),
+      createdAt: o.created_at, // Keep raw timestamp for matching
       source: o.content?.source,
       parentId: o.parent?.id || o.parent || o.properties?.parent_document_id || null,
       parentTitle: o.parent?.name || o.properties?.parent_document_title || null
@@ -3967,6 +4044,9 @@ async function reloadAfterResearch() {
       }
     }
     
+    // Match completed jobs to actual documents
+    updateCompletedJobsWithDocuments();
+    
     renderDocuments();
     renderSidebar();
     renderLibrary();
@@ -3976,6 +4056,63 @@ async function reloadAfterResearch() {
   } catch (e) {
     console.error('Error reloading after research:', e);
   }
+}
+
+// Match completed jobs to their actual document names
+function updateCompletedJobsWithDocuments() {
+  const completedJobs = activeJobs.filter(j => j.status === 'completed' && !j.docId);
+  if (completedJobs.length === 0) return;
+  
+  console.log('Matching', completedJobs.length, 'completed jobs to documents...');
+  
+  // Recent docs (created in last 20 minutes)
+  const recentCutoff = Date.now() - (20 * 60 * 1000);
+  
+  completedJobs.forEach(job => {
+    // Get candidate documents
+    let candidates = allVertesiaDocs.filter(d => {
+      // Must be recent
+      const docTime = new Date(d.createdAt).getTime();
+      if (docTime < recentCutoff) return false;
+      return true;
+    });
+    
+    // If job has workspace, prioritize docs in that workspace
+    if (job.wsId && workspaceDocs[job.wsId]) {
+      const wsDocIds = workspaceDocs[job.wsId].map(d => d.id);
+      const wsCandidates = candidates.filter(d => wsDocIds.includes(d.id));
+      if (wsCandidates.length > 0) candidates = wsCandidates;
+    }
+    
+    // Try to match by type/framework containing research type
+    let match = candidates.find(d => 
+      d.type && d.type.toLowerCase().includes(job.researchType.toLowerCase())
+    );
+    
+    // Or title containing research type
+    if (!match) {
+      match = candidates.find(d => 
+        d.title && d.title.toLowerCase().includes(job.researchType.toLowerCase())
+      );
+    }
+    
+    // Or just take most recent if we have workspace match
+    if (!match && candidates.length > 0 && job.wsId) {
+      candidates.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+      match = candidates[0];
+    }
+    
+    if (match) {
+      console.log(`Matched job "${job.researchType}" to doc "${match.title}"`);
+      job.docId = match.id;
+      job.docTitle = match.title;
+      job.name = match.title; // Update display name
+    }
+  });
+  
+  saveJobs();
+  updateJobs();
+  if (currentView === 'home') renderHomeResearchProgress();
 }
 
 function resetResearchModal() {
