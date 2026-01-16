@@ -2459,12 +2459,12 @@ async function openInWorkspace(jobName, wsId) {
   selectWs(wsId);
   
   // Wait for workspace to load, then open the document
-  // Use longer timeout and retry logic for reliability
   let attempts = 0;
-  const maxAttempts = 5;
+  const maxAttempts = 10;
   
   const tryOpenDoc = () => {
     attempts++;
+    console.log('openInWorkspace attempt', attempts);
     
     // Search in the current documents array (set by doSelectWs)
     let doc = documents.find(d => d.title === jobName);
@@ -2487,6 +2487,12 @@ async function openInWorkspace(jobName, wsId) {
       if (!doc) doc = libraryDocs.find(d => d.title.includes(jobName) || jobName.includes(d.title));
     }
     
+    // Try allVertesiaDocs as last resort
+    if (!doc) {
+      doc = allVertesiaDocs.find(d => d.title === jobName);
+      if (!doc) doc = allVertesiaDocs.find(d => d.title.includes(jobName) || jobName.includes(d.title));
+    }
+    
     if (doc) {
       // Found the document - open it
       if (liveMode && doc.source) {
@@ -2497,24 +2503,29 @@ async function openInWorkspace(jobName, wsId) {
       }
     } else if (attempts < maxAttempts) {
       // Retry after a short delay
-      setTimeout(tryOpenDoc, 300);
+      setTimeout(tryOpenDoc, 500);
     } else {
       console.warn('Could not find document after', maxAttempts, 'attempts:', jobName);
     }
   };
   
-  // Start first attempt after initial delay
-  setTimeout(tryOpenDoc, 300);
+  // Longer initial delay to let workspace fully load
+  setTimeout(tryOpenDoc, 600);
 }
 
 // View a job's document - uses docId when available for reliable lookup
 async function viewJobDocument(docId, jobName, wsId = null) {
+  console.log('viewJobDocument called:', { docId, jobName, wsId });
   let doc = null;
   
+  // Handle string 'null' from template
+  const actualDocId = (docId && docId !== 'null') ? docId : null;
+  
   // If we have docId, use it directly
-  if (docId) {
-    doc = libraryDocs.find(d => d.id === docId);
-    if (!doc) doc = allVertesiaDocs.find(d => d.id === docId);
+  if (actualDocId) {
+    doc = libraryDocs.find(d => d.id === actualDocId);
+    if (!doc) doc = allVertesiaDocs.find(d => d.id === actualDocId);
+    if (!doc && wsId) doc = workspaceDocs[wsId]?.find(d => d.id === actualDocId);
   }
   
   // Fallback to name search
@@ -2522,6 +2533,14 @@ async function viewJobDocument(docId, jobName, wsId = null) {
     doc = libraryDocs.find(d => d.title === jobName);
     if (!doc) doc = libraryDocs.find(d => d.title.includes(jobName) || jobName.includes(d.title));
   }
+  
+  // Try allVertesiaDocs
+  if (!doc) {
+    doc = allVertesiaDocs.find(d => d.title === jobName);
+    if (!doc) doc = allVertesiaDocs.find(d => d.title.includes(jobName) || jobName.includes(d.title));
+  }
+  
+  console.log('viewJobDocument found:', doc?.title || 'NOT FOUND');
   
   if (doc) {
     if (liveMode && doc.source) {
@@ -2537,27 +2556,59 @@ async function viewJobDocument(docId, jobName, wsId = null) {
 
 // Open job's document in its workspace - uses docId when available
 async function openJobInWorkspace(docId, jobName, wsId) {
+  console.log('openJobInWorkspace called:', { docId, jobName, wsId });
+  
+  // Handle string 'null' from template
+  const actualDocId = (docId && docId !== 'null') ? docId : null;
+  
   showView('workspaces');
   selectWs(wsId);
   
   let attempts = 0;
-  const maxAttempts = 5;
+  const maxAttempts = 10;
   
   const tryOpenDoc = () => {
     attempts++;
+    console.log('tryOpenDoc attempt', attempts, 'documents:', documents.length, 'wsId:', wsId);
     let doc = null;
     
     // If we have docId, use it directly
-    if (docId) {
-      doc = documents.find(d => d.id === docId);
-      if (!doc) doc = libraryDocs.find(d => d.id === docId);
+    if (actualDocId) {
+      doc = documents.find(d => d.id === actualDocId);
+      if (!doc) doc = workspaceDocs[wsId]?.find(d => d.id === actualDocId);
+      if (!doc) doc = libraryDocs.find(d => d.id === actualDocId);
+      if (!doc) doc = allVertesiaDocs.find(d => d.id === actualDocId);
+      console.log('Search by ID:', actualDocId, 'found:', !!doc);
     }
     
     // Fallback to name search
     if (!doc) {
       doc = documents.find(d => d.title === jobName);
       if (!doc) doc = documents.find(d => d.title.includes(jobName) || jobName.includes(d.title));
+      console.log('Search by name in documents:', jobName, 'found:', !!doc);
     }
+    
+    // Try workspaceDocs directly
+    if (!doc && workspaceDocs[wsId]) {
+      doc = workspaceDocs[wsId].find(d => d.title === jobName);
+      if (!doc) doc = workspaceDocs[wsId].find(d => d.title.includes(jobName) || jobName.includes(d.title));
+      console.log('Search in workspaceDocs:', 'found:', !!doc);
+    }
+    
+    // Try library as fallback
+    if (!doc) {
+      doc = libraryDocs.find(d => d.title === jobName);
+      if (!doc) doc = libraryDocs.find(d => d.title.includes(jobName) || jobName.includes(d.title));
+      console.log('Search in libraryDocs:', 'found:', !!doc);
+    }
+    
+    // Last resort: get most recent doc in workspace
+    if (!doc && documents.length > 0) {
+      console.log('Fallback: opening most recent doc in workspace');
+      doc = documents[0]; // First doc is usually most recent
+    }
+    
+    console.log('Final result:', doc?.title || 'NOT FOUND');
     
     if (doc) {
       if (liveMode && doc.source) {
@@ -2567,13 +2618,15 @@ async function openJobInWorkspace(docId, jobName, wsId) {
         openDocViewer(content, doc.title);
       }
     } else if (attempts < maxAttempts) {
-      setTimeout(tryOpenDoc, 300);
+      setTimeout(tryOpenDoc, 500);
     } else {
-      console.warn('Could not find document:', jobName);
+      console.warn('Could not find document after', maxAttempts, 'attempts:', jobName);
+      showAlert('Could not find the document in this workspace.', 'Document Not Found');
     }
   };
   
-  setTimeout(tryOpenDoc, 300);
+  // Longer initial delay to let workspace fully load
+  setTimeout(tryOpenDoc, 600);
 }
 
 let homeLibraryFilter = '';
