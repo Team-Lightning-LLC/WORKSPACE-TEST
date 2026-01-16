@@ -298,8 +298,10 @@
     .job-dismiss { background: none; border: none; padding: 4px; cursor: pointer; color: var(--muted); opacity: 0.6; transition: opacity 0.15s; }
     .job-dismiss:hover { opacity: 1; color: var(--ink); }
     .job-actions { display: flex; align-items: center; gap: 8px; margin-left: auto; }
-    .job-view-btn { background: var(--accent); color: white; border: none; padding: 4px 10px; border-radius: 4px; font-size: 11px; font-weight: 500; cursor: pointer; transition: background 0.15s; }
-    .job-view-btn:hover { background: var(--accent-dark, #1a9a6c); }
+    .job-view-btn { background: var(--soft); color: var(--ink); border: none; padding: 4px 10px; border-radius: 4px; font-size: 11px; font-weight: 500; cursor: pointer; transition: background 0.15s; }
+    .job-view-btn:hover { background: var(--border); }
+    .job-view-btn.primary { background: var(--accent); color: white; }
+    .job-view-btn.primary:hover { background: var(--accent-dark, #1a9a6c); }
     .job-status { color: var(--accent); font-weight: 500; }
     .jobs-empty { padding: 20px; text-align: center; color: var(--muted); font-size: 12px; }
 
@@ -3408,10 +3410,11 @@ function updateJobs() {
             <div class="job-done-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg></div>
             <div class="job-info">
               <div class="job-name">${j.name}</div>
-              <div class="job-progress">Ready · Click to view</div>
+              <div class="job-progress">Ready in <span class="job-workspace">${j.wsName}</span></div>
             </div>
             <div class="job-actions">
               <button class="job-view-btn" onclick="event.stopPropagation();viewResearchDoc('${j.name}', ${wsIdAttr})">View</button>
+              <button class="job-view-btn primary" onclick="event.stopPropagation();openInWorkspace('${j.name}', ${wsIdAttr})">Open in Workspace</button>
               <button class="job-dismiss" onclick="event.stopPropagation();dismissJob(${j.id})" title="Dismiss">
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
               </button>
