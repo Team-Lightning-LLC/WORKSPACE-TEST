@@ -517,9 +517,6 @@
     .stepper-btn { width: 26px; height: 26px; border: 1px solid var(--border); background: var(--card); border-radius: 6px; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 14px; color: var(--muted); }
     .stepper-btn:hover { border-color: var(--accent); color: var(--accent); }
     .stepper-value { width: 32px; text-align: center; font-size: 13px; font-weight: 600; color: var(--ink); }
-    .batch-summary { background: var(--soft); border-radius: 8px; padding: 12px 14px; margin-top: 16px; display: flex; align-items: center; justify-content: space-between; }
-    .summary-text { font-size: 13px; }
-    .summary-text strong { color: var(--accent); }
 
     .modal-view { display: none; }
     .modal-view.active { display: block; }
@@ -955,10 +952,6 @@
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
             Research
           </button>
-          <button class="action-btn" onclick="openModal('batchResearch')">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
-            Batch Research
-          </button>
           <button class="action-btn primary" onclick="openModal('generateReport')">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
             Generate Report
@@ -1015,7 +1008,7 @@
             <div class="chat-history-popup" id="chatHistoryPopup">
               <div class="chat-history-header">
                 <span class="chat-history-title">Saved Chats</span>
-                <button class="chat-history-close" onclick="closeChatHistory()">—</button>
+                <button class="chat-history-close" onclick="closeChatHistory()">Ã—</button>
               </div>
               <div class="chat-history-list" id="chatHistoryList">
                 <!-- Populated by JS -->
@@ -1055,7 +1048,7 @@
   <!-- MODALS -->
   <div class="modal-overlay" id="newWorkspace" onclick="if(event.target===this)closeModal('newWorkspace')">
     <div class="modal large">
-      <div class="modal-header"><h2 class="modal-title">New Workspace</h2><button class="modal-close" onclick="closeModal('newWorkspace')">—</button></div>
+      <div class="modal-header"><h2 class="modal-title">New Workspace</h2><button class="modal-close" onclick="closeModal('newWorkspace')">Ã—</button></div>
       <div class="modal-body">
         <p class="modal-desc">Workspaces organize related research, enable scoped chat, and generate synthesized reports.</p>
         <div class="form-group">
@@ -1076,7 +1069,7 @@
 
   <div class="modal-overlay" id="addDocuments" onclick="if(event.target===this)closeModal('addDocuments')">
     <div class="modal large">
-      <div class="modal-header"><h2 class="modal-title">Add Documents</h2><button class="modal-close" onclick="closeModal('addDocuments')">—</button></div>
+      <div class="modal-header"><h2 class="modal-title">Add Documents</h2><button class="modal-close" onclick="closeModal('addDocuments')">Ã—</button></div>
       <div class="modal-body">
         <p class="modal-desc">Select documents from your library to add to this workspace.</p>
         <div class="doc-picker" id="addDocsPicker"></div>
@@ -1090,7 +1083,7 @@
 
   <div class="modal-overlay" id="research" onclick="if(event.target===this)closeModal('research')">
     <div class="modal">
-      <div class="modal-header"><h2 class="modal-title" id="researchModalTitle">Research</h2><button class="modal-close" onclick="closeModal('research')">—</button></div>
+      <div class="modal-header"><h2 class="modal-title" id="researchModalTitle">Research</h2><button class="modal-close" onclick="closeModal('research')">Ã—</button></div>
       <div class="modal-body">
         <p class="modal-desc" id="researchModalDesc">Generate a single research document. Output will be added to this workspace.</p>
         <div class="form-group">
@@ -1140,43 +1133,9 @@
     </div>
   </div>
 
-  <div class="modal-overlay" id="batchResearch" onclick="if(event.target===this)closeModal('batchResearch')">
-    <div class="modal wide">
-      <div class="modal-header"><h2 class="modal-title">Batch Research</h2><button class="modal-close" onclick="closeModal('batchResearch')">—</button></div>
-      <div class="modal-view active" id="batchStep1">
-        <div class="modal-body">
-          <p class="modal-desc">Simultaneously run multiple research queries to build more robust insight.</p>
-          <div class="form-group">
-            <label class="form-label">Topic</label>
-            <textarea class="form-input" rows="2" id="batchTopic" placeholder="e.g., Market analysis, Industry trends"></textarea>
-          </div>
-          <div class="form-group">
-            <label class="form-label">Research Types</label>
-            <div class="research-types" id="batchTypes"></div>
-          </div>
-          <div class="batch-summary"><span class="summary-text"><strong id="batchTotal">0</strong> documents</span><span style="font-size:12px;color:var(--muted)">Runs in parallel</span></div>
-        </div>
-        <div class="modal-footer">
-          <button class="action-btn" onclick="closeModal('batchResearch')">Cancel</button>
-          <button class="action-btn primary" onclick="showBatchConfirm()">Review & Confirm</button>
-        </div>
-      </div>
-      <div class="modal-view" id="batchStep2">
-        <div class="modal-body">
-          <div class="confirm-box"><div class="confirm-title">Research Queue</div><div class="confirm-list" id="confirmList"></div></div>
-          <p class="modal-desc" style="color: #6b5a10;"><strong>Note:</strong> This uses significantly more compute. Please confirm.</p>
-        </div>
-        <div class="modal-footer">
-          <button class="action-btn" onclick="showBatchConfig()">Back</button>
-          <button class="action-btn primary" onclick="startBatchResearch()">Confirm & Queue</button>
-        </div>
-      </div>
-    </div>
-  </div>
-
   <div class="modal-overlay" id="generateReport" onclick="if(event.target===this)closeModal('generateReport')">
     <div class="modal">
-      <div class="modal-header"><h2 class="modal-title">Generate Report</h2><button class="modal-close" onclick="closeModal('generateReport')">—</button></div>
+      <div class="modal-header"><h2 class="modal-title">Generate Report</h2><button class="modal-close" onclick="closeModal('generateReport')">Ã—</button></div>
       <div class="modal-body">
         <p class="modal-desc">Synthesize your workspace documents into a cohesive report.</p>
         <div class="form-group">
@@ -1197,7 +1156,7 @@
 
   <div class="modal-overlay" id="libraryPopup" onclick="if(event.target===this)closeModal('libraryPopup')">
     <div class="modal fullish">
-      <div class="modal-header"><h2 class="modal-title">Library</h2><button class="modal-close" onclick="closeModal('libraryPopup')">—</button></div>
+      <div class="modal-header"><h2 class="modal-title">Library</h2><button class="modal-close" onclick="closeModal('libraryPopup')">Ã—</button></div>
       <div class="modal-body" style="padding:0;max-height:500px;overflow-y:auto"><div class="library-list" id="libraryList"></div></div>
     </div>
   </div>
@@ -1207,7 +1166,7 @@
     <div class="modal">
       <div class="modal-header">
         <h2 class="modal-title">Profile Settings</h2>
-        <button class="modal-close" onclick="closeModal('profileModal')">—</button>
+        <button class="modal-close" onclick="closeModal('profileModal')">Ã—</button>
       </div>
       <div class="modal-body">
         <div class="profile-avatar">
@@ -1260,7 +1219,7 @@
     <div class="modal">
       <div class="modal-header">
         <h2 class="modal-title">How can we help?</h2>
-        <button class="modal-close" onclick="closeModal('supportModal')">—</button>
+        <button class="modal-close" onclick="closeModal('supportModal')">Ã—</button>
       </div>
       <div class="modal-body support-body">
         <div class="help-options">
@@ -1275,7 +1234,7 @@
               <h4>Reset password</h4>
               <p>Forgot your password? We'll help you reset it</p>
             </div>
-            <div class="help-option-arrow">†’</div>
+            <div class="help-option-arrow">â†’</div>
           </a>
           <a href="#" class="help-option" onclick="event.preventDefault()">
             <div class="help-option-icon">
@@ -1289,7 +1248,7 @@
               <h4>Getting started</h4>
               <p>New to MarketLens? Learn the basics</p>
             </div>
-            <div class="help-option-arrow">†’</div>
+            <div class="help-option-arrow">â†’</div>
           </a>
           <a href="#" class="help-option" onclick="event.preventDefault()">
             <div class="help-option-icon">
@@ -1301,7 +1260,7 @@
               <h4>Technical issues</h4>
               <p>Something not working? Let us know</p>
             </div>
-            <div class="help-option-arrow">†’</div>
+            <div class="help-option-arrow">â†’</div>
           </a>
           <a href="#" class="help-option" onclick="event.preventDefault()">
             <div class="help-option-icon">
@@ -1314,7 +1273,7 @@
               <h4>Account & billing</h4>
               <p>Manage your subscription and settings</p>
             </div>
-            <div class="help-option-arrow">†’</div>
+            <div class="help-option-arrow">â†’</div>
           </a>
         </div>
         <div class="help-divider"><span>or</span></div>
@@ -1902,7 +1861,6 @@ document.addEventListener('DOMContentLoaded', async () => {
   renderSidebar();
   renderDocuments();
   renderLibrary();
-  renderBatchTypes();
   updateJobs();
   updateChatUsage();
   renderChatHistory();
@@ -2110,7 +2068,6 @@ function openModal(id) {
     renderDocPicker('addDocsPicker', libraryDocs, false, existingIds);
   }
   if (id === 'generateReport') renderReportPicker();
-  if (id === 'batchResearch') { document.getElementById('batchStep1').classList.add('active'); document.getElementById('batchStep2').classList.remove('active'); }
 }
 function closeModal(id) { 
   document.getElementById(id).classList.remove('open'); 
@@ -2343,7 +2300,7 @@ function renderHomeResearchProgress() {
       if (isQuick) {
         // Quick Research - no workspace, just View button
         html += `
-          <div class="research-item completed">
+          <div class="research-item completed" onclick="viewJobDocument(${docIdAttr}, '${displayName}')" style="cursor:pointer">
             <div class="research-done">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>
             </div>
@@ -2351,9 +2308,9 @@ function renderHomeResearchProgress() {
               <div class="research-name">${job.name}</div>
               <div class="research-meta"><span class="quick-label">Quick Research</span> · Saved to Library</div>
             </div>
-            <div class="research-actions">
-              <button class="research-action-btn primary" onclick="event.stopPropagation();viewJobDocument(${docIdAttr}, '${displayName}')">View</button>
-              <button class="research-action-btn" onclick="event.stopPropagation();dismissJob(${job.id})" title="Dismiss">
+            <div class="research-actions" onclick="event.stopPropagation()">
+              <button class="research-action-btn primary" onclick="viewJobDocument(${docIdAttr}, '${displayName}')">View</button>
+              <button class="research-action-btn" onclick="dismissJob(${job.id})" title="Dismiss">
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
               </button>
             </div>
@@ -2366,7 +2323,7 @@ function renderHomeResearchProgress() {
           ? `${researchType} · Ready in <span class="workspace">${job.wsName}</span>`
           : `Ready in <span class="workspace">${job.wsName}</span>`;
         html += `
-          <div class="research-item completed">
+          <div class="research-item completed" onclick="viewJobDocument(${docIdAttr}, '${displayName}', ${wsIdAttr})" style="cursor:pointer">
             <div class="research-done">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>
             </div>
@@ -2374,10 +2331,10 @@ function renderHomeResearchProgress() {
               <div class="research-name">${job.name}</div>
               <div class="research-meta">${metaText}</div>
             </div>
-            <div class="research-actions">
-              <button class="research-action-btn" onclick="event.stopPropagation();viewJobDocument(${docIdAttr}, '${displayName}', ${wsIdAttr})">View</button>
-              <button class="research-action-btn primary" onclick="event.stopPropagation();openJobInWorkspace(${docIdAttr}, '${displayName}', ${wsIdAttr})">Open in Workspace</button>
-              <button class="research-action-btn" onclick="event.stopPropagation();dismissJob(${job.id})" title="Dismiss">
+            <div class="research-actions" onclick="event.stopPropagation()">
+              <button class="research-action-btn" onclick="viewJobDocument(${docIdAttr}, '${displayName}', ${wsIdAttr})">View</button>
+              <button class="research-action-btn primary" onclick="openJobInWorkspace(${docIdAttr}, '${displayName}', ${wsIdAttr})">Open in Workspace</button>
+              <button class="research-action-btn" onclick="dismissJob(${job.id})" title="Dismiss">
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
               </button>
             </div>
@@ -3232,11 +3189,11 @@ function renderDocuments() {
     const isCollapsed = collapsedParents.has(d.id);
     const isStarred = starredDocs.has(d.id);
     
-    let html = `<div class="document-card ${isChild ? 'is-child' : ''} ${hasChildren ? 'has-children' : ''} ${isStarred ? 'is-starred' : ''}" style="${indentStyle}" data-doc-id="${d.id}" data-parent-id="${d.parentId || ''}">
-      ${isChild ? `<div class="child-indicator">†³ Follow-up${d.parentTitle ? ` from ${d.parentTitle.substring(0, 25)}${d.parentTitle.length > 25 ? '...' : ''}` : ''}</div>` : ''}
+    let html = `<div class="document-card ${isChild ? 'is-child' : ''} ${hasChildren ? 'has-children' : ''} ${isStarred ? 'is-starred' : ''}" style="${indentStyle}" data-doc-id="${d.id}" data-parent-id="${d.parentId || ''}" onclick="viewDoc('${safeTitle}')">
+      ${isChild ? `<div class="child-indicator">↳ Follow-up${d.parentTitle ? ` from ${d.parentTitle.substring(0, 25)}${d.parentTitle.length > 25 ? '...' : ''}` : ''}</div>` : ''}
       <div class="document-card-header">
         <span class="document-type">${d.type}</span>
-        <div class="document-actions">
+        <div class="document-actions" onclick="event.stopPropagation()">
           <button class="doc-action-btn star-btn ${isStarred ? 'starred' : ''}" onclick="toggleStar(${idAttr})" title="${isStarred ? 'Unstar' : 'Star'}"><svg width="14" height="14" viewBox="0 0 24 24" fill="${isStarred ? 'currentColor' : 'none'}" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg></button>
           ${hasChildren ? `<button class="doc-action-btn collapse-btn ${isCollapsed ? 'collapsed' : ''}" onclick="toggleCollapse(${idAttr})" title="${isCollapsed ? 'Expand' : 'Collapse'} follow-ups"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="${isCollapsed ? '6 9 12 15 18 9' : '18 15 12 9 6 15'}"/></svg></button>` : ''}
           <button class="doc-action-btn" onclick="viewDoc('${safeTitle}')" title="View"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></button>
@@ -3328,7 +3285,7 @@ function toggleCollapse(docId) {
 
 async function removeDoc(id) {
   const confirmed = await showConfirm(
-    'Remove this document from the workspace?\n\nThis only removes it from this workspace€”the document will still be available in your Library.',
+    'Remove this document from the workspace?\n\nThis only removes it from this workspaceâ€”the document will still be available in your Library.',
     'Remove Document'
   );
   if (!confirmed) return;
@@ -3469,15 +3426,15 @@ function updateJobs() {
       
       if (j.status === 'completed') {
         if (isQuick) {
-          return `<div class="job-item completed">
+          return `<div class="job-item completed" onclick="viewJobDocument(${docIdAttr}, '${displayName}')" style="cursor:pointer">
             <div class="job-done-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg></div>
             <div class="job-info">
               <div class="job-name">${j.name}</div>
               <div class="job-progress"><span class="job-workspace">Quick Research</span> · Saved to Library</div>
             </div>
-            <div class="job-actions">
-              <button class="job-view-btn" onclick="event.stopPropagation();viewJobDocument(${docIdAttr}, '${displayName}')">View</button>
-              <button class="job-dismiss" onclick="event.stopPropagation();dismissJob(${j.id})" title="Dismiss">
+            <div class="job-actions" onclick="event.stopPropagation()">
+              <button class="job-view-btn" onclick="viewJobDocument(${docIdAttr}, '${displayName}')">View</button>
+              <button class="job-dismiss" onclick="dismissJob(${j.id})" title="Dismiss">
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
               </button>
             </div>
@@ -3487,16 +3444,16 @@ function updateJobs() {
           const metaText = j.docTitle 
             ? `${researchType} · Ready in <span class="job-workspace">${j.wsName}</span>`
             : `Ready in <span class="job-workspace">${j.wsName}</span>`;
-          return `<div class="job-item completed">
+          return `<div class="job-item completed" onclick="viewJobDocument(${docIdAttr}, '${displayName}', ${wsIdAttr})" style="cursor:pointer">
             <div class="job-done-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg></div>
             <div class="job-info">
               <div class="job-name">${j.name}</div>
               <div class="job-progress">${metaText}</div>
             </div>
-            <div class="job-actions">
-              <button class="job-view-btn" onclick="event.stopPropagation();viewJobDocument(${docIdAttr}, '${displayName}', ${wsIdAttr})">View</button>
-              <button class="job-view-btn primary" onclick="event.stopPropagation();openJobInWorkspace(${docIdAttr}, '${displayName}', ${wsIdAttr})">Open in Workspace</button>
-              <button class="job-dismiss" onclick="event.stopPropagation();dismissJob(${j.id})" title="Dismiss">
+            <div class="job-actions" onclick="event.stopPropagation()">
+              <button class="job-view-btn" onclick="viewJobDocument(${docIdAttr}, '${displayName}', ${wsIdAttr})">View</button>
+              <button class="job-view-btn primary" onclick="openJobInWorkspace(${docIdAttr}, '${displayName}', ${wsIdAttr})">Open in Workspace</button>
+              <button class="job-dismiss" onclick="dismissJob(${j.id})" title="Dismiss">
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
               </button>
             </div>
@@ -4162,116 +4119,6 @@ function openFollowUpResearch(docTitle, docId) {
   openModal('research');
 }
 
-// BATCH RESEARCH
-function renderBatchTypes() {
-  document.getElementById('batchTypes').innerHTML = researchTypes.map(rt => `
-    <div class="research-type" onclick="toggleBatchType(this)">
-      <div class="research-type-checkbox"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg></div>
-      <div class="research-type-info">
-        <div class="research-type-name">${rt.name}</div>
-        <div class="research-type-desc">${rt.desc}</div>
-      </div>
-      <div class="quantity-stepper">
-        <button class="stepper-btn" onclick="event.stopPropagation();adjustQty(this,-1)">ˆ’</button>
-        <span class="stepper-value">—1</span>
-        <button class="stepper-btn" onclick="event.stopPropagation();adjustQty(this,1)">+</button>
-      </div>
-    </div>
-  `).join('');
-}
-function toggleBatchType(el) {
-  el.classList.toggle('selected');
-  updateBatchTotal();
-}
-function adjustQty(btn, d) {
-  const v = btn.parentElement.querySelector('.stepper-value');
-  let n = parseInt(v.textContent.replace('—', ''));
-  n = Math.max(1, Math.min(3, n + d));
-  v.textContent = '—' + n;
-  updateBatchTotal();
-}
-function updateBatchTotal() {
-  let t = 0;
-  document.querySelectorAll('#batchTypes .research-type.selected').forEach(el => {
-    t += parseInt(el.querySelector('.stepper-value').textContent.replace('—', ''));
-  });
-  document.getElementById('batchTotal').textContent = t;
-}
-async function showBatchConfirm() {
-  const sel = document.querySelectorAll('#batchTypes .research-type.selected');
-  if (!sel.length) { await showAlert('Please select at least one type.', 'Required'); return; }
-  document.getElementById('confirmList').innerHTML = Array.from(sel).map(el => `
-    <div class="confirm-item">
-      <span class="confirm-item-name">${el.querySelector('.research-type-name').textContent}</span>
-      <span class="confirm-item-qty">${el.querySelector('.stepper-value').textContent}</span>
-    </div>
-  `).join('');
-  document.getElementById('batchStep1').classList.remove('active');
-  document.getElementById('batchStep2').classList.add('active');
-}
-function showBatchConfig() {
-  document.getElementById('batchStep2').classList.remove('active');
-  document.getElementById('batchStep1').classList.add('active');
-}
-function startBatchResearch() {
-  // Disable button immediately to prevent double-click
-  const confirmBtn = document.querySelector('#batchStep2 .action-btn.primary');
-  if (confirmBtn) { confirmBtn.disabled = true; confirmBtn.textContent = 'Queueing...'; }
-  
-  const topic = document.getElementById('batchTopic')?.value?.trim() || '';
-  const scope = document.getElementById('researchScope')?.value || 'Asset';
-  const rigor = document.getElementById('researchRigor')?.value || 'In Depth';
-  const selected = document.querySelectorAll('#batchTypes .research-type.selected');
-  
-  // Get current workspace collection ID for assignment
-  const collectionId = typeof currentWs.id === 'string' ? currentWs.id : null;
-  const collectionName = currentWs.name || 'Unknown';
-  
-  selected.forEach(async (el) => {
-    const name = el.querySelector('.research-type-name').textContent;
-    const qty = parseInt(el.querySelector('.stepper-value').textContent.replace('×', ''));
-    
-    for (let i = 0; i < qty; i++) {
-      const jobName = qty > 1 ? `${name} (${i + 1})` : name;
-      
-      // Call API if in live mode
-      if (liveMode) {
-        try {
-          const prompt = `Research Type: ${name}
-Topic: ${topic || 'General analysis'}
-Scope: ${scope}
-Analytical Rigor: ${rigor}
-
-Generate comprehensive research with hyperlinked sources.
-The final output must be a document uploaded to the content object library.
-${collectionId ? `
-FINAL STEP - CRITICAL: After uploading the document to the content library, you MUST:
-- Add the newly created document to collection ID: ${collectionId} (named "${collectionName}") using the add_to_collection tool
-- Confirm completion by confirming the document was added to the collection
-` : ''}`;
-          const response = await api.executeResearch(prompt);
-          const newJobId = addJob(jobName, true, response.workflowId, response.runId);
-          if (response.runId && response.workflowId) {
-            pollResearchCompletion(response.workflowId, response.runId, newJobId);
-          }
-        } catch (error) {
-          console.error('Batch research failed:', error);
-        }
-      } else {
-        addJob(jobName, false); // Use fake timer in demo mode
-      }
-    }
-    
-    el.classList.remove('selected');
-    el.querySelector('.stepper-value').textContent = '×1';
-  });
-  
-  updateBatchTotal();
-  
-  // Reset button state before closing
-  if (confirmBtn) { confirmBtn.disabled = false; confirmBtn.textContent = 'Confirm & Queue'; }
-  closeModal('batchResearch');
-}
 
 // REPORT
 function renderReportPicker() {
@@ -4591,8 +4438,8 @@ function formatAIResponse(text) {
   // Convert **bold** to <strong> (do this first, before italic)
   html = html.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
   
-  // Convert bullet points (- or €¢) at start of lines
-  html = html.replace(/^[\-€¢]\s+(.+)$/gm, '<li>$1</li>');
+  // Convert bullet points (- or â€¢) at start of lines
+  html = html.replace(/^[\-â€¢]\s+(.+)$/gm, '<li>$1</li>');
   
   // Wrap consecutive <li> in <ul>
   html = html.replace(/(<li>[^<]*<\/li>\s*)+/g, (match) => `<ul>${match}</ul>`);
@@ -5564,7 +5411,7 @@ const tutorialSteps = [
   {
     element: '.actions',
     title: 'Research Actions',
-    desc: 'Generate new research, run batch analyses on multiple topics, or synthesize everything into a comprehensive report.',
+    desc: 'Generate new research documents or synthesize your workspace documents into a comprehensive report.',
     position: 'bottom',
     view: 'workspaces'
   },
