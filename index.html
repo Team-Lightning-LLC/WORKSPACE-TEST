@@ -11,22 +11,22 @@
       --primary: #0f2a36;
       --primary-light: #1a3d4a;
       --accent: #23545b;
-      --accent-soft: #eef5f5;
+      --accent-soft: #ecf3f3;
       --accent-hover: #1d474d;
       --ink: #1a2e38;
       --muted: #5f7178;
       --border: #e2ddd7;
       --hair: #ebe6e0;
-      --bg: #f8f6f3;
-      --card: #fffefb;
-      --soft: #f5f2ed;
+      --bg: #f5f3f0;
+      --card: #faf9f6;
+      --soft: #f3f1ed;
       --success: #2e865f;
       --warning: #b48e56;
-      --warning-soft: #faf6ef;
+      --warning-soft: #f8f4ed;
       --danger: #a65353;
-      --danger-soft: #faf2f0;
-      --shadow: 0 4px 12px rgba(15,42,54,.08);
-      --shadow-lg: 0 8px 24px rgba(15,42,54,.12);
+      --danger-soft: #f8f0ee;
+      --shadow: 0 4px 12px rgba(15,42,54,.06);
+      --shadow-lg: 0 8px 24px rgba(15,42,54,.10);
     }
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body {
@@ -116,7 +116,7 @@
     .ws-card:hover .ws-card-menu { opacity: 1; }
     .ws-card-menu-btn { background: var(--soft); border: none; width: 20px; height: 20px; border-radius: 4px; cursor: pointer; display: flex; align-items: center; justify-content: center; color: var(--muted); }
     .ws-card-menu-btn:hover { background: var(--border); color: var(--ink); }
-    .ws-card-dropdown { position: fixed; background: white; border: 1px solid var(--border); border-radius: 6px; box-shadow: var(--shadow-lg); min-width: 120px; z-index: 1000; display: none; }
+    .ws-card-dropdown { position: fixed; background: var(--card); border: 1px solid var(--border); border-radius: 6px; box-shadow: var(--shadow-lg); min-width: 120px; z-index: 1000; display: none; }
     .ws-card-dropdown.open { display: block; }
     .ws-card-dropdown-item { padding: 7px 12px; font-size: 12px; cursor: pointer; display: flex; align-items: center; gap: 6px; color: var(--ink); }
     .ws-card-dropdown-item:hover { background: var(--soft); }
@@ -190,7 +190,7 @@
     /* Home Mini Library */
     .home-library-search { margin-left: auto; }
     .home-library-search input { padding: 4px 10px; border: 1px solid var(--border); border-radius: 5px; font-size: 11px; width: 120px; background: var(--soft); }
-    .home-library-search input:focus { outline: none; border-color: var(--accent); background: white; }
+    .home-library-search input:focus { outline: none; border-color: var(--accent); background: var(--card); }
     .home-lib-item { padding: 10px 14px; display: flex; align-items: center; gap: 10px; border-bottom: 1px solid var(--hair); transition: background 0.15s; }
     .home-lib-item:last-child { border-bottom: none; }
     .home-lib-item:hover { background: var(--soft); }
@@ -204,7 +204,7 @@
     .home-lib-btn:hover { background: var(--border); color: var(--ink); }
     .home-lib-btn.danger:hover { background: var(--danger-soft); color: var(--danger); }
     .home-lib-menu { position: relative; }
-    .home-lib-dropdown { position: absolute; right: 0; top: 100%; background: white; border: 1px solid var(--border); border-radius: 6px; box-shadow: var(--shadow-lg); min-width: 160px; z-index: 100; display: none; }
+    .home-lib-dropdown { position: absolute; right: 0; top: 100%; background: var(--card); border: 1px solid var(--border); border-radius: 6px; box-shadow: var(--shadow-lg); min-width: 160px; z-index: 100; display: none; }
     .home-lib-dropdown.open { display: block; }
     .home-lib-dropdown-item { padding: 8px 12px; font-size: 12px; cursor: pointer; display: flex; align-items: center; gap: 8px; color: var(--ink); }
     .home-lib-dropdown-item:hover { background: var(--soft); }
@@ -375,7 +375,7 @@
     .chat-welcome p { font-size: 12px; color: var(--muted); margin-bottom: 20px; }
     .chat-suggestions { display: flex; flex-direction: column; gap: 8px; }
     .chat-suggestion { padding: 10px 14px; background: var(--soft); border: 1px solid var(--border); border-radius: 8px; font-size: 12px; color: var(--ink); cursor: pointer; text-align: left; transition: all 0.15s; }
-    .chat-suggestion:hover { border-color: var(--accent); background: white; }
+    .chat-suggestion:hover { border-color: var(--accent); background: var(--card); }
     .chat-input-area { padding: 12px 16px; border-top: 1px solid var(--hair); flex-shrink: 0; background: var(--card); }
     .chat-input-wrapper { display: flex; gap: 8px; }
     .chat-input { flex: 1; padding: 10px 14px; border: 1px solid var(--border); border-radius: 8px; font-size: 13px; resize: none; font-family: inherit; }
@@ -577,7 +577,7 @@
     .doc-toc-item.level-3 { padding-left: 40px; font-size: 11px; color: var(--muted); }
     
     /* Document body */
-    .doc-body { flex: 1; padding: 30px 50px; overflow-y: auto; background: white; }
+    .doc-body { flex: 1; padding: 30px 50px; overflow-y: auto; background: var(--card); }
     .doc-body h1 { font-size: 26px; color: var(--primary); border-bottom: 3px solid var(--accent); padding-bottom: 12px; margin: 28px 0 18px 0; font-weight: 700; }
     .doc-body h2 { font-size: 20px; color: var(--ink); margin: 24px 0 12px 0; font-weight: 600; border-left: 4px solid var(--accent); padding-left: 14px; }
     .doc-body h3 { font-size: 16px; color: var(--ink); margin: 18px 0 10px 0; font-weight: 600; }
@@ -585,9 +585,9 @@
     .doc-body strong { color: var(--primary); }
     .doc-body ul, .doc-body ol { margin: 14px 0; padding-left: 24px; }
     .doc-body li { margin-bottom: 6px; font-size: 14px; }
-    .doc-body table { width: 100%; border-collapse: collapse; margin: 18px 0; font-size: 13px; background: white; }
+    .doc-body table { width: 100%; border-collapse: collapse; margin: 18px 0; font-size: 13px; background: var(--card); }
     .doc-body th { background: var(--accent) !important; color: white !important; padding: 10px 12px; text-align: left; font-weight: 600; border: 1px solid var(--accent); }
-    .doc-body td { border: 1px solid var(--border); padding: 10px 12px; background: white; }
+    .doc-body td { border: 1px solid var(--border); padding: 10px 12px; background: var(--card); }
     .doc-body thead { background: var(--accent); }
     .doc-body thead th { background: var(--accent) !important; color: white !important; }
     .doc-body tr:nth-child(even) { background: var(--soft); }
@@ -1006,7 +1006,7 @@
             <div class="chat-history-popup" id="chatHistoryPopup">
               <div class="chat-history-header">
                 <span class="chat-history-title">Saved Chats</span>
-                <button class="chat-history-close" onclick="closeChatHistory()">Ã—</button>
+                <button class="chat-history-close" onclick="closeChatHistory()">—</button>
               </div>
               <div class="chat-history-list" id="chatHistoryList">
                 <!-- Populated by JS -->
@@ -1046,7 +1046,7 @@
   <!-- MODALS -->
   <div class="modal-overlay" id="newWorkspace" onclick="if(event.target===this)closeModal('newWorkspace')">
     <div class="modal large">
-      <div class="modal-header"><h2 class="modal-title">New Workspace</h2><button class="modal-close" onclick="closeModal('newWorkspace')">Ã—</button></div>
+      <div class="modal-header"><h2 class="modal-title">New Workspace</h2><button class="modal-close" onclick="closeModal('newWorkspace')">—</button></div>
       <div class="modal-body">
         <p class="modal-desc">Workspaces organize related research, enable scoped chat, and generate synthesized reports.</p>
         <div class="form-group">
@@ -1067,7 +1067,7 @@
 
   <div class="modal-overlay" id="addDocuments" onclick="if(event.target===this)closeModal('addDocuments')">
     <div class="modal large">
-      <div class="modal-header"><h2 class="modal-title">Add Documents</h2><button class="modal-close" onclick="closeModal('addDocuments')">Ã—</button></div>
+      <div class="modal-header"><h2 class="modal-title">Add Documents</h2><button class="modal-close" onclick="closeModal('addDocuments')">—</button></div>
       <div class="modal-body">
         <p class="modal-desc">Select documents from your library to add to this workspace.</p>
         <div class="doc-picker" id="addDocsPicker"></div>
@@ -1081,7 +1081,7 @@
 
   <div class="modal-overlay" id="research" onclick="if(event.target===this)closeModal('research')">
     <div class="modal">
-      <div class="modal-header"><h2 class="modal-title" id="researchModalTitle">Research</h2><button class="modal-close" onclick="closeModal('research')">Ã—</button></div>
+      <div class="modal-header"><h2 class="modal-title" id="researchModalTitle">Research</h2><button class="modal-close" onclick="closeModal('research')">—</button></div>
       <div class="modal-body">
         <p class="modal-desc" id="researchModalDesc">Generate a single research document. Output will be added to this workspace.</p>
         <div class="form-group">
@@ -1133,7 +1133,7 @@
 
   <div class="modal-overlay" id="generateReport" onclick="if(event.target===this)closeModal('generateReport')">
     <div class="modal">
-      <div class="modal-header"><h2 class="modal-title">Generate Report</h2><button class="modal-close" onclick="closeModal('generateReport')">Ã—</button></div>
+      <div class="modal-header"><h2 class="modal-title">Generate Report</h2><button class="modal-close" onclick="closeModal('generateReport')">—</button></div>
       <div class="modal-body">
         <p class="modal-desc">Synthesize your workspace documents into a cohesive report.</p>
         <div class="form-group">
@@ -1154,7 +1154,7 @@
 
   <div class="modal-overlay" id="libraryPopup" onclick="if(event.target===this)closeModal('libraryPopup')">
     <div class="modal fullish">
-      <div class="modal-header"><h2 class="modal-title">Library</h2><button class="modal-close" onclick="closeModal('libraryPopup')">Ã—</button></div>
+      <div class="modal-header"><h2 class="modal-title">Library</h2><button class="modal-close" onclick="closeModal('libraryPopup')">—</button></div>
       <div class="modal-body" style="padding:0;max-height:500px;overflow-y:auto"><div class="library-list" id="libraryList"></div></div>
     </div>
   </div>
@@ -1164,7 +1164,7 @@
     <div class="modal">
       <div class="modal-header">
         <h2 class="modal-title">Profile Settings</h2>
-        <button class="modal-close" onclick="closeModal('profileModal')">Ã—</button>
+        <button class="modal-close" onclick="closeModal('profileModal')">—</button>
       </div>
       <div class="modal-body">
         <div class="profile-avatar">
@@ -1217,7 +1217,7 @@
     <div class="modal">
       <div class="modal-header">
         <h2 class="modal-title">How can we help?</h2>
-        <button class="modal-close" onclick="closeModal('supportModal')">Ã—</button>
+        <button class="modal-close" onclick="closeModal('supportModal')">—</button>
       </div>
       <div class="modal-body support-body">
         <div class="help-options">
