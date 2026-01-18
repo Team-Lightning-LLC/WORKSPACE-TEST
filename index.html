@@ -8,25 +8,25 @@
   <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
   <style>
     :root {
-      --primary: #172A3A;
-      --primary-light: #1e3a4c;
-      --accent: #4a9da8;
-      --accent-soft: #e8f4f6;
-      --accent-hover: #3d8a94;
-      --ink: #1f2d3d;
-      --muted: #6c7a89;
-      --border: #e0e5ea;
-      --hair: #eceff3;
-      --bg: #f5f6f7;
-      --card: #fff;
-      --soft: #f8f9fb;
-      --success: #4a9d6e;
-      --warning: #d4a017;
-      --warning-soft: #fef9e8;
-      --danger: #c0392b;
-      --danger-soft: #fdf0ef;
-      --shadow: 0 4px 12px rgba(23,42,58,.08);
-      --shadow-lg: 0 8px 24px rgba(23,42,58,.12);
+      --primary: #0f2a36;
+      --primary-light: #1a3d4a;
+      --accent: #23545b;
+      --accent-soft: #eef5f5;
+      --accent-hover: #1d474d;
+      --ink: #1a2e38;
+      --muted: #5f7178;
+      --border: #e2ddd7;
+      --hair: #ebe6e0;
+      --bg: #f8f6f3;
+      --card: #fffefb;
+      --soft: #f5f2ed;
+      --success: #2e865f;
+      --warning: #b48e56;
+      --warning-soft: #faf6ef;
+      --danger: #a65353;
+      --danger-soft: #faf2f0;
+      --shadow: 0 4px 12px rgba(15,42,54,.08);
+      --shadow-lg: 0 8px 24px rgba(15,42,54,.12);
     }
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body {
@@ -61,7 +61,7 @@
     .nav-tab:hover { color: white; background: rgba(255,255,255,0.1); }
     .nav-tab.active { color: white; background: rgba(255,255,255,0.15); }
     .nav-tab.tutorial-nav-btn { color: var(--warning); }
-    .nav-tab.tutorial-nav-btn:hover { color: #f5a623; background: rgba(245,166,35,0.15); }
+    .nav-tab.tutorial-nav-btn:hover { color: #c9a66c; background: rgba(180,142,86,0.15); }
     .nav-divider { width: 1px; height: 20px; background: rgba(255,255,255,0.2); margin: 0 8px; }
 
     /* HOME VIEW */
@@ -95,7 +95,7 @@
     .ws-card.new span { font-size: 13px; font-weight: 500; }
     .ws-card-header { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
     .ws-card-icon { width: 36px; height: 36px; background: var(--accent-soft); border-radius: 8px; display: flex; align-items: center; justify-content: center; color: var(--accent); flex-shrink: 0; }
-    .ws-card.complete .ws-card-icon { background: #e8f5e9; color: var(--success); }
+    .ws-card.complete .ws-card-icon { background: #eef5f1; color: var(--success); }
     .ws-card-name { font-size: 14px; font-weight: 600; color: var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: flex; align-items: center; gap: 5px; flex: 1; min-width: 0; }
     .ws-card-name .pin { color: var(--warning); flex-shrink: 0; }
     .ws-card-meta { font-size: 12px; color: var(--muted); margin-bottom: 10px; display: flex; align-items: center; gap: 6px; }
@@ -105,7 +105,7 @@
     .ws-card-badge { font-size: 11px; padding: 4px 10px; border-radius: 10px; font-weight: 500; display: inline-block; }
     .ws-card-badge.generating { background: var(--accent-soft); color: var(--accent); }
     .ws-card-badge.docs { background: var(--soft); color: var(--muted); }
-    .ws-card-badge.completed { background: #e8f5e9; color: #2e7d32; }
+    .ws-card-badge.completed { background: #eef5f1; color: #2e865f; }
     
     /* Workspace Card Actions - Option B */
     .ws-card-pin { position: absolute; top: 8px; right: 8px; background: none; border: none; cursor: pointer; color: var(--muted); padding: 3px; border-radius: 4px; transition: all 0.15s; z-index: 2; }
@@ -150,14 +150,14 @@
     .research-item { padding: 12px 18px; display: flex; align-items: center; gap: 12px; border-bottom: 1px solid var(--hair); }
     .research-item:last-child { border-bottom: none; }
     .research-item.completed { background: var(--accent-soft); cursor: pointer; }
-    .research-item.completed:hover { background: #d5eaed; }
+    .research-item.completed:hover { background: #e4efec; }
     .research-spinner { width: 18px; height: 18px; border: 2px solid var(--border); border-top-color: var(--accent); border-radius: 50%; animation: spin 1s linear infinite; flex-shrink: 0; }
     .research-done { width: 18px; height: 18px; background: var(--accent); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; flex-shrink: 0; }
     .research-done svg { width: 10px; height: 10px; }
-    .research-item.failed { background: #fef3f3; }
-    .research-fail { width: 18px; height: 18px; background: #e74c3c; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; flex-shrink: 0; }
+    .research-item.failed { background: #faf2f0; }
+    .research-fail { width: 18px; height: 18px; background: #a65353; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; flex-shrink: 0; }
     .research-fail svg { width: 10px; height: 10px; }
-    .fail-reason { color: #c0392b; font-weight: 500; }
+    .fail-reason { color: #8f4444; font-weight: 500; }
     .research-info { flex: 1; min-width: 0; }
     .research-name { font-size: 13px; font-weight: 500; color: var(--ink); margin-bottom: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     .research-meta { font-size: 11px; color: var(--muted); }
@@ -178,9 +178,9 @@
     .activity-item.clickable:hover .activity-arrow { opacity: 1; }
     .activity-icon { width: 28px; height: 28px; border-radius: 6px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
     .activity-icon.complete { background: var(--accent-soft); color: var(--accent); }
-    .activity-icon.added { background: #e3f2fd; color: #1976d2; }
-    .activity-icon.research { background: #f3e5f5; color: #7b1fa2; }
-    .activity-icon.workspace { background: var(--warning-soft); color: #b45309; }
+    .activity-icon.added { background: #eef3f5; color: #3d6a7a; }
+    .activity-icon.research { background: #f5f0f5; color: #6d5a7a; }
+    .activity-icon.workspace { background: var(--warning-soft); color: #8f6930; }
     .activity-content { flex: 1; min-width: 0; }
     .activity-text { font-size: 12px; color: var(--ink); margin-bottom: 2px; }
     .activity-text strong { font-weight: 600; }
@@ -298,13 +298,13 @@
     .job-progress { font-size: 11px; color: var(--muted); }
     .job-workspace { color: var(--accent); font-weight: 500; }
     .job-item.completed { background: var(--accent-soft); cursor: pointer; }
-    .job-item.completed:hover { background: #cce8df; }
+    .job-item.completed:hover { background: #e4efec; }
     .job-done-icon { width: 20px; height: 20px; background: var(--accent); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; flex-shrink: 0; }
     .job-done-icon svg { width: 12px; height: 12px; }
-    .job-item.failed { background: #fef3f3; }
-    .job-fail-icon { width: 20px; height: 20px; background: #e74c3c; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; flex-shrink: 0; }
+    .job-item.failed { background: #faf2f0; }
+    .job-fail-icon { width: 20px; height: 20px; background: #a65353; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; flex-shrink: 0; }
     .job-fail-icon svg { width: 12px; height: 12px; }
-    .job-fail-reason { color: #c0392b; font-weight: 500; }
+    .job-fail-reason { color: #8f4444; font-weight: 500; }
     .job-dismiss { background: none; border: none; padding: 4px; cursor: pointer; color: var(--muted); opacity: 0.6; transition: opacity 0.15s; }
     .job-dismiss:hover { opacity: 1; color: var(--ink); }
     .job-actions { display: flex; align-items: center; gap: 8px; margin-left: auto; }
@@ -329,15 +329,15 @@
     .document-title { font-size: 14px; font-weight: 600; color: var(--ink); line-height: 1.4; margin-bottom: 4px; }
     .document-meta { font-size: 11px; color: var(--muted); }
     .document-card.is-child { margin-left: 20px; border-left: 3px solid var(--accent); }
-    .document-card.is-child.is-starred { border-left: 3px solid #f5a623; }
+    .document-card.is-child.is-starred { border-left: 3px solid #b48e56; }
     .children-container { transition: all 0.2s ease; }
     .children-container.collapsed { display: none; }
     .collapse-btn { transition: transform 0.2s ease; }
     .collapse-btn.collapsed { opacity: 0.6; }
     .star-btn { color: var(--muted); }
-    .star-btn.starred { color: #f5a623; }
-    .star-btn:hover { color: #f5a623; }
-    .document-card.is-starred { border-left: 3px solid #f5a623; }
+    .star-btn.starred { color: #b48e56; }
+    .star-btn:hover { color: #b48e56; }
+    .document-card.is-starred { border-left: 3px solid #b48e56; }
     .child-indicator { font-size: 10px; color: var(--muted); margin-bottom: 4px; }
 
     /* CHAT */
@@ -420,8 +420,8 @@
     .dialog-btn.cancel:hover { background: var(--hair); color: var(--ink); }
     .dialog-btn.confirm { background: var(--accent); border: 1px solid var(--accent); color: white; }
     .dialog-btn.confirm:hover { background: #0d8f6f; }
-    .dialog-btn.danger { background: #dc3545; border-color: #dc3545; }
-    .dialog-btn.danger:hover { background: #c82333; }
+    .dialog-btn.danger { background: #a65353; border-color: #a65353; }
+    .dialog-btn.danger:hover { background: #8f4444; }
     .dialog-input { width: 100%; padding: 10px 12px; border: 1px solid var(--border); border-radius: 6px; font-size: 14px; margin-bottom: 20px; }
     .dialog-input:focus { outline: none; border-color: var(--accent); }
 
@@ -480,7 +480,7 @@
     .logoff-body p { font-size: 14px; color: var(--muted); margin-bottom: 24px; }
     .logoff-actions { display: flex; gap: 10px; justify-content: center; }
     .btn.danger { background: var(--danger); color: white; border-color: var(--danger); }
-    .btn.danger:hover { background: #a82f24; }
+    .btn.danger:hover { background: #8f4444; }
     
     .form-group { margin-bottom: 14px; }
     .form-label { display: flex; align-items: center; justify-content: space-between; font-size: 12px; font-weight: 600; color: var(--ink); margin-bottom: 6px; }
@@ -489,7 +489,7 @@
     .form-input:focus, .form-select:focus { outline: none; border-color: var(--accent); }
 
     .info-box { background: var(--soft); border: 1px solid var(--border); border-radius: 8px; padding: 14px 16px; margin-bottom: 20px; font-size: 13px; line-height: 1.6; }
-    .info-box.warning { background: var(--warning-soft); border-color: #f0e6c8; color: #6b5a10; }
+    .info-box.warning { background: var(--warning-soft); border-color: #e8dfd0; color: #6b5a40; }
     .modal-desc { font-size: 13px; color: var(--muted); margin-bottom: 16px; line-height: 1.5; }
     .form-row { display: flex; gap: 12px; }
 
@@ -536,7 +536,7 @@
     .confirm-item { display: flex; align-items: center; justify-content: space-between; padding: 8px 12px; background: var(--card); border-radius: 6px; font-size: 13px; }
     .confirm-item-name { font-weight: 500; }
     .confirm-item-qty { color: var(--accent); font-weight: 600; }
-    .confirm-warning { background: var(--warning-soft); border: 1px solid #f0e6c8; border-radius: 8px; padding: 12px 14px; font-size: 12px; color: #6b5a10; }
+    .confirm-warning { background: var(--warning-soft); border: 1px solid #e8dfd0; border-radius: 8px; padding: 12px 14px; font-size: 12px; color: #6b5a40; }
     .parent-doc-display { display: flex; align-items: center; gap: 10px; padding: 10px 12px; background: var(--accent-soft); border: 1px solid var(--accent); border-radius: 8px; font-size: 13px; color: var(--primary); }
     .parent-doc-display svg { flex-shrink: 0; color: var(--accent); }
     .parent-doc-name { font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -784,7 +784,7 @@
     .tutorial-btn.secondary { background: var(--soft); border: none; color: var(--ink); }
     .tutorial-btn.secondary:hover { background: var(--border); }
     .tutorial-btn.primary { background: var(--warning); border: none; color: white; }
-    .tutorial-btn.primary:hover { background: #c49316; }
+    .tutorial-btn.primary:hover { background: #9a7848; }
     .tutorial-modal {
       position: fixed;
       inset: 0;
@@ -1006,7 +1006,7 @@
             <div class="chat-history-popup" id="chatHistoryPopup">
               <div class="chat-history-header">
                 <span class="chat-history-title">Saved Chats</span>
-                <button class="chat-history-close" onclick="closeChatHistory()">—</button>
+                <button class="chat-history-close" onclick="closeChatHistory()">Ã—</button>
               </div>
               <div class="chat-history-list" id="chatHistoryList">
                 <!-- Populated by JS -->
@@ -1046,7 +1046,7 @@
   <!-- MODALS -->
   <div class="modal-overlay" id="newWorkspace" onclick="if(event.target===this)closeModal('newWorkspace')">
     <div class="modal large">
-      <div class="modal-header"><h2 class="modal-title">New Workspace</h2><button class="modal-close" onclick="closeModal('newWorkspace')">—</button></div>
+      <div class="modal-header"><h2 class="modal-title">New Workspace</h2><button class="modal-close" onclick="closeModal('newWorkspace')">Ã—</button></div>
       <div class="modal-body">
         <p class="modal-desc">Workspaces organize related research, enable scoped chat, and generate synthesized reports.</p>
         <div class="form-group">
@@ -1067,7 +1067,7 @@
 
   <div class="modal-overlay" id="addDocuments" onclick="if(event.target===this)closeModal('addDocuments')">
     <div class="modal large">
-      <div class="modal-header"><h2 class="modal-title">Add Documents</h2><button class="modal-close" onclick="closeModal('addDocuments')">—</button></div>
+      <div class="modal-header"><h2 class="modal-title">Add Documents</h2><button class="modal-close" onclick="closeModal('addDocuments')">Ã—</button></div>
       <div class="modal-body">
         <p class="modal-desc">Select documents from your library to add to this workspace.</p>
         <div class="doc-picker" id="addDocsPicker"></div>
@@ -1081,7 +1081,7 @@
 
   <div class="modal-overlay" id="research" onclick="if(event.target===this)closeModal('research')">
     <div class="modal">
-      <div class="modal-header"><h2 class="modal-title" id="researchModalTitle">Research</h2><button class="modal-close" onclick="closeModal('research')">—</button></div>
+      <div class="modal-header"><h2 class="modal-title" id="researchModalTitle">Research</h2><button class="modal-close" onclick="closeModal('research')">Ã—</button></div>
       <div class="modal-body">
         <p class="modal-desc" id="researchModalDesc">Generate a single research document. Output will be added to this workspace.</p>
         <div class="form-group">
@@ -1133,7 +1133,7 @@
 
   <div class="modal-overlay" id="generateReport" onclick="if(event.target===this)closeModal('generateReport')">
     <div class="modal">
-      <div class="modal-header"><h2 class="modal-title">Generate Report</h2><button class="modal-close" onclick="closeModal('generateReport')">—</button></div>
+      <div class="modal-header"><h2 class="modal-title">Generate Report</h2><button class="modal-close" onclick="closeModal('generateReport')">Ã—</button></div>
       <div class="modal-body">
         <p class="modal-desc">Synthesize your workspace documents into a cohesive report.</p>
         <div class="form-group">
@@ -1154,7 +1154,7 @@
 
   <div class="modal-overlay" id="libraryPopup" onclick="if(event.target===this)closeModal('libraryPopup')">
     <div class="modal fullish">
-      <div class="modal-header"><h2 class="modal-title">Library</h2><button class="modal-close" onclick="closeModal('libraryPopup')">—</button></div>
+      <div class="modal-header"><h2 class="modal-title">Library</h2><button class="modal-close" onclick="closeModal('libraryPopup')">Ã—</button></div>
       <div class="modal-body" style="padding:0;max-height:500px;overflow-y:auto"><div class="library-list" id="libraryList"></div></div>
     </div>
   </div>
@@ -1164,7 +1164,7 @@
     <div class="modal">
       <div class="modal-header">
         <h2 class="modal-title">Profile Settings</h2>
-        <button class="modal-close" onclick="closeModal('profileModal')">—</button>
+        <button class="modal-close" onclick="closeModal('profileModal')">Ã—</button>
       </div>
       <div class="modal-body">
         <div class="profile-avatar">
@@ -1217,7 +1217,7 @@
     <div class="modal">
       <div class="modal-header">
         <h2 class="modal-title">How can we help?</h2>
-        <button class="modal-close" onclick="closeModal('supportModal')">—</button>
+        <button class="modal-close" onclick="closeModal('supportModal')">Ã—</button>
       </div>
       <div class="modal-body support-body">
         <div class="help-options">
@@ -5415,15 +5415,15 @@ function downloadDocPDF() {
       <title>${currentViewDoc}</title>
       <style>
         @media print { @page { margin: 0.5in; } }
-        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; line-height: 1.6; color: #1f2d3d; max-width: 800px; margin: 0 auto; padding: 30px; }
-        h1 { font-size: 24px; color: #172A3A; border-bottom: 2px solid #4a9da8; padding-bottom: 10px; margin: 24px 0 16px; }
-        h2 { font-size: 18px; margin: 20px 0 12px; border-left: 3px solid #4a9da8; padding-left: 12px; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; line-height: 1.6; color: #1a2e38; max-width: 800px; margin: 0 auto; padding: 30px; }
+        h1 { font-size: 24px; color: #0f2a36; border-bottom: 2px solid #23545b; padding-bottom: 10px; margin: 24px 0 16px; }
+        h2 { font-size: 18px; margin: 20px 0 12px; border-left: 3px solid #23545b; padding-left: 12px; }
         h3 { font-size: 15px; margin: 16px 0 10px; }
         p { margin-bottom: 12px; }
-        strong { color: #172A3A; }
+        strong { color: #0f2a36; }
         table { width: 100%; border-collapse: collapse; margin: 16px 0; font-size: 13px; }
-        th { background: #172A3A; color: white; padding: 8px 10px; text-align: left; }
-        td { border: 1px solid #e0e5ea; padding: 8px 10px; }
+        th { background: #0f2a36; color: white; padding: 8px 10px; text-align: left; }
+        td { border: 1px solid #e2ddd7; padding: 8px 10px; }
         ul, ol { margin: 12px 0; padding-left: 24px; }
         li { margin-bottom: 6px; }
       </style>
