@@ -155,24 +155,24 @@
     .quick-research-btn:focus-visible { outline: none; box-shadow: 0 1px 0 rgba(255,255,255,0.12) inset, 0 2px 4px rgba(0,0,0,0.12), 0 4px 10px rgba(0,0,0,0.08), 0 0 0 3px rgba(35,84,91,0.4); }
     
     /* Research Progress Items */
-    .research-item { padding: 12px 18px; display: flex; align-items: center; gap: 12px; border-bottom: 1px solid var(--hair); }
+    .research-item { padding: 10px 14px; display: flex; align-items: center; gap: 10px; border-bottom: 1px solid var(--hair); }
     .research-item:last-child { border-bottom: none; }
     .research-item.completed { background: var(--accent-soft); cursor: pointer; }
     .research-item.completed:hover { background: #e4efec; }
-    .research-spinner { width: 18px; height: 18px; border: 2px solid var(--border); border-top-color: var(--accent); border-radius: 50%; animation: spin 1s linear infinite; flex-shrink: 0; }
-    .research-done { width: 18px; height: 18px; background: var(--accent); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; flex-shrink: 0; }
-    .research-done svg { width: 10px; height: 10px; }
+    .research-spinner { width: 16px; height: 16px; border: 2px solid var(--border); border-top-color: var(--accent); border-radius: 50%; animation: spin 1s linear infinite; flex-shrink: 0; }
+    .research-done { width: 16px; height: 16px; background: var(--accent); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; flex-shrink: 0; }
+    .research-done svg { width: 9px; height: 9px; }
     .research-item.failed { background: #faf2f0; }
-    .research-fail { width: 18px; height: 18px; background: #a65353; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; flex-shrink: 0; }
-    .research-fail svg { width: 10px; height: 10px; }
+    .research-fail { width: 16px; height: 16px; background: #a65353; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; flex-shrink: 0; }
+    .research-fail svg { width: 9px; height: 9px; }
     .fail-reason { color: #8f4444; font-weight: 500; }
     .research-info { flex: 1; min-width: 60px; overflow: hidden; }
-    .research-name { font-size: 13px; font-weight: 500; color: var(--ink); margin-bottom: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
-    .research-meta { font-size: 11px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
+    .research-name { font-size: 12px; font-weight: 500; color: var(--ink); margin-bottom: 1px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
+    .research-meta { font-size: 10px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
     .research-meta .workspace { color: var(--accent); font-weight: 500; }
     .research-meta .quick-label { color: var(--accent); font-weight: 500; }
-    .research-actions { display: flex; gap: 4px; flex-shrink: 0; }
-    .research-action-btn { background: none; border: none; padding: 6px 10px; cursor: pointer; color: var(--muted); font-size: 11px; border-radius: 4px; display: flex; align-items: center; gap: 4px; transition: all 0.15s ease; }
+    .research-actions { display: flex; gap: 3px; flex-shrink: 0; }
+    .research-action-btn { background: none; border: none; padding: 4px 8px; cursor: pointer; color: var(--muted); font-size: 10px; border-radius: 4px; display: flex; align-items: center; gap: 3px; transition: all 0.15s ease; }
     .research-action-btn:hover { background: rgba(0,0,0,0.05); color: var(--ink); }
     .research-action-btn.primary { background: var(--accent); color: white; }
     .research-action-btn.primary:hover { background: var(--accent-hover); }
@@ -220,18 +220,21 @@
     .home-lib-dropdown-item.danger:hover { background: var(--danger-soft); }
     .home-lib-dropdown-divider { height: 1px; background: var(--hair); margin: 4px 0; }
 
-    .app-container { display: flex; height: calc(100vh - 56px); margin-top: 56px; }
+    .app-container { display: flex; height: calc(100vh - 56px); margin-top: 56px; position: relative; z-index: 1; isolation: isolate; }
 
     /* SIDEBAR */
-    .sidebar { width: 280px; background: linear-gradient(90deg, #fbfaf8 0%, #f1efe9 100%); border-right: 1px solid var(--border); display: flex; flex-direction: column; box-shadow: inset -12px 0 18px -12px rgba(0,0,0,0.06); position: relative; z-index: 10; }
-    .sidebar-header { padding: 16px; border-bottom: 1px solid var(--hair); position: relative; z-index: 1; }
-    .new-workspace-btn { width: 100%; padding: 10px 14px; background: linear-gradient(180deg, #183a45 0%, var(--primary) 100%); color: white; border: none; border-radius: 8px; font-size: 13px; font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px; margin-bottom: 12px; box-shadow: 0 1px 0 rgba(255,255,255,0.08) inset, 0 2px 4px rgba(0,0,0,0.12), 0 4px 10px rgba(0,0,0,0.08); transition: all 0.15s ease; }
-    .new-workspace-btn:hover { background: linear-gradient(180deg, var(--primary) 0%, #081820 100%); }
+    .sidebar { width: 280px; background: linear-gradient(90deg, #fbfaf8 0%, #f1efe9 100%); border-right: 1px solid var(--border); display: flex; flex-direction: column; box-shadow: inset -12px 0 18px -12px rgba(0,0,0,0.06); position: relative; z-index: 10; pointer-events: auto !important; }
+    .sidebar * { pointer-events: auto; }
+    .sidebar-header { padding: 16px; border-bottom: 1px solid var(--hair); position: relative; z-index: 11; }
+    .sidebar-header:hover { background: rgba(0,0,0,0.02); }
+    .new-workspace-btn { width: 100%; padding: 10px 14px; background: linear-gradient(180deg, #183a45 0%, var(--primary) 100%); color: white; border: none; border-radius: 8px; font-size: 13px; font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px; margin-bottom: 12px; box-shadow: 0 1px 0 rgba(255,255,255,0.08) inset, 0 2px 4px rgba(0,0,0,0.12), 0 4px 10px rgba(0,0,0,0.08); transition: all 0.15s ease; position: relative; z-index: 12; }
+    .new-workspace-btn:hover { background: linear-gradient(180deg, var(--primary) 0%, #081820 100%); box-shadow: 0 1px 0 rgba(255,255,255,0.08) inset, 0 4px 8px rgba(0,0,0,0.15), 0 6px 14px rgba(0,0,0,0.1); }
+    .new-workspace-btn:active { transform: scale(0.98); }
     .new-workspace-btn:focus-visible { outline: none; box-shadow: 0 1px 0 rgba(255,255,255,0.08) inset, 0 2px 4px rgba(0,0,0,0.12), 0 4px 10px rgba(0,0,0,0.08), 0 0 0 3px rgba(15,42,54,0.4); }
-    .sidebar-search { position: relative; }
-    .sidebar-search input { width: 100%; padding: 8px 12px 8px 32px; border: 1px solid var(--border); border-radius: 6px; font-size: 13px; background: var(--soft); cursor: text; }
+    .sidebar-search { position: relative; z-index: 12; }
+    .sidebar-search input { width: 100%; padding: 8px 12px 8px 32px; border: 1px solid var(--border); border-radius: 6px; font-size: 13px; background: var(--soft); cursor: text; position: relative; z-index: 13; }
     .sidebar-search input:focus { outline: none; border-color: var(--accent); background: var(--card); }
-    .sidebar-search svg { position: absolute; left: 10px; top: 50%; transform: translateY(-50%); color: var(--muted); pointer-events: none; }
+    .sidebar-search svg { position: absolute; left: 10px; top: 50%; transform: translateY(-50%); color: var(--muted); pointer-events: none !important; z-index: 14; }
     
     .sidebar-content { flex: 1; overflow-y: auto; padding: 8px; }
     .section-label { font-size: 11px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: 0.08em; padding: 12px 10px 6px; }
@@ -656,9 +659,8 @@
     .doc-followup-btn:disabled { background: var(--border); cursor: not-allowed; }
 
     /* Loading Overlay */
-    .loading-overlay { position: fixed; inset: 0; background: rgba(255,255,255,0.97); display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 999; transition: opacity 0.3s; }
-    .loading-overlay:not(.hidden) { pointer-events: auto; }
-    .loading-overlay.hidden { opacity: 0; pointer-events: none; }
+    .loading-overlay { position: fixed; inset: 0; background: rgba(255,255,255,0.97); display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 999; transition: opacity 0.3s; pointer-events: auto; }
+    .loading-overlay.hidden { opacity: 0; pointer-events: none; display: none; }
     .loading-spinner { width: 36px; height: 36px; border: 3px solid var(--border); border-top-color: var(--accent); border-radius: 50%; animation: spin 0.8s linear infinite; }
     @keyframes spin { to { transform: rotate(360deg); } }
     .loading-text { margin-top: 14px; color: var(--muted); font-size: 13px; }
@@ -940,7 +942,7 @@
   <div class="app-container" id="appContainer" style="display: none;">
     <aside class="sidebar">
       <div class="sidebar-header">
-        <button class="new-workspace-btn" onclick="openModal('newWorkspace')">
+        <button class="new-workspace-btn" onclick="console.log('Button clicked!'); openModal('newWorkspace')">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
           New Workspace
         </button>
@@ -1022,7 +1024,7 @@
             <div class="chat-history-popup" id="chatHistoryPopup">
               <div class="chat-history-header">
                 <span class="chat-history-title">Saved Chats</span>
-                <button class="chat-history-close" onclick="closeChatHistory()">—</button>
+                <button class="chat-history-close" onclick="closeChatHistory()">Ã—</button>
               </div>
               <div class="chat-history-list" id="chatHistoryList">
                 <!-- Populated by JS -->
@@ -1062,7 +1064,7 @@
   <!-- MODALS -->
   <div class="modal-overlay" id="newWorkspace" onclick="if(event.target===this)closeModal('newWorkspace')">
     <div class="modal large">
-      <div class="modal-header"><h2 class="modal-title">New Workspace</h2><button class="modal-close" onclick="closeModal('newWorkspace')">—</button></div>
+      <div class="modal-header"><h2 class="modal-title">New Workspace</h2><button class="modal-close" onclick="closeModal('newWorkspace')">Ã—</button></div>
       <div class="modal-body">
         <p class="modal-desc">Workspaces organize related research, enable scoped chat, and generate synthesized reports.</p>
         <div class="form-group">
@@ -1083,7 +1085,7 @@
 
   <div class="modal-overlay" id="addDocuments" onclick="if(event.target===this)closeModal('addDocuments')">
     <div class="modal large">
-      <div class="modal-header"><h2 class="modal-title">Add Documents</h2><button class="modal-close" onclick="closeModal('addDocuments')">—</button></div>
+      <div class="modal-header"><h2 class="modal-title">Add Documents</h2><button class="modal-close" onclick="closeModal('addDocuments')">Ã—</button></div>
       <div class="modal-body">
         <p class="modal-desc">Select documents from your library to add to this workspace.</p>
         <div class="doc-picker" id="addDocsPicker"></div>
@@ -1097,7 +1099,7 @@
 
   <div class="modal-overlay" id="research" onclick="if(event.target===this)closeModal('research')">
     <div class="modal">
-      <div class="modal-header"><h2 class="modal-title" id="researchModalTitle">Research</h2><button class="modal-close" onclick="closeModal('research')">—</button></div>
+      <div class="modal-header"><h2 class="modal-title" id="researchModalTitle">Research</h2><button class="modal-close" onclick="closeModal('research')">Ã—</button></div>
       <div class="modal-body">
         <p class="modal-desc" id="researchModalDesc">Generate a single research document. Output will be added to this workspace.</p>
         <div class="form-group">
@@ -1149,7 +1151,7 @@
 
   <div class="modal-overlay" id="generateReport" onclick="if(event.target===this)closeModal('generateReport')">
     <div class="modal">
-      <div class="modal-header"><h2 class="modal-title">Generate Report</h2><button class="modal-close" onclick="closeModal('generateReport')">—</button></div>
+      <div class="modal-header"><h2 class="modal-title">Generate Report</h2><button class="modal-close" onclick="closeModal('generateReport')">Ã—</button></div>
       <div class="modal-body">
         <p class="modal-desc">Synthesize your workspace documents into a cohesive report.</p>
         <div class="form-group">
@@ -1170,7 +1172,7 @@
 
   <div class="modal-overlay" id="libraryPopup" onclick="if(event.target===this)closeModal('libraryPopup')">
     <div class="modal fullish">
-      <div class="modal-header"><h2 class="modal-title">Library</h2><button class="modal-close" onclick="closeModal('libraryPopup')">—</button></div>
+      <div class="modal-header"><h2 class="modal-title">Library</h2><button class="modal-close" onclick="closeModal('libraryPopup')">Ã—</button></div>
       <div class="modal-body" style="padding:0;max-height:500px;overflow-y:auto"><div class="library-list" id="libraryList"></div></div>
     </div>
   </div>
@@ -1180,7 +1182,7 @@
     <div class="modal">
       <div class="modal-header">
         <h2 class="modal-title">Profile Settings</h2>
-        <button class="modal-close" onclick="closeModal('profileModal')">—</button>
+        <button class="modal-close" onclick="closeModal('profileModal')">Ã—</button>
       </div>
       <div class="modal-body">
         <div class="profile-avatar">
@@ -1233,7 +1235,7 @@
     <div class="modal">
       <div class="modal-header">
         <h2 class="modal-title">How can we help?</h2>
-        <button class="modal-close" onclick="closeModal('supportModal')">—</button>
+        <button class="modal-close" onclick="closeModal('supportModal')">Ã—</button>
       </div>
       <div class="modal-body support-body">
         <div class="help-options">
