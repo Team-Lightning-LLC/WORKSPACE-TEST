@@ -522,11 +522,13 @@
     .doc-picker-item:last-child { border-bottom: none; }
     .doc-picker-item:hover { background: var(--soft); }
     .doc-picker-item.selected { background: var(--accent-soft); }
-    .doc-picker-checkbox { width: 18px; height: 18px; border: 2px solid var(--border); border-radius: 4px; display: flex; align-items: center; justify-content: center; }
+    .doc-picker-checkbox { width: 18px; height: 18px; border: 2px solid var(--border); border-radius: 4px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
     .doc-picker-item.selected .doc-picker-checkbox { background: var(--accent); border-color: var(--accent); color: white; }
     .doc-picker-info { flex: 1; min-width: 0; }
-    .doc-picker-title { font-size: 13px; font-weight: 500; color: var(--ink); }
-    .doc-picker-meta { font-size: 11px; color: var(--muted); }
+    .doc-picker-title { font-size: 12px; font-weight: 500; color: var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .doc-picker-meta { font-size: 10px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .doc-picker-meta .doc-type { color: var(--accent); font-weight: 500; }
+    .doc-picker-meta .doc-ws { color: var(--accent); font-weight: 500; }
     .doc-picker-footer { padding: 10px 12px; border-top: 1px solid var(--hair); background: var(--soft); font-size: 12px; color: var(--muted); }
 
     /* BATCH RESEARCH */
@@ -559,12 +561,14 @@
     .parent-doc-name { font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
     .library-list, .pulse-list { display: flex; flex-direction: column; }
-    .library-item, .pulse-item { padding: 14px 20px; border-bottom: 1px solid var(--hair); display: flex; align-items: center; justify-content: space-between; cursor: pointer; }
+    .library-item, .pulse-item { padding: 12px 20px; border-bottom: 1px solid var(--hair); display: flex; align-items: center; justify-content: space-between; cursor: pointer; }
     .library-item:hover, .pulse-item:hover { background: var(--soft); }
-    .library-item-info, .pulse-item-title { flex: 1; }
-    .library-item-title { font-size: 15px; font-weight: 500; margin-bottom: 4px; letter-spacing: -0.01em; }
-    .library-item-meta { font-size: 11px; color: var(--muted); }
-    .library-item-actions { display: flex; gap: 4px; opacity: 0; }
+    .library-item-info, .pulse-item-title { flex: 1; min-width: 0; }
+    .library-item-title { font-size: 13px; font-weight: 500; margin-bottom: 2px; letter-spacing: -0.01em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .library-item-meta { font-size: 11px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .library-item-meta .doc-type { color: var(--accent); font-weight: 500; }
+    .library-item-meta .doc-ws { color: var(--accent); font-weight: 500; }
+    .library-item-actions { display: flex; gap: 4px; opacity: 0; flex-shrink: 0; }
     .library-item:hover .library-item-actions { opacity: 1; }
     .pulse-item-title { font-size: 14px; font-weight: 500; }
 
@@ -1023,7 +1027,7 @@
             <div class="chat-history-popup" id="chatHistoryPopup">
               <div class="chat-history-header">
                 <span class="chat-history-title">Saved Chats</span>
-                <button class="chat-history-close" onclick="closeChatHistory()">Ã—</button>
+                <button class="chat-history-close" onclick="closeChatHistory()">&times;</button>
               </div>
               <div class="chat-history-list" id="chatHistoryList">
                 <!-- Populated by JS -->
@@ -1063,7 +1067,7 @@
   <!-- MODALS -->
   <div class="modal-overlay" id="newWorkspace" onclick="if(event.target===this)closeModal('newWorkspace')">
     <div class="modal large">
-      <div class="modal-header"><h2 class="modal-title">New Workspace</h2><button class="modal-close" onclick="closeModal('newWorkspace')">Ã—</button></div>
+      <div class="modal-header"><h2 class="modal-title">New Workspace</h2><button class="modal-close" onclick="closeModal('newWorkspace')">&times;</button></div>
       <div class="modal-body">
         <p class="modal-desc">Workspaces organize related research, enable scoped chat, and generate synthesized reports.</p>
         <div class="form-group">
@@ -1084,7 +1088,7 @@
 
   <div class="modal-overlay" id="addDocuments" onclick="if(event.target===this)closeModal('addDocuments')">
     <div class="modal large">
-      <div class="modal-header"><h2 class="modal-title">Add Documents</h2><button class="modal-close" onclick="closeModal('addDocuments')">Ã—</button></div>
+      <div class="modal-header"><h2 class="modal-title">Add Documents</h2><button class="modal-close" onclick="closeModal('addDocuments')">&times;</button></div>
       <div class="modal-body">
         <p class="modal-desc">Select documents from your library to add to this workspace.</p>
         <div class="doc-picker" id="addDocsPicker"></div>
@@ -1098,7 +1102,7 @@
 
   <div class="modal-overlay" id="research" onclick="if(event.target===this)closeModal('research')">
     <div class="modal">
-      <div class="modal-header"><h2 class="modal-title" id="researchModalTitle">Research</h2><button class="modal-close" onclick="closeModal('research')">Ã—</button></div>
+      <div class="modal-header"><h2 class="modal-title" id="researchModalTitle">Research</h2><button class="modal-close" onclick="closeModal('research')">&times;</button></div>
       <div class="modal-body">
         <p class="modal-desc" id="researchModalDesc">Generate a single research document. Output will be added to this workspace.</p>
         <div class="form-group">
@@ -1150,7 +1154,7 @@
 
   <div class="modal-overlay" id="generateReport" onclick="if(event.target===this)closeModal('generateReport')">
     <div class="modal">
-      <div class="modal-header"><h2 class="modal-title">Generate Report</h2><button class="modal-close" onclick="closeModal('generateReport')">Ã—</button></div>
+      <div class="modal-header"><h2 class="modal-title">Generate Report</h2><button class="modal-close" onclick="closeModal('generateReport')">&times;</button></div>
       <div class="modal-body">
         <p class="modal-desc">Synthesize your workspace documents into a cohesive report.</p>
         <div class="form-group">
@@ -1171,7 +1175,7 @@
 
   <div class="modal-overlay" id="libraryPopup" onclick="if(event.target===this)closeModal('libraryPopup')">
     <div class="modal fullish">
-      <div class="modal-header"><h2 class="modal-title">Library</h2><button class="modal-close" onclick="closeModal('libraryPopup')">Ã—</button></div>
+      <div class="modal-header"><h2 class="modal-title">Library</h2><button class="modal-close" onclick="closeModal('libraryPopup')">&times;</button></div>
       <div class="modal-body" style="padding:0;max-height:500px;overflow-y:auto"><div class="library-list" id="libraryList"></div></div>
     </div>
   </div>
@@ -1181,7 +1185,7 @@
     <div class="modal">
       <div class="modal-header">
         <h2 class="modal-title">Profile Settings</h2>
-        <button class="modal-close" onclick="closeModal('profileModal')">Ã—</button>
+        <button class="modal-close" onclick="closeModal('profileModal')">&times;</button>
       </div>
       <div class="modal-body">
         <div class="profile-avatar">
@@ -1234,7 +1238,7 @@
     <div class="modal">
       <div class="modal-header">
         <h2 class="modal-title">How can we help?</h2>
-        <button class="modal-close" onclick="closeModal('supportModal')">Ã—</button>
+        <button class="modal-close" onclick="closeModal('supportModal')">&times;</button>
       </div>
       <div class="modal-body support-body">
         <div class="help-options">
@@ -3394,7 +3398,7 @@ function toggleCollapse(docId) {
 
 async function removeDoc(id) {
   const confirmed = await showConfirm(
-    'Remove this document from the workspace?\n\nThis only removes it from this workspaceâ€”the document will still be available in your Library.',
+    'Remove this document from the workspace?\n\nThis only removes it from this workspace - the document will still be available in your Library.',
     'Remove Document'
   );
   if (!confirmed) return;
@@ -3780,17 +3784,45 @@ function renderDocPicker(containerId, docs, isRelated = false, excludeIds = []) 
     ? docs.filter(d => !excludeIds.includes(d.id))
     : docs;
   
-  container.innerHTML = `
-    ${!isRelated ? '<div class="doc-picker-search"><input type="text" placeholder="Search..." oninput="filterPicker(this)"></div>' : ''}
-    <div class="doc-picker-list">${filteredDocs.map(d => `
+  // Build items with workspace info
+  const itemsHtml = filteredDocs.map(d => {
+    // Find all workspaces containing this document
+    let wsNames = [];
+    for (const ws of workspaces) {
+      const wsDocs = workspaceDocs[ws.id] || [];
+      if (wsDocs.some(doc => doc.id === d.id)) {
+        wsNames.push(ws.name);
+      }
+    }
+    
+    // Build meta text
+    let metaText;
+    if (isRelated) {
+      metaText = 'Matched: ' + d.match;
+    } else {
+      metaText = `<span class="doc-type">${d.type}</span>`;
+      if (d.parentTitle) {
+        metaText += ` · ${d.parentTitle}`;
+      }
+      if (wsNames.length > 0) {
+        metaText += ` · <span class="doc-ws">${wsNames.join(', ')}</span>`;
+      }
+    }
+    
+    return `
       <div class="doc-picker-item" data-doc-id="${d.id}" onclick="togglePickerItem(this)">
         <div class="doc-picker-checkbox"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg></div>
         <div class="doc-picker-info">
-          <div class="doc-picker-title">${d.title}</div>
-          <div class="doc-picker-meta">${isRelated ? 'Matched: ' + d.match : d.date + ' · ' + d.type}</div>
+          <div class="doc-picker-title" title="${d.title}">${d.title}</div>
+          <div class="doc-picker-meta">${metaText}</div>
         </div>
       </div>
-    `).join('')}</div>
+    `;
+  }).join('');
+  
+  container.innerHTML = `
+    ${!isRelated ? '<div class="doc-picker-search"><input type="text" placeholder="Search..." oninput="filterPicker(this)"></div>' : ''}
+    <div class="doc-picker-list">${itemsHtml}</div>
     <div class="doc-picker-footer">${filteredDocs.length} documents available · 0 selected</div>
   `;
 }
@@ -4394,10 +4426,29 @@ The final output must be a document uploaded to the content object library.`;
 function renderLibrary() {
   document.getElementById('libraryList').innerHTML = libraryDocs.map(d => {
     const safeTitle = d.title.replace(/'/g, "\\'");
+    
+    // Find all workspaces containing this document
+    let wsNames = [];
+    for (const ws of workspaces) {
+      const wsDocs = workspaceDocs[ws.id] || [];
+      if (wsDocs.some(doc => doc.id === d.id)) {
+        wsNames.push(ws.name);
+      }
+    }
+    
+    // Build meta text
+    let metaText = `<span class="doc-type">${d.type}</span>`;
+    if (d.parentTitle) {
+      metaText += ` · ${d.parentTitle}`;
+    }
+    if (wsNames.length > 0) {
+      metaText += ` · <span class="doc-ws">${wsNames.join(', ')}</span>`;
+    }
+    
     return `<div class="library-item">
       <div class="library-item-info">
-        <div class="library-item-title">${d.title}</div>
-        <div class="library-item-meta">${d.date} · ${d.type}</div>
+        <div class="library-item-title" title="${d.title}">${d.title}</div>
+        <div class="library-item-meta">${metaText}</div>
       </div>
       <div class="library-item-actions">
         <button class="doc-action-btn" onclick="viewDoc('${safeTitle}')" title="View"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></button>
@@ -4621,8 +4672,8 @@ function formatAIResponse(text) {
   // Convert **bold** to <strong> (do this first, before italic)
   html = html.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
   
-  // Convert bullet points (- or â€¢) at start of lines
-  html = html.replace(/^[\-â€¢]\s+(.+)$/gm, '<li>$1</li>');
+  // Convert bullet points (- or •) at start of lines
+  html = html.replace(/^[\-•]\s+(.+)$/gm, '<li>$1</li>');
   
   // Wrap consecutive <li> in <ul>
   html = html.replace(/(<li>[^<]*<\/li>\s*)+/g, (match) => `<ul>${match}</ul>`);
