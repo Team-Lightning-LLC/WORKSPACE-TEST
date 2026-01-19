@@ -113,7 +113,7 @@
     .ws-card-badge.completed { background: #eef5f1; color: #2e865f; }
     
     /* Workspace Card Actions - Option B */
-    .ws-card-pin { position: absolute; top: 8px; right: 8px; background: none; border: none; cursor: pointer; color: var(--muted); padding: 3px; border-radius: 4px; transition: all 0.15s ease; z-index: 2; }
+    .ws-card-pin { position: absolute; top: 8px; right: 8px; background: none; border: none; cursor: pointer; color: var(--muted); padding: 3px; border-radius: 4px; transition: all 0.15s ease; z-index: 3; }
     .ws-card-pin:hover { background: var(--soft); }
     .ws-card-pin.active { color: var(--warning); }
     .ws-card-pin svg { width: 12px; height: 12px; }
@@ -1423,7 +1423,8 @@ const VERTESIA_CONFIG = {
   ENVIRONMENT_ID: '681915c6a01fb262a410c161',
   MODEL: 'publishers/anthropic/models/claude-sonnet-4',
   INTERACTION_RESEARCH: 'ResearchV2',
-  INTERACTION_CHAT: 'DocumentChat'
+  INTERACTION_CHAT: 'DocumentChat',
+  INTERACTION_REPORT: 'WhiteLabel'
 };
 
 // ===== VERTESIA API CLASS =====
@@ -1630,6 +1631,19 @@ class VertesiaAPI {
       body: JSON.stringify({
         type: 'conversation',
         interaction: VERTESIA_CONFIG.INTERACTION_RESEARCH,
+        data: { Task: task },
+        config: { environment: VERTESIA_CONFIG.ENVIRONMENT_ID, model: VERTESIA_CONFIG.MODEL }
+      })
+    });
+  }
+
+  // Execute report generation via WhiteLabel interaction
+  async executeReport(task) {
+    return await this.callWithAuth('/execute/async', {
+      method: 'POST',
+      body: JSON.stringify({
+        type: 'conversation',
+        interaction: VERTESIA_CONFIG.INTERACTION_REPORT,
         data: { Task: task },
         config: { environment: VERTESIA_CONFIG.ENVIRONMENT_ID, model: VERTESIA_CONFIG.MODEL }
       })
@@ -4398,8 +4412,8 @@ Document IDs: ${docIds.join(', ')}
 Generate a comprehensive report that synthesizes insights from all documents with proper citations.
 The final output must be a document uploaded to the content object library.`;
 
-      console.log('Generating report:', { title: t, scope, rigor, docCount: docIds.length });
-      const response = await api.executeResearch(prompt);
+      console.log('Generating report via WhiteLabel:', { title: t, scope, rigor, docCount: docIds.length });
+      const response = await api.executeReport(prompt);
       
       addJob(jobName, true, response.workflowId, response.runId);
       
