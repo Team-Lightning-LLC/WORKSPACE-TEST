@@ -207,8 +207,9 @@
     .home-lib-info { flex: 1; min-width: 0; }
     .home-lib-title { font-size: 12px; font-weight: 500; color: var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-bottom: 1px; }
     .home-lib-meta { font-size: 10px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .home-lib-meta .doc-kind { color: var(--muted); font-weight: 500; }
     .home-lib-meta .doc-type { color: var(--accent); font-weight: 500; }
-    .home-lib-meta .doc-parent { color: var(--accent); font-weight: 500; }
+    .home-lib-meta .doc-ws { color: var(--accent); }
     .home-lib-actions { display: flex; gap: 2px; opacity: 0; transition: opacity 0.15s; }
     .home-lib-item:hover .home-lib-actions { opacity: 1; }
     .home-lib-btn { width: 24px; height: 24px; border: none; background: none; color: var(--muted); cursor: pointer; border-radius: 4px; display: flex; align-items: center; justify-content: center; }
@@ -527,8 +528,9 @@
     .doc-picker-info { flex: 1; min-width: 0; }
     .doc-picker-title { font-size: 12px; font-weight: 500; color: var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     .doc-picker-meta { font-size: 10px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .doc-picker-meta .doc-kind { color: var(--muted); font-weight: 500; }
     .doc-picker-meta .doc-type { color: var(--accent); font-weight: 500; }
-    .doc-picker-meta .doc-ws { color: var(--accent); font-weight: 500; }
+    .doc-picker-meta .doc-ws { color: var(--accent); }
     .doc-picker-footer { padding: 10px 12px; border-top: 1px solid var(--hair); background: var(--soft); font-size: 12px; color: var(--muted); }
 
     /* BATCH RESEARCH */
@@ -566,8 +568,9 @@
     .library-item-info, .pulse-item-title { flex: 1; min-width: 0; }
     .library-item-title { font-size: 13px; font-weight: 500; margin-bottom: 2px; letter-spacing: -0.01em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     .library-item-meta { font-size: 11px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .library-item-meta .doc-kind { color: var(--muted); font-weight: 500; }
     .library-item-meta .doc-type { color: var(--accent); font-weight: 500; }
-    .library-item-meta .doc-ws { color: var(--accent); font-weight: 500; }
+    .library-item-meta .doc-ws { color: var(--accent); }
     .library-item-actions { display: flex; gap: 4px; opacity: 0; flex-shrink: 0; }
     .library-item:hover .library-item-actions { opacity: 1; }
     .pulse-item-title { font-size: 14px; font-weight: 500; }
@@ -2672,6 +2675,39 @@ async function openJobInWorkspace(docId, jobName, wsId) {
 
 let homeLibraryFilter = '';
 
+// Helper to build consistent document meta text
+function buildDocMeta(doc) {
+  // 1. Determine document kind
+  let kind = 'Primary';
+  const titleLower = doc.title.toLowerCase();
+  if (titleLower.includes('report') || titleLower.includes('digest') || titleLower.includes('at a glance')) {
+    kind = 'Report';
+  } else if (doc.parentId || doc.parentTitle) {
+    kind = 'Follow-up';
+  }
+  
+  // 2. Research type
+  const researchType = doc.type || 'Research';
+  
+  // 3. Find all workspaces containing this document
+  let wsNames = [];
+  for (const ws of workspaces) {
+    const wsDocs = workspaceDocs[ws.id] || [];
+    if (wsDocs.some(d => d.id === doc.id)) {
+      wsNames.push(ws.name);
+    }
+  }
+  
+  // 4. Build meta string with spans for styling
+  let meta = `<span class="doc-kind">${kind}</span>`;
+  meta += ` · <span class="doc-type">${researchType}</span>`;
+  if (wsNames.length > 0) {
+    meta += ` · <span class="doc-ws">${wsNames.join(', ')}</span>`;
+  }
+  
+  return meta;
+}
+
 function renderHomeLibrary() {
   const docs = libraryDocs.filter(d => {
     if (!homeLibraryFilter) return true;
@@ -2690,25 +2726,7 @@ function renderHomeLibrary() {
   docs.forEach((doc, idx) => {
     const safeTitle = doc.title.replace(/'/g, "\\'");
     const safeId = doc.id ? (typeof doc.id === 'string' ? `'${doc.id}'` : doc.id) : 'null';
-    
-    // Find workspace(s) containing this document
-    let wsNames = [];
-    for (const ws of workspaces) {
-      const wsDocs = workspaceDocs[ws.id] || [];
-      if (wsDocs.some(d => d.id === doc.id)) {
-        wsNames.push(ws.name);
-      }
-    }
-    
-    // Build meta text similar to research items
-    let metaText = `<span class="doc-type">${doc.type}</span>`;
-    if (doc.parentTitle) {
-      metaText += ` · ${doc.parentTitle}`;
-    }
-    if (wsNames.length > 0) {
-      metaText += ` · <span class="doc-parent">${wsNames[0]}</span>`;
-      if (wsNames.length > 1) metaText += ` +${wsNames.length - 1}`;
-    }
+    const metaText = buildDocMeta(doc);
     
     html += `
       <div class="home-lib-item" onclick="viewDocFromHome('${safeTitle}')">
@@ -2731,7 +2749,7 @@ function renderHomeLibrary() {
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="1"/><circle cx="12" cy="5" r="1"/><circle cx="12" cy="19" r="1"/></svg>
             </button>
             <div class="home-lib-dropdown" id="homeLibMenu-${idx}">
-              <div class="home-lib-dropdown-item" onclick="event.stopPropagation();homeLibAddToWs('${safeTitle}', '${doc.type}')">
+              <div class="home-lib-dropdown-item" onclick="event.stopPropagation();homeLibAddToWs('${safeTitle}', '${doc.type}')">>
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
                 Add to Workspace
               </div>
@@ -3786,28 +3804,7 @@ function renderDocPicker(containerId, docs, isRelated = false, excludeIds = []) 
   
   // Build items with workspace info
   const itemsHtml = filteredDocs.map(d => {
-    // Find all workspaces containing this document
-    let wsNames = [];
-    for (const ws of workspaces) {
-      const wsDocs = workspaceDocs[ws.id] || [];
-      if (wsDocs.some(doc => doc.id === d.id)) {
-        wsNames.push(ws.name);
-      }
-    }
-    
-    // Build meta text
-    let metaText;
-    if (isRelated) {
-      metaText = 'Matched: ' + d.match;
-    } else {
-      metaText = `<span class="doc-type">${d.type}</span>`;
-      if (d.parentTitle) {
-        metaText += ` · ${d.parentTitle}`;
-      }
-      if (wsNames.length > 0) {
-        metaText += ` · <span class="doc-ws">${wsNames.join(', ')}</span>`;
-      }
-    }
+    const metaText = isRelated ? ('Matched: ' + d.match) : buildDocMeta(d);
     
     return `
       <div class="doc-picker-item" data-doc-id="${d.id}" onclick="togglePickerItem(this)">
@@ -4426,24 +4423,7 @@ The final output must be a document uploaded to the content object library.`;
 function renderLibrary() {
   document.getElementById('libraryList').innerHTML = libraryDocs.map(d => {
     const safeTitle = d.title.replace(/'/g, "\\'");
-    
-    // Find all workspaces containing this document
-    let wsNames = [];
-    for (const ws of workspaces) {
-      const wsDocs = workspaceDocs[ws.id] || [];
-      if (wsDocs.some(doc => doc.id === d.id)) {
-        wsNames.push(ws.name);
-      }
-    }
-    
-    // Build meta text
-    let metaText = `<span class="doc-type">${d.type}</span>`;
-    if (d.parentTitle) {
-      metaText += ` · ${d.parentTitle}`;
-    }
-    if (wsNames.length > 0) {
-      metaText += ` · <span class="doc-ws">${wsNames.join(', ')}</span>`;
-    }
+    const metaText = buildDocMeta(d);
     
     return `<div class="library-item">
       <div class="library-item-info">
