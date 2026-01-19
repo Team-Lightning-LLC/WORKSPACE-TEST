@@ -130,8 +130,9 @@
     .ws-card-dropdown-item svg { width: 12px; height: 12px; }
     
     /* Home Grid */
-    .home-grid { flex: 1; display: grid; grid-template-columns: 2.5fr 1fr; gap: 20px; min-height: 0; }
+    .home-grid { flex: 1; display: grid; grid-template-columns: 2.2fr 1fr; gap: 20px; min-height: 0; }
     .home-grid > .home-card { min-width: 0; }
+    .home-grid > .home-right-col { min-width: 280px; max-width: 360px; }
     
     /* Home Cards */
     .home-card { background: linear-gradient(180deg, #fdfcfa 0%, #f1eee9 100%); border-radius: 12px; border: 1px solid var(--border); border-top-color: #e9e5de; border-bottom-color: #d6d1c9; display: flex; flex-direction: column; overflow: hidden; box-shadow: 0 1px 0 rgba(255,255,255,0.8) inset, 0 2px 4px rgba(0,0,0,0.05), 0 5px 14px rgba(0,0,0,0.04); }
@@ -600,11 +601,10 @@
     .doc-body ul, .doc-body ol { margin: 14px 0; padding-left: 24px; }
     .doc-body li { margin-bottom: 6px; font-size: 15px; font-weight: 400; }
     .doc-body table { width: 100%; border-collapse: collapse; margin: 18px 0; font-size: 13px; background: var(--card); }
-    .doc-body th { background: var(--accent) !important; color: white !important; padding: 10px 12px; text-align: left; font-weight: 600; border: 1px solid var(--accent); }
+    .doc-body th, .doc-body thead th, .doc-body th * { background: var(--accent) !important; color: #fff !important; padding: 10px 12px; text-align: left; font-weight: 600; border: 1px solid var(--accent); }
     .doc-body td { border: 1px solid var(--border); padding: 10px 12px; background: var(--card); }
-    .doc-body thead { background: var(--accent); }
-    .doc-body thead th { background: var(--accent) !important; color: white !important; }
-    .doc-body tr:nth-child(even) { background: var(--soft); }
+    .doc-body thead { background: var(--accent); color: #fff; }
+    .doc-body tr:nth-child(even) td { background: var(--soft); }
     
     /* Chat/Follow-up panel */
     .doc-chat-panel { width: 0; opacity: 0; overflow: hidden; background: linear-gradient(270deg, #f6f4f0 0%, #f0ede7 100%); border-left: 1px solid var(--border); display: flex; flex-direction: column; transition: all 0.3s; box-shadow: inset 8px 0 12px -8px rgba(0,0,0,0.05); }
@@ -2127,7 +2127,7 @@ function renderHome() {
 }
 
 function renderHomeGreeting() {
-  document.getElementById('homeGreeting').textContent = 'Welcome Back, Chris';
+  document.getElementById('homeGreeting').textContent = 'Welcome Back, User';
   
   // Dynamic subgreeting with job stats
   const running = activeJobs.filter(j => j.status === 'running').length;
@@ -5437,7 +5437,7 @@ function downloadDocPDF() {
         p { margin-bottom: 12px; }
         strong { color: #0f2a36; }
         table { width: 100%; border-collapse: collapse; margin: 16px 0; font-size: 13px; }
-        th { background: #0f2a36; color: white; padding: 8px 10px; text-align: left; }
+        th, thead th { background: #23545b; color: #fff; padding: 8px 10px; text-align: left; font-weight: 600; }
         td { border: 1px solid #e2ddd7; padding: 8px 10px; }
         ul, ol { margin: 12px 0; padding-left: 24px; }
         li { margin-bottom: 6px; }
