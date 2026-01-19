@@ -200,13 +200,15 @@
     .home-library-search { margin-left: auto; }
     .home-library-search input { padding: 4px 10px; border: 1px solid var(--border); border-radius: 4px; font-size: 11px; width: 120px; background: var(--soft); }
     .home-library-search input:focus { outline: none; border-color: var(--accent); background: var(--card); }
-    .home-lib-item { padding: 10px 14px; display: flex; align-items: center; gap: 10px; border-bottom: 1px solid var(--hair); transition: background 0.15s; }
+    .home-lib-item { padding: 10px 14px; display: flex; align-items: center; gap: 10px; border-bottom: 1px solid var(--hair); transition: background 0.15s; cursor: pointer; }
     .home-lib-item:last-child { border-bottom: none; }
     .home-lib-item:hover { background: var(--soft); }
     .home-lib-icon { width: 28px; height: 28px; background: var(--accent-soft); border-radius: 6px; display: flex; align-items: center; justify-content: center; color: var(--accent); flex-shrink: 0; }
     .home-lib-info { flex: 1; min-width: 0; }
-    .home-lib-title { font-size: 12px; font-weight: 600; color: var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-bottom: 2px; }
-    .home-lib-meta { font-size: 11px; color: var(--muted); }
+    .home-lib-title { font-size: 12px; font-weight: 500; color: var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-bottom: 1px; }
+    .home-lib-meta { font-size: 10px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .home-lib-meta .doc-type { color: var(--accent); font-weight: 500; }
+    .home-lib-meta .doc-parent { color: var(--accent); font-weight: 500; }
     .home-lib-actions { display: flex; gap: 2px; opacity: 0; transition: opacity 0.15s; }
     .home-lib-item:hover .home-lib-actions { opacity: 1; }
     .home-lib-btn { width: 24px; height: 24px; border: none; background: none; color: var(--muted); cursor: pointer; border-radius: 4px; display: flex; align-items: center; justify-content: center; }
@@ -2685,14 +2687,33 @@ function renderHomeLibrary() {
     const safeTitle = doc.title.replace(/'/g, "\\'");
     const safeId = doc.id ? (typeof doc.id === 'string' ? `'${doc.id}'` : doc.id) : 'null';
     
+    // Find workspace(s) containing this document
+    let wsNames = [];
+    for (const ws of workspaces) {
+      const wsDocs = workspaceDocs[ws.id] || [];
+      if (wsDocs.some(d => d.id === doc.id)) {
+        wsNames.push(ws.name);
+      }
+    }
+    
+    // Build meta text similar to research items
+    let metaText = `<span class="doc-type">${doc.type}</span>`;
+    if (doc.parentTitle) {
+      metaText += ` · ${doc.parentTitle}`;
+    }
+    if (wsNames.length > 0) {
+      metaText += ` · <span class="doc-parent">${wsNames[0]}</span>`;
+      if (wsNames.length > 1) metaText += ` +${wsNames.length - 1}`;
+    }
+    
     html += `
-      <div class="home-lib-item">
+      <div class="home-lib-item" onclick="viewDocFromHome('${safeTitle}')">
         <div class="home-lib-icon">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
         </div>
         <div class="home-lib-info">
           <div class="home-lib-title" title="${doc.title}">${doc.title}</div>
-          <div class="home-lib-meta">${doc.date} · ${doc.type}</div>
+          <div class="home-lib-meta">${metaText}</div>
         </div>
         <div class="home-lib-actions">
           <button class="home-lib-btn" onclick="event.stopPropagation();viewDocFromHome('${safeTitle}')" title="View">
