@@ -3538,17 +3538,8 @@ function updateJobStatus(jobId, statusText) {
 }
 
 function updateJobs() {
-  // Filter jobs: 
-  // - Always show running jobs (regardless of workspace)
-  // - Show completed/failed only for current workspace or quick research
-  const relevantJobs = activeJobs.filter(j => {
-    // Quick research always shows
-    if (j.isQuickResearch || !j.wsId) return true;
-    // Running jobs always show (so user knows research is happening)
-    if (j.status === 'running') return true;
-    // Completed/failed jobs only show in their workspace (use string comparison for safety)
-    return currentWs && String(j.wsId) === String(currentWs.id);
-  });
+  // Show ALL jobs globally - research status is workspace-independent
+  const relevantJobs = activeJobs;
   
   const runningJobs = relevantJobs.filter(j => j.status === 'running');
   const completedJobs = relevantJobs.filter(j => j.status === 'completed');
