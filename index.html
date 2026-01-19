@@ -2122,6 +2122,7 @@ function showView(view) {
     appContainer.style.display = 'flex';
     navHome.classList.remove('active');
     navWorkspaces.classList.add('active');
+    updateJobs();  // Refresh jobs toast when entering workspaces view
   }
 }
 
@@ -2167,8 +2168,9 @@ function renderHomeWorkspaces() {
   });
   
   sorted.forEach(w => {
-    const wsRunning = activeJobs.filter(j => j.wsId === w.id && j.status === 'running');
-    const wsCompleted = activeJobs.filter(j => j.wsId === w.id && j.status === 'completed');
+    // Use string comparison for safety with API IDs
+    const wsRunning = activeJobs.filter(j => String(j.wsId) === String(w.id) && j.status === 'running');
+    const wsCompleted = activeJobs.filter(j => String(j.wsId) === String(w.id) && j.status === 'completed');
     const docCount = (workspaceDocs[w.id] || []).length;
     const idAttr = typeof w.id === 'string' ? `'${w.id}'` : w.id;
     const isComplete = w.status === 'completed';
@@ -2927,8 +2929,9 @@ function renderSidebar() {
 function wsItem(w) {
   const active = currentWs?.id === w.id ? 'active' : '';
   const pin = w.pinned ? '<svg class="pin-icon" width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z"/></svg>' : '';
-  const wsRunning = activeJobs.filter(j => j.wsId === w.id && j.status !== 'completed');
-  const wsCompleted = activeJobs.filter(j => j.wsId === w.id && j.status === 'completed');
+  // Use string comparison for safety with API IDs
+  const wsRunning = activeJobs.filter(j => String(j.wsId) === String(w.id) && j.status !== 'completed');
+  const wsCompleted = activeJobs.filter(j => String(j.wsId) === String(w.id) && j.status === 'completed');
   const docCount = (workspaceDocs[w.id] || []).length;
   let meta;
   if (wsRunning.length > 0) {
@@ -2984,6 +2987,7 @@ function doSelectWs(id) {
   renderSidebar();
   renderDocuments();
   updateHeader();
+  updateJobs();  // Update jobs toast for new workspace context
   resetChat();
   renderChatHistory();
   closeChatHistory();
@@ -3534,12 +3538,16 @@ function updateJobStatus(jobId, statusText) {
 }
 
 function updateJobs() {
-  // Filter jobs: show only current workspace jobs + quick research jobs when in workspace view
+  // Filter jobs: 
+  // - Always show running jobs (regardless of workspace)
+  // - Show completed/failed only for current workspace or quick research
   const relevantJobs = activeJobs.filter(j => {
     // Quick research always shows
     if (j.isQuickResearch || !j.wsId) return true;
-    // Workspace jobs only show in their workspace
-    return currentWs && j.wsId === currentWs.id;
+    // Running jobs always show (so user knows research is happening)
+    if (j.status === 'running') return true;
+    // Completed/failed jobs only show in their workspace (use string comparison for safety)
+    return currentWs && String(j.wsId) === String(currentWs.id);
   });
   
   const runningJobs = relevantJobs.filter(j => j.status === 'running');
@@ -3769,11 +3777,11 @@ async function openJobDoc(jobName, wsId) {
 // Resume polling for any running jobs from previous session
 function resumeJobPolling() {
   // First, clean up jobs that reference non-existent workspaces (but keep Quick Research jobs)
-  const validWsIds = workspaces.map(w => w.id);
-  const staleJobs = activeJobs.filter(j => j.wsId && !j.isQuickResearch && !validWsIds.includes(j.wsId));
+  const validWsIds = workspaces.map(w => String(w.id));  // Normalize to strings
+  const staleJobs = activeJobs.filter(j => j.wsId && !j.isQuickResearch && !validWsIds.includes(String(j.wsId)));
   if (staleJobs.length > 0) {
     console.log(`Removing ${staleJobs.length} stale jobs from non-existent workspaces`);
-    activeJobs = activeJobs.filter(j => !j.wsId || j.isQuickResearch || validWsIds.includes(j.wsId));
+    activeJobs = activeJobs.filter(j => !j.wsId || j.isQuickResearch || validWsIds.includes(String(j.wsId)));
     saveJobs();
     updateJobs();
   }
