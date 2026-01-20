@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>MarketLens · Workspaces v7</title>
+  <title>MarketLens · Workspaces v8</title>
   <link rel="icon" type="image/png" href="assets/logo.png">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -58,7 +58,7 @@
       z-index: 100;
       box-shadow: 0 2px 4px rgba(0,0,0,0.12), 0 6px 16px rgba(0,0,0,0.1);
     }
-    .logo-section { display: flex; align-items: center; gap: 10px; }
+    .logo-section { display: flex; align-items: center; gap: 10px; cursor: pointer; }
     .logo { width: 32px; height: 32px; border-radius: 6px; object-fit: contain; }
     .brand-name { color: white; font-size: 18px; font-weight: 600; letter-spacing: -0.02em; }
     .header-nav { display: flex; gap: 4px; align-items: center; }
@@ -224,10 +224,10 @@
     .home-lib-dropdown-item.danger:hover { background: var(--danger-soft); }
     .home-lib-dropdown-divider { height: 1px; background: var(--hair); margin: 4px 0; }
 
-    .app-container { display: flex; height: calc(100vh - 56px); margin-top: 56px; }
+    .app-container { display: flex; height: calc(100vh - 56px); margin-top: 56px; position: relative; }
 
     /* SIDEBAR */
-    .sidebar { width: 280px; background: linear-gradient(90deg, #fbfaf8 0%, #f1efe9 100%); border-right: 1px solid var(--border); display: flex; flex-direction: column; box-shadow: inset -12px 0 18px -12px rgba(0,0,0,0.06); }
+    .sidebar { width: 280px; background: linear-gradient(90deg, #fbfaf8 0%, #f1efe9 100%); border-right: 1px solid var(--border); display: flex; flex-direction: column; box-shadow: inset -12px 0 18px -12px rgba(0,0,0,0.06); position: relative; z-index: 10; }
     .sidebar-header { padding: 16px; border-bottom: 1px solid var(--hair); }
     .new-workspace-btn { width: 100%; padding: 10px 14px; background: linear-gradient(180deg, #183a45 0%, var(--primary) 100%); color: white; border: none; border-radius: 8px; font-size: 13px; font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px; margin-bottom: 12px; box-shadow: 0 1px 0 rgba(255,255,255,0.08) inset, 0 2px 4px rgba(0,0,0,0.12), 0 4px 10px rgba(0,0,0,0.08); transition: all 0.15s ease; }
     .new-workspace-btn:hover { background: linear-gradient(180deg, var(--primary) 0%, #081820 100%); }
@@ -865,7 +865,7 @@
   </div>
 
   <header class="header">
-    <div class="logo-section" onclick="showView('home')" style="cursor: pointer;">
+    <div class="logo-section" onclick="showView('home')">
       <img src="assets/logo.png" alt="MarketLens" class="logo">
       <span class="brand-name">MarketLens</span>
     </div>
@@ -1949,6 +1949,8 @@ let workspaceChats = loadWorkspaceChats();
 
 // ===== INITIALIZATION =====
 document.addEventListener('DOMContentLoaded', async () => {
+  console.log('MarketLens v8 loaded - 2025-01-20');
+  
   // Fallback: hide loading after 10 seconds no matter what
   setTimeout(() => hideLoading(), 10000);
   
@@ -2325,6 +2327,12 @@ function renderHomeWorkspaces() {
 }
 
 function toggleHomeWsMenu(id, event) {
+  // Stop event propagation to prevent double firing
+  if (event) {
+    event.stopPropagation();
+    event.preventDefault();
+  }
+  
   // Ensure id is used consistently (may be string or number)
   const menuId = 'homeWsMenu-' + String(id);
   const menu = document.getElementById(menuId);
@@ -2341,9 +2349,9 @@ function toggleHomeWsMenu(id, event) {
       const btn = event.target.closest('.ws-card-menu-btn');
       if (btn) {
         const rect = btn.getBoundingClientRect();
-        // Position below button, aligned to right edge of button
+        // Position below button, aligned to left edge of button
         menu.style.top = (rect.bottom + 4) + 'px';
-        menu.style.left = (rect.right - 120) + 'px'; // 120 = min-width of dropdown
+        menu.style.left = rect.left + 'px';
         menu.style.right = 'auto';
       }
     }
