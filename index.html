@@ -865,7 +865,7 @@
   </div>
 
   <header class="header">
-    <div class="logo-section">
+    <div class="logo-section" onclick="showView('home')" style="cursor: pointer;">
       <img src="assets/logo.png" alt="MarketLens" class="logo">
       <span class="brand-name">MarketLens</span>
     </div>
@@ -1109,17 +1109,19 @@
       <div class="modal-body">
         <p class="modal-desc" id="researchModalDesc">Generate a single research document. Output will be added to this workspace.</p>
         <div class="form-group">
-          <label class="form-label">Research Type</label>
+          <label class="form-label">Research Category</label>
           <select class="form-select" id="researchType" onchange="updateFocus()">
-            <option value="">Select type...</option>
-            <option value="traditional">Traditional Analysis</option>
-            <option value="ecosystem">Ecosystem Focused</option>
-            <option value="scenario">Scenario Modeling</option>
+            <option value="">Select category...</option>
+            <option value="company">Company Analysis</option>
+            <option value="competitive">Competitive Landscape</option>
+            <option value="ecosystem">Ecosystem & Exposure</option>
+            <option value="scenarios">Scenarios & Risk</option>
+            <option value="custom">Custom</option>
           </select>
         </div>
         <div class="form-group">
           <label class="form-label">Focus</label>
-          <select class="form-select" id="researchFocus"><option value="">Choose type first...</option></select>
+          <select class="form-select" id="researchFocus" onchange="updateContextHint()"><option value="">Choose category first...</option></select>
         </div>
         <div class="form-row">
           <div class="form-group" style="flex:1">
@@ -1644,7 +1646,7 @@ class VertesiaAPI {
       body: JSON.stringify({
         type: 'conversation',
         interaction: VERTESIA_CONFIG.INTERACTION_REPORT,
-        data: { task: task },
+        data: { Task: task },
         config: { environment: VERTESIA_CONFIG.ENVIRONMENT_ID, model: VERTESIA_CONFIG.MODEL }
       })
     });
@@ -1798,13 +1800,39 @@ let currentWs = null;
 let documents = [];
 
 let libraryDocs = [];
-let researchTypes = [
-  { id: 'supply', name: 'Supply Chain Contagion', desc: 'Disruption effects' },
-  { id: 'risk', name: 'Risk Modeling', desc: 'Portfolio impact' },
-  { id: 'ecosystem', name: 'Ecosystem Mapping', desc: 'Dependencies' },
-  { id: 'dcf', name: 'DCF Valuation', desc: 'Intrinsic value' },
-  { id: 'porter', name: "Porter's Five Forces", desc: 'Competitive dynamics' }
-];
+// All 20 research frameworks organized by category
+const researchFrameworks = {
+  company: [
+    { id: 'general', name: 'General Analysis', desc: 'Comprehensive overview' },
+    { id: 'valuation', name: 'Valuation Analysis', desc: 'DCF, comps, intrinsic value' },
+    { id: 'financial', name: 'Financial Health', desc: 'Margins, debt, returns' },
+    { id: 'swot', name: 'SWOT Analysis', desc: 'Strengths, weaknesses, opportunities, threats' },
+    { id: 'leadership', name: 'Leadership Assessment', desc: 'Management track record' }
+  ],
+  competitive: [
+    { id: 'headtohead', name: 'Head-to-Head', desc: 'Direct company comparison' },
+    { id: 'porter', name: "Porter's Five Forces", desc: 'Industry competitive dynamics' },
+    { id: 'marketshare', name: 'Market Share Dynamics', desc: 'Who is winning over time' },
+    { id: 'response', name: 'Competitive Response Patterns', desc: 'Historical competitive behavior' }
+  ],
+  ecosystem: [
+    { id: 'ecosystem', name: 'Ecosystem Mapping', desc: 'Suppliers, partners, customers' },
+    { id: 'supplychain', name: 'Supply Chain Contagion', desc: 'Disruption ripple effects' },
+    { id: 'concentration', name: 'Concentration Risk', desc: 'Customer/supplier dependency' },
+    { id: 'geographic', name: 'Geographic Exposure', desc: 'Regional risk analysis' },
+    { id: 'relationship', name: 'Relationship Evolution', desc: 'How relationships change over time' }
+  ],
+  scenarios: [
+    { id: 'riskcorr', name: 'Risk Correlation', desc: 'Interconnected risks' },
+    { id: 'ma', name: 'M&A Scenarios', desc: 'Consolidation analysis' },
+    { id: 'rates', name: 'Interest Rate Sensitivity', desc: 'Rate impact analysis' },
+    { id: 'recession', name: 'Recession Stress Test', desc: 'Downturn performance' },
+    { id: 'narrative', name: 'Narrative Momentum', desc: 'Market story shifts' }
+  ],
+  custom: [
+    { id: 'custom', name: 'Custom Framework', desc: 'Your specific question' }
+  ]
+};
 
 // Job persistence
 const JOBS_STORAGE_KEY = 'marketlens_active_jobs';
@@ -1826,9 +1854,60 @@ function saveJobs() {
 }
 
 const focusOpts = {
-  traditional: ['General Analysis', 'DCF Valuation', "Porter's Five Forces"],
-  ecosystem: ['Ecosystem Mapping', 'Supply Chain Contagion'],
-  scenario: ['Risk Modeling', 'M&A Analysis']
+  company: [
+    'General Analysis',
+    'Valuation Analysis', 
+    'Financial Health',
+    'SWOT Analysis',
+    'Leadership Assessment'
+  ],
+  competitive: [
+    'Head-to-Head',
+    "Porter's Five Forces",
+    'Market Share Dynamics',
+    'Competitive Response Patterns'
+  ],
+  ecosystem: [
+    'Ecosystem Mapping',
+    'Supply Chain Contagion',
+    'Concentration Risk',
+    'Geographic Exposure',
+    'Relationship Evolution'
+  ],
+  scenarios: [
+    'Risk Correlation',
+    'M&A Scenarios',
+    'Interest Rate Sensitivity',
+    'Recession Stress Test',
+    'Narrative Momentum'
+  ],
+  custom: [
+    'Custom Framework'
+  ]
+};
+
+// Context hints for research types - shown in placeholder
+const RESEARCH_HINTS = {
+  'General Analysis': 'Enter company or topic (e.g., NVIDIA, semiconductor industry)',
+  'Valuation Analysis': 'Enter company for DCF, comps, multiples (e.g., NVDA fair value, Tesla vs peers)',
+  'Financial Health': 'Enter company for margins, debt, returns (e.g., Apple profitability, Boeing balance sheet)',
+  'SWOT Analysis': 'Enter company for strengths, weaknesses, opportunities, threats (e.g., Microsoft SWOT)',
+  'Leadership Assessment': 'Enter company to evaluate leadership (e.g., Microsoft under Nadella, Apple post-Jobs)',
+  'Head-to-Head': 'Enter 2+ companies to compare (e.g., Tesla vs Rivian vs Lucid)',
+  "Porter's Five Forces": 'Enter company/industry for competitive dynamics (e.g., EV industry, streaming wars)',
+  'Market Share Dynamics': 'Enter market and players (e.g., Cloud: AWS vs Azure vs GCP 2019-2024)',
+  'Competitive Response Patterns': 'Enter companies for historical behavior (e.g., Amazon vs Walmart pricing wars)',
+  'Ecosystem Mapping': 'Enter company to map suppliers, partners, customers (e.g., Apple ecosystem, TSMC)',
+  'Supply Chain Contagion': 'Describe disruption scenario (e.g., Taiwan semiconductor shutdown impact)',
+  'Concentration Risk': 'Enter company for customer/supplier concentration (e.g., NVIDIA customer concentration)',
+  'Geographic Exposure': 'Enter company for regional risk analysis (e.g., Apple China exposure)',
+  'Relationship Evolution': 'Enter two entities and timeframe (e.g., Apple-Samsung relationship 2010-2024)',
+  'Risk Correlation': 'Enter scenario and affected companies (e.g., oil price impact on airlines, shipping)',
+  'M&A Scenarios': 'Enter industry or companies (e.g., semiconductor consolidation, potential acquirers)',
+  'Interest Rate Sensitivity': 'Enter companies/sectors (e.g., REITs, utilities, tech growth stocks)',
+  'Recession Stress Test': 'Enter company/sector for downturn analysis (e.g., consumer discretionary)',
+  'Narrative Momentum': 'Enter company and narrative shift (e.g., NVIDIA: gaming → AI infrastructure)',
+  'Custom Framework': 'Describe your specific research question in detail...'
 };
 
 // CHAT STATE
@@ -2213,15 +2292,15 @@ function renderHomeWorkspaces() {
           </button>
           <div class="ws-card-dropdown" id="homeWsMenu-${w.id}">
             <div class="ws-card-dropdown-item" onclick="event.stopPropagation();homeWsAction('rename',${idAttr})">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
               Rename
             </div>
             <div class="ws-card-dropdown-item" onclick="event.stopPropagation();homeWsAction('complete',${idAttr})">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
               ${isComplete ? 'Reopen' : 'Mark Complete'}
             </div>
             <div class="ws-card-dropdown-item danger" onclick="event.stopPropagation();homeWsAction('delete',${idAttr})">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
               Delete
             </div>
           </div>
@@ -2246,7 +2325,9 @@ function renderHomeWorkspaces() {
 }
 
 function toggleHomeWsMenu(id, event) {
-  const menu = document.getElementById('homeWsMenu-' + id);
+  // Ensure id is used consistently (may be string or number)
+  const menuId = 'homeWsMenu-' + String(id);
+  const menu = document.getElementById(menuId);
   const wasOpen = menu && menu.classList.contains('open');
   
   // Close all menus first
@@ -2260,8 +2341,10 @@ function toggleHomeWsMenu(id, event) {
       const btn = event.target.closest('.ws-card-menu-btn');
       if (btn) {
         const rect = btn.getBoundingClientRect();
+        // Position below button, aligned to right edge of button
         menu.style.top = (rect.bottom + 4) + 'px';
-        menu.style.right = (window.innerWidth - rect.right) + 'px';
+        menu.style.left = (rect.right - 120) + 'px'; // 120 = min-width of dropdown
+        menu.style.right = 'auto';
       }
     }
   }
@@ -3259,13 +3342,14 @@ async function createWorkspace() {
   currentWs = ws;
   documents = workspaceDocs[wsId] || [];
   
+  closeModal('newWorkspace');
+  showView('workspaces');  // Navigate to workspaces view
   renderSidebar();
   renderDocuments();
   updateHeader();
   resetChat();
   
   document.getElementById('newWsName').value = '';
-  closeModal('newWorkspace');
   
   // Show warning if documents couldn't be added (but workspace was created)
   if (!docsAddedSuccessfully) {
@@ -3907,9 +3991,22 @@ async function addDocsToWorkspace(pickerId) {
 function updateFocus() {
   const t = document.getElementById('researchType').value;
   const opts = focusOpts[t] || [];
-  document.getElementById('researchFocus').innerHTML = opts.length
+  const focusSelect = document.getElementById('researchFocus');
+  
+  focusSelect.innerHTML = opts.length
     ? '<option value="">Select focus...</option>' + opts.map(o => `<option value="${o}">${o}</option>`).join('')
-    : '<option value="">Choose type first...</option>';
+    : '<option value="">Choose category first...</option>';
+  
+  // Reset context placeholder
+  updateContextHint();
+}
+
+function updateContextHint() {
+  const focus = document.getElementById('researchFocus').value;
+  const contextInput = document.getElementById('researchContext');
+  if (contextInput) {
+    contextInput.placeholder = RESEARCH_HINTS[focus] || 'Add any specific focus or context...';
+  }
 }
 
 async function startResearch() {
