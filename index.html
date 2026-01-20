@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>MarketLens · Workspaces v8</title>
+  <title>MarketLens · Workspaces v8.2</title>
   <link rel="icon" type="image/png" href="assets/logo.png">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -1949,7 +1949,10 @@ let workspaceChats = loadWorkspaceChats();
 
 // ===== INITIALIZATION =====
 document.addEventListener('DOMContentLoaded', async () => {
-  console.log('MarketLens v8 loaded - 2025-01-20');
+  console.log('MarketLens v8.2 loaded');
+  
+  // Ensure all dropdowns start closed
+  document.querySelectorAll('.ws-card-dropdown').forEach(d => d.classList.remove('open'));
   
   // Fallback: hide loading after 10 seconds no matter what
   setTimeout(() => hideLoading(), 10000);
@@ -2206,6 +2209,12 @@ function showView(view) {
   const navHome = document.getElementById('navHome');
   const navWorkspaces = document.getElementById('navWorkspaces');
   
+  // Always close any open dropdowns when switching views
+  document.querySelectorAll('.ws-card-dropdown').forEach(d => {
+    d.classList.remove('open');
+    d.style.display = 'none';  // Force hide
+  });
+  
   if (view === 'home') {
     homeView.style.display = 'flex';
     appContainer.style.display = 'none';
@@ -2338,11 +2347,15 @@ function toggleHomeWsMenu(id, event) {
   const menu = document.getElementById(menuId);
   const wasOpen = menu && menu.classList.contains('open');
   
-  // Close all menus first
-  document.querySelectorAll('.ws-card-dropdown').forEach(d => d.classList.remove('open'));
+  // Close all menus first and reset their display style
+  document.querySelectorAll('.ws-card-dropdown').forEach(d => {
+    d.classList.remove('open');
+    d.style.display = '';  // Clear inline style so CSS takes over
+  });
   
   // Only open if it wasn't already open
   if (menu && !wasOpen) {
+    menu.style.display = '';  // Clear any inline style
     menu.classList.add('open');
     // Position the dropdown near the button
     if (event) {
@@ -2359,8 +2372,11 @@ function toggleHomeWsMenu(id, event) {
 }
 
 async function homeWsAction(action, id) {
-  // Close any open menus
-  document.querySelectorAll('.ws-card-dropdown').forEach(d => d.classList.remove('open'));
+  // Close any open menus and clear inline styles
+  document.querySelectorAll('.ws-card-dropdown').forEach(d => {
+    d.classList.remove('open');
+    d.style.display = '';
+  });
   
   switch(action) {
     case 'pin':
@@ -2390,7 +2406,10 @@ function goToWorkspaceFromHome(id) {
 // Close home workspace dropdown menus when clicking outside
 document.addEventListener('click', (e) => {
   if (!e.target.closest('.ws-card-menu')) {
-    document.querySelectorAll('.ws-card-dropdown').forEach(d => d.classList.remove('open'));
+    document.querySelectorAll('.ws-card-dropdown').forEach(d => {
+      d.classList.remove('open');
+      d.style.display = '';  // Clear inline style
+    });
   }
 });
 
