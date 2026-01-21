@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>MarketLens Â· Workspaces v8.2</title>
+  <title>MarketLens</title>
   <link rel="icon" type="image/png" href="assets/logo.png">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -1259,7 +1259,7 @@
               <h4>Reset password</h4>
               <p>Forgot your password? We'll help you reset it</p>
             </div>
-            <div class="help-option-arrow">Ã¢â€ â€™</div>
+            <div class="help-option-arrow">Ã¢€ €™</div>
           </a>
           <a href="#" class="help-option" onclick="event.preventDefault()">
             <div class="help-option-icon">
@@ -1273,7 +1273,7 @@
               <h4>Getting started</h4>
               <p>New to MarketLens? Learn the basics</p>
             </div>
-            <div class="help-option-arrow">Ã¢â€ â€™</div>
+            <div class="help-option-arrow">Ã¢€ €™</div>
           </a>
           <a href="#" class="help-option" onclick="event.preventDefault()">
             <div class="help-option-icon">
@@ -1285,7 +1285,7 @@
               <h4>Technical issues</h4>
               <p>Something not working? Let us know</p>
             </div>
-            <div class="help-option-arrow">Ã¢â€ â€™</div>
+            <div class="help-option-arrow">Ã¢€ €™</div>
           </a>
           <a href="#" class="help-option" onclick="event.preventDefault()">
             <div class="help-option-icon">
@@ -1298,7 +1298,7 @@
               <h4>Account & billing</h4>
               <p>Manage your subscription and settings</p>
             </div>
-            <div class="help-option-arrow">Ã¢â€ â€™</div>
+            <div class="help-option-arrow">Ã¢€ €™</div>
           </a>
         </div>
         <div class="help-divider"><span>or</span></div>
@@ -1907,7 +1907,7 @@ const RESEARCH_HINTS = {
   'M&A Scenarios': 'Enter industry or companies (e.g., semiconductor consolidation, potential acquirers)',
   'Interest Rate Sensitivity': 'Enter companies/sectors (e.g., REITs, utilities, tech growth stocks)',
   'Recession Stress Test': 'Enter company/sector for downturn analysis (e.g., consumer discretionary)',
-  'Narrative Momentum': 'Enter company and narrative shift (e.g., NVIDIA: gaming â†’ AI infrastructure)',
+  'Narrative Momentum': 'Enter company and narrative shift (e.g., NVIDIA: gaming †’ AI infrastructure)',
   'Custom Framework': 'Describe your specific research question in detail...'
 };
 
@@ -2252,7 +2252,7 @@ function renderHomeGreeting() {
     const parts = [];
     if (running > 0) parts.push(`${running} research job${running !== 1 ? 's' : ''} running`);
     if (completed > 0) parts.push(`${completed} completed`);
-    sub = parts.join(' Â· ');
+    sub = parts.join(' · ');
   }
   document.getElementById('homeSubgreeting').textContent = sub;
 }
@@ -2325,7 +2325,7 @@ function renderHomeWorkspaces() {
         </div>
         <div class="ws-card-meta">
           <span>${docCount} doc${docCount !== 1 ? 's' : ''}</span>
-          <span>Â·</span>
+          <span>·</span>
           <span class="ws-card-status ${statusClass}">${statusText}</span>
         </div>
         ${badge}
@@ -2477,7 +2477,7 @@ function renderHomeResearchProgress() {
             </div>
             <div class="research-info">
               <div class="research-name">${job.name}</div>
-              <div class="research-meta"><span class="quick-label">Quick Research</span> Â· Saved to Library</div>
+              <div class="research-meta"><span class="quick-label">Quick Research</span> · Saved to Library</div>
             </div>
             <div class="research-actions" onclick="event.stopPropagation()">
               <button class="research-action-btn primary" onclick="viewJobDocument(${docIdAttr}, '${displayName}')">View</button>
@@ -2491,7 +2491,7 @@ function renderHomeResearchProgress() {
         // Workspace research
         const researchType = job.researchType || job.name;
         const metaText = job.docTitle 
-          ? `${researchType} Â· Ready in <span class="workspace">${job.wsName}</span>`
+          ? `${researchType} · Ready in <span class="workspace">${job.wsName}</span>`
           : `Ready in <span class="workspace">${job.wsName}</span>`;
         html += `
           <div class="research-item completed" onclick="viewJobDocument(${docIdAttr}, '${displayName}', ${wsIdAttr})" style="cursor:pointer">
@@ -2522,7 +2522,7 @@ function renderHomeResearchProgress() {
           <div class="research-spinner"></div>
           <div class="research-info">
             <div class="research-name">${job.name}</div>
-            <div class="research-meta"><span class="workspace">${wsName}</span> Â· <span class="job-status">${statusText}</span> Â· ${elapsed}</div>
+            <div class="research-meta"><span class="workspace">${wsName}</span> · <span class="job-status">${statusText}</span> · ${elapsed}</div>
           </div>
           <div class="research-actions">
             <button class="research-action-btn" onclick="event.stopPropagation();cancelResearchJob(${job.id})" title="Cancel">
@@ -2827,9 +2827,9 @@ function buildDocMeta(doc) {
   
   // 4. Build meta string with spans for styling
   let meta = `<span class="doc-kind">${kind}</span>`;
-  meta += ` Â· <span class="doc-type">${researchType}</span>`;
+  meta += ` · <span class="doc-type">${researchType}</span>`;
   if (wsNames.length > 0) {
-    meta += ` Â· <span class="doc-ws">${wsNames.join(', ')}</span>`;
+    meta += ` · <span class="doc-ws">${wsNames.join(', ')}</span>`;
   }
   
   return meta;
@@ -3136,7 +3136,7 @@ function resetChat() {
       <div class="chat-message ai">
         <div class="message-bubble">I've loaded the contents of this workspace. What would you like to explore?</div>
         <div class="message-footer">
-          <span class="message-time">MarketLens Â· Just now</span>
+          <span class="message-time">MarketLens · Just now</span>
           <div class="message-actions">
             <button class="msg-action-btn" onclick="copyMessage(this)" title="Copy"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></button>
           </div>
@@ -3396,7 +3396,7 @@ async function createWorkspace() {
     selected.forEach(el => {
       const title = el.querySelector('.doc-picker-title').textContent;
       const meta = el.querySelector('.doc-picker-meta').textContent;
-      const type = meta.split(' Â· ')[1] || 'Research';
+      const type = meta.split(' · ')[1] || 'Research';
       workspaceDocs[wsId].push({
         id: Date.now() + Math.random(),
         title,
@@ -3487,7 +3487,7 @@ function renderDocuments() {
     const isStarred = starredDocs.has(d.id);
     
     let html = `<div class="document-card ${isChild ? 'is-child' : ''} ${hasChildren ? 'has-children' : ''} ${isStarred ? 'is-starred' : ''}" style="${indentStyle}" data-doc-id="${d.id}" data-parent-id="${d.parentId || ''}" onclick="viewDoc('${safeTitle}')">
-      ${isChild ? `<div class="child-indicator">â†³ Follow-up${d.parentTitle ? ` from ${d.parentTitle.substring(0, 25)}${d.parentTitle.length > 25 ? '...' : ''}` : ''}</div>` : ''}
+      ${isChild ? `<div class="child-indicator">†³ Follow-up${d.parentTitle ? ` from ${d.parentTitle.substring(0, 25)}${d.parentTitle.length > 25 ? '...' : ''}` : ''}</div>` : ''}
       <div class="document-card-header">
         <span class="document-type">${d.type}</span>
         <div class="document-actions" onclick="event.stopPropagation()">
@@ -3499,7 +3499,7 @@ function renderDocuments() {
         </div>
       </div>
       <div class="document-title">${d.title}</div>
-      <div class="document-meta">${d.date}${hasChildren ? ` Â· ${children.length} follow-up${children.length > 1 ? 's' : ''}${isCollapsed ? ' (collapsed)' : ''}` : ''}</div>
+      <div class="document-meta">${d.date}${hasChildren ? ` · ${children.length} follow-up${children.length > 1 ? 's' : ''}${isCollapsed ? ' (collapsed)' : ''}` : ''}</div>
     </div>`;
     
     // Render children recursively (wrapped in container for collapse)
@@ -3515,7 +3515,7 @@ function renderDocuments() {
   }
   
   listEl.innerHTML = rootDocs.map(d => renderDocWithChildren(d, 0)).join('');
-  document.getElementById('docCount').textContent = ` Â· ${documents.length} total`;
+  document.getElementById('docCount').textContent = ` · ${documents.length} total`;
 }
 
 // Track collapsed state for parent documents
@@ -3735,7 +3735,7 @@ function updateJobs() {
             <div class="job-done-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg></div>
             <div class="job-info">
               <div class="job-name">${j.name}</div>
-              <div class="job-progress"><span class="job-workspace">Quick Research</span> Â· Saved to Library</div>
+              <div class="job-progress"><span class="job-workspace">Quick Research</span> · Saved to Library</div>
             </div>
             <div class="job-actions" onclick="event.stopPropagation()">
               <button class="job-view-btn" onclick="viewJobDocument(${docIdAttr}, '${displayName}')">View</button>
@@ -3747,7 +3747,7 @@ function updateJobs() {
         } else {
           const researchType = j.researchType || j.name;
           const metaText = j.docTitle 
-            ? `${researchType} Â· Ready in <span class="job-workspace">${j.wsName}</span>`
+            ? `${researchType} · Ready in <span class="job-workspace">${j.wsName}</span>`
             : `Ready in <span class="job-workspace">${j.wsName}</span>`;
           return `<div class="job-item completed" onclick="viewJobDocument(${docIdAttr}, '${displayName}', ${wsIdAttr})" style="cursor:pointer">
             <div class="job-done-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg></div>
@@ -3772,7 +3772,7 @@ function updateJobs() {
           <div class="job-spinner"></div>
           <div class="job-info">
             <div class="job-name">${j.name}</div>
-            <div class="job-progress">${wsName} Â· <span class="job-status">${statusText}</span> Â· ${elapsed}</div>
+            <div class="job-progress">${wsName} · <span class="job-status">${statusText}</span> · ${elapsed}</div>
           </div>
           <button class="job-dismiss" onclick="event.stopPropagation();cancelResearchJob(${j.id})" title="Cancel">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
@@ -3981,7 +3981,7 @@ function renderDocPicker(containerId, docs, isRelated = false, excludeIds = []) 
   container.innerHTML = `
     ${!isRelated ? '<div class="doc-picker-search"><input type="text" placeholder="Search..." oninput="filterPicker(this)"></div>' : ''}
     <div class="doc-picker-list">${itemsHtml}</div>
-    <div class="doc-picker-footer">${filteredDocs.length} documents available Â· 0 selected</div>
+    <div class="doc-picker-footer">${filteredDocs.length} documents available · 0 selected</div>
   `;
 }
 function togglePickerItem(el) {
@@ -3989,7 +3989,7 @@ function togglePickerItem(el) {
   const picker = el.closest('.doc-picker');
   const count = picker.querySelectorAll('.doc-picker-item.selected').length;
   const total = picker.querySelectorAll('.doc-picker-item').length;
-  picker.querySelector('.doc-picker-footer').textContent = `${total} documents available Â· ${count} selected`;
+  picker.querySelector('.doc-picker-footer').textContent = `${total} documents available · ${count} selected`;
 }
 function filterPicker(input) {
   const q = input.value.toLowerCase();
@@ -4451,13 +4451,13 @@ function updateCompletedJobsWithDocuments() {
     }
     
     if (match) {
-      console.log(`âœ“ Matched job "${job.researchType}" to doc "${match.title}"`);
+      console.log(`œ“ Matched job "${job.researchType}" to doc "${match.title}"`);
       job.docId = match.id;
       job.docTitle = match.title;
       // Use clean title for display
       job.name = cleanDocTitle(match.title);
     } else {
-      console.log(`âœ— No match found for job "${job.researchType}"`);
+      console.log(`œ— No match found for job "${job.researchType}"`);
     }
   });
   
@@ -4662,7 +4662,7 @@ async function sendChat() {
     <div class="chat-message user">
       <div class="message-bubble">${escapeHtml(msg)}</div>
       <div class="message-footer">
-        <span class="message-time">You Â· ${time}</span>
+        <span class="message-time">You · ${time}</span>
         <div class="message-actions">
           <button class="msg-action-btn" onclick="copyMessage(this)" title="Copy"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></button>
         </div>
@@ -4784,7 +4784,7 @@ function addAIResponse(chatEl, text, sources = []) {
       <div class="message-bubble">${formatAIResponse(text)}</div>
       ${sourcesHtml}
       <div class="message-footer">
-        <span class="message-time">MarketLens Â· ${aiTime}</span>
+        <span class="message-time">MarketLens · ${aiTime}</span>
         <div class="message-actions">
           <button class="msg-action-btn" onclick="copyMessage(this)" title="Copy"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></button>
           <button class="msg-action-btn" onclick="quoteMessage(this)" title="Save Quote"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 21c3 0 7-1 7-8V5c0-1.25-.756-2.017-2-2H4c-1.25 0-2 .75-2 1.972V11c0 1.25.75 2 2 2 1 0 1 0 1 1v1c0 1-1 2-2 2s-1 .008-1 1.031V21"/><path d="M15 21c3 0 7-1 7-8V5c0-1.25-.757-2.017-2-2h-4c-1.25 0-2 .75-2 1.972V11c0 1.25.75 2 2 2h.75c0 2.25.25 4-2.75 4v3"/></svg></button>
@@ -4826,8 +4826,8 @@ function formatAIResponse(text) {
   // Convert **bold** to <strong> (do this first, before italic)
   html = html.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
   
-  // Convert bullet points (- or â€¢) at start of lines
-  html = html.replace(/^[\-â€¢]\s+(.+)$/gm, '<li>$1</li>');
+  // Convert bullet points (- or €¢) at start of lines
+  html = html.replace(/^[\-€¢]\s+(.+)$/gm, '<li>$1</li>');
   
   // Wrap consecutive <li> in <ul>
   html = html.replace(/(<li>[^<]*<\/li>\s*)+/g, (match) => `<ul>${match}</ul>`);
@@ -4956,7 +4956,7 @@ function renderChatHistory() {
       </div>
       <div class="chat-history-info" onclick="loadSavedChat('${chat.id}')">
         <div class="chat-history-name">${escapeHtml(chat.title)}</div>
-        <div class="chat-history-meta">${chat.date} Â· ${chat.messages.length} messages</div>
+        <div class="chat-history-meta">${chat.date} · ${chat.messages.length} messages</div>
       </div>
       <div class="chat-history-actions">
         <button class="chat-history-action" onclick="event.stopPropagation();renameSavedChat('${chat.id}')" title="Rename">
@@ -4999,7 +4999,7 @@ async function loadSavedChat(chatId) {
         <div class="chat-message user">
           <div class="message-bubble">${escapeHtml(msg.content)}</div>
           <div class="message-footer">
-            <span class="message-time">You Â· ${msg.time}</span>
+            <span class="message-time">You · ${msg.time}</span>
             <div class="message-actions">
               <button class="msg-action-btn" onclick="copyMessage(this)" title="Copy"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></button>
             </div>
@@ -5015,7 +5015,7 @@ async function loadSavedChat(chatId) {
           <div class="message-bubble">${formatAIResponse(msg.content)}</div>
           ${sourcesHtml}
           <div class="message-footer">
-            <span class="message-time">MarketLens Â· ${msg.time}</span>
+            <span class="message-time">MarketLens · ${msg.time}</span>
             <div class="message-actions">
               <button class="msg-action-btn" onclick="copyMessage(this)" title="Copy"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></button>
               <button class="msg-action-btn" onclick="quoteMessage(this)" title="Save Quote"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 21c3 0 7-1 7-8V5c0-1.25-.756-2.017-2-2H4c-1.25 0-2 .75-2 1.972V11c0 1.25.75 2 2 2 1 0 1 0 1 1v1c0 1-1 2-2 2s-1 .008-1 1.031V21"/><path d="M15 21c3 0 7-1 7-8V5c0-1.25-.757-2.017-2-2h-4c-1.25 0-2 .75-2 1.972V11c0 1.25.75 2 2 2h.75c0 2.25.25 4-2.75 4v3"/></svg></button>
@@ -5517,7 +5517,7 @@ async function sendDocChat() {
   messagesEl.innerHTML += `
     <div class="doc-chat-message user">
       <div class="doc-chat-bubble">${escapeHtml(msg)}</div>
-      <div class="doc-chat-time">You Â· ${time}</div>
+      <div class="doc-chat-time">You · ${time}</div>
     </div>`;
   
   docChatMessages.push({ role: 'user', content: msg, time });
@@ -5613,7 +5613,7 @@ function addDocAIResponse(messagesEl, text) {
   messagesEl.innerHTML += `
     <div class="doc-chat-message assistant">
       <div class="doc-chat-bubble">${formatAIResponse(text)}</div>
-      <div class="doc-chat-time">MarketLens Â· ${aiTime}</div>
+      <div class="doc-chat-time">MarketLens · ${aiTime}</div>
     </div>`;
   docChatMessages.push({ role: 'assistant', content: text, time: aiTime });
   messagesEl.scrollTop = messagesEl.scrollHeight;
