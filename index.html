@@ -1647,7 +1647,7 @@ class VertesiaAPI {
       body: JSON.stringify({
         type: 'conversation',
         interaction: VERTESIA_CONFIG.INTERACTION_REPORT,
-        data: { Task: task },
+        data: { task: task },
         config: { environment: VERTESIA_CONFIG.ENVIRONMENT_ID, model: VERTESIA_CONFIG.MODEL }
       })
     });
