@@ -3281,7 +3281,7 @@ async function createWorkspace() {
   
   let wsId;
   let ws;
-  let docsWereAdded = false;
+  let docsWereSelected = false;
   
   // If live mode, create via API
   if (liveMode) {
@@ -3325,17 +3325,18 @@ async function createWorkspace() {
     const picker = document.getElementById('newWsPicker');
     const selected = picker.querySelectorAll('.doc-picker-item.selected');
     const docIds = Array.from(selected).map(el => el.dataset.docId).filter(id => id);
+    docsWereSelected = docIds.length > 0;
     
-    if (docIds.length > 0) {
+    if (docsWereSelected) {
       try {
         if (btn) { btn.textContent = 'Adding documents...'; }
         // Brief delay to ensure collection is fully registered in backend
         await new Promise(resolve => setTimeout(resolve, 800));
         await api.addToCollection(wsId, docIds);
         console.log('Documents add request sent');
-        docsWereAdded = true;
       } catch (docError) {
         console.warn('Failed to add documents to workspace:', docError);
+        // Continue anyway - refresh will pick them up if they were added
       }
     }
     
@@ -3376,8 +3377,8 @@ async function createWorkspace() {
   
   document.getElementById('newWsName').value = '';
   
-  // If documents were added, auto-trigger refresh multiple times to fetch them
-  if (docsWereAdded && liveMode) {
+  // If documents were selected, auto-trigger refresh multiple times to fetch them
+  if (docsWereSelected && liveMode) {
     // Refresh at 1s, 3s, and 6s to catch documents as they propagate
     setTimeout(() => {
       console.log('Auto-refresh attempt 1...');
