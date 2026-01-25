@@ -1647,7 +1647,7 @@ class VertesiaAPI {
       body: JSON.stringify({
         type: 'conversation',
         interaction: VERTESIA_CONFIG.INTERACTION_REPORT,
-        data: { task: task },
+        data: { Task: task },
         config: { environment: VERTESIA_CONFIG.ENVIRONMENT_ID, model: VERTESIA_CONFIG.MODEL }
       })
     });
@@ -3321,24 +3321,10 @@ async function createWorkspace() {
       return;
     }
     
-    // STEP 2: Add documents (if any selected)
+    // Check if documents were selected (refresh will pick them up)
     const picker = document.getElementById('newWsPicker');
     const selected = picker.querySelectorAll('.doc-picker-item.selected');
-    const docIds = Array.from(selected).map(el => el.dataset.docId).filter(id => id);
-    docsWereSelected = docIds.length > 0;
-    
-    if (docsWereSelected) {
-      try {
-        if (btn) { btn.textContent = 'Adding documents...'; }
-        // Brief delay to ensure collection is fully registered in backend
-        await new Promise(resolve => setTimeout(resolve, 800));
-        await api.addToCollection(wsId, docIds);
-        console.log('Documents add request sent');
-      } catch (docError) {
-        console.warn('Failed to add documents to workspace:', docError);
-        // Continue anyway - refresh will pick them up if they were added
-      }
-    }
+    docsWereSelected = selected.length > 0;
     
     if (btn) { btn.disabled = false; btn.textContent = 'Create Workspace'; }
     
@@ -5552,6 +5538,10 @@ async function sendDocChatToAPI(msg, messagesEl) {
               gotAnswer = true;
               document.getElementById('docThinking')?.remove();
               addDocAIResponse(messagesEl, answer);
+              // Reset state immediately when we have an answer - don't wait for stream to close
+              console.log('Got answer - resetting doc chat state immediately');
+              isDocChatStreaming = false;
+              if (sendBtn) sendBtn.disabled = false;
             }
           }
         },
@@ -5561,12 +5551,18 @@ async function sendDocChatToAPI(msg, messagesEl) {
             document.getElementById('docThinking')?.remove();
             addDocAIResponse(messagesEl, "I couldn't find relevant information in this document for your question.");
           }
+          // Also reset state on complete (covers no-answer case)
+          isDocChatStreaming = false;
+          if (sendBtn) sendBtn.disabled = false;
         },
         (error) => {
           // onError
           console.error('Doc chat stream error:', error);
           document.getElementById('docThinking')?.remove();
           addDocAIResponse(messagesEl, 'Error processing your request. Please try again.');
+          // Reset state on error too
+          isDocChatStreaming = false;
+          if (sendBtn) sendBtn.disabled = false;
         }
       );
     } else {
